@@ -398,8 +398,9 @@ git commit -m "feat: add api and error mapping foundations"
 
 **Interfaces:**
 - Produces: `AlistApi.login(LoginRequest): AlistResponse<AlistLoginData>`.
-- Produces: `AuthTokenProvider` with `getToken()`, `setToken(token)`, `clearToken()`.
-- Consumes: `CredentialStore` from Phase 0.
+- Produces: in-memory `AuthTokenProvider` with `getToken()`, `setToken(token)`, `clearToken()`.
+- Produces: `SkipAuthRetry` marker infrastructure that strips `X-Skip-Auth-Retry` before network I/O while preserving an internal request marker for later `Authenticator` opt-out checks.
+- Consumes: none. `CredentialStore` consumption starts in Task 1.4 via `SessionManager`, which persists and restores tokens into `AuthTokenProvider`.
 
 - [ ] **Step 1: Add DTOs and API interface**
 
