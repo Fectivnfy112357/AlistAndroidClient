@@ -4,6 +4,7 @@ import com.textvision.alistclient.auth.model.SavedSession
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.LoginRequest
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,6 +22,8 @@ class AuthRepository @Inject constructor(
         } else {
             ApiResult.Failure(response.code, response.message)
         }
+    } catch (t: CancellationException) {
+        throw t
     } catch (t: Throwable) {
         ApiResult.NetworkError(t)
     }

@@ -1,6 +1,7 @@
 package com.textvision.alistclient.common.error
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.SerializationException
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -12,6 +13,7 @@ import javax.net.ssl.SSLProtocolException
 object ErrorMapper {
     fun mapThrowable(t: Throwable): AppError = when (t) {
         is CancellationException -> AppError.Cancelled
+        is SerializationException -> AppError.NotAlistServer
         is SSLHandshakeException -> AppError.CertificateUntrusted
         is SSLProtocolException -> AppError.SSLError
         is SSLException -> AppError.SSLError

@@ -7,6 +7,7 @@ import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
 import com.textvision.alistclient.network.dto.LoginRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -23,6 +24,25 @@ class AuthRepositoryTest {
 
     private class FakeApi(private val response: AlistResponse<AlistLoginData>) : AlistApi {
         override suspend fun login(request: LoginRequest): AlistResponse<AlistLoginData> = response
+    }
+
+    private class CancellingApi : AlistApi {
+        override suspend fun login(request: LoginRequest): AlistResponse<AlistLoginData> {
+            throw CancellationException("cancelled")
+        }
+    }
+
+    @Test fun loginRethrowsCancellationException() = runTest {
+        val repo = AuthRepository(CancellingApi(), SessionManager(MemoryStore(), AuthTokenProvider()))
+
+        try {
+            repo.login("http://server/", "admin", "pass")
+        } catch (e: CancellationException) {
+            assertEquals("cancelled", e.message)
+            return@runTest
+        }
+
+        throw AssertionError("Expected CancellationException")
     }
 
     @Test fun loginSuccessPersistsSessionAndToken() = runTest {

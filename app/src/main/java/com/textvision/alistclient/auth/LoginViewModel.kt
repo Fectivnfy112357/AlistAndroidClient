@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 interface AuthRepositoryContract {
@@ -64,9 +65,9 @@ class LoginViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "用户名和密码不能为空") }
             return
         }
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (val result = authRepository.login(normalized, current.username.trim(), current.password)) {
+            when (val result = withContext(dispatcher) { authRepository.login(normalized, current.username.trim(), current.password) }) {
                 is ApiResult.Success -> {
                     _uiState.update { it.copy(isLoading = false) }
                     onSuccess()

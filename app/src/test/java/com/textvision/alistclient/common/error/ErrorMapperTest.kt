@@ -1,6 +1,7 @@
 package com.textvision.alistclient.common.error
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.SerializationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,6 +15,10 @@ class ErrorMapperTest {
         assertEquals(AppError.Timeout, ErrorMapper.mapThrowable(SocketTimeoutException()))
         assertEquals(AppError.CertificateUntrusted, ErrorMapper.mapThrowable(SSLHandshakeException("bad cert")))
         assertEquals(AppError.Cancelled, ErrorMapper.mapThrowable(CancellationException("cancelled")))
+    }
+
+    @Test fun mapsSerializationExceptionToNotAlistServer() {
+        assertEquals(AppError.NotAlistServer, ErrorMapper.mapThrowable(SerializationException("unexpected response")))
     }
 
     @Test fun mapsAlistFailures() {
