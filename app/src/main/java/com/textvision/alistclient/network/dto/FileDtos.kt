@@ -26,6 +26,21 @@ data class AlistFileDto(
     @SerialName("type") val fileType: Int? = null,
 )
 
+@Serializable
+data class FsListRequest(val path: String, val page: Int = 1, @SerialName("per_page") val perPage: Int = 0)
+
+@Serializable
+data class FsSearchRequest(val path: String, val keywords: String, val page: Int = 1, @SerialName("per_page") val perPage: Int = 50)
+
+@Serializable
+data class MkdirRequest(val path: String)
+
+@Serializable
+data class RenameRequest(val path: String, val name: String)
+
+@Serializable
+data class RemoveRequest(val dir: String, val names: List<String>)
+
 fun AlistFileDto.toFileItem(parentPath: String, baseUrl: String): FileItem {
     val normalizedParent = parentPath.trimEnd('/')
     val fullPath = if (normalizedParent.isEmpty()) "/$name" else "$normalizedParent/$name"
