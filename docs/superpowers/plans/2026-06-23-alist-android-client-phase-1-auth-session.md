@@ -171,6 +171,7 @@ package com.textvision.alistclient.common.error
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.CancellationException
 import org.junit.Test
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -181,6 +182,7 @@ class ErrorMapperTest {
         assertEquals(AppError.ServerUnreachable, ErrorMapper.mapThrowable(ConnectException()))
         assertEquals(AppError.Timeout, ErrorMapper.mapThrowable(SocketTimeoutException()))
         assertEquals(AppError.CertificateUntrusted, ErrorMapper.mapThrowable(SSLHandshakeException("bad cert")))
+        assertEquals(AppError.Cancelled, ErrorMapper.mapThrowable(CancellationException("cancelled")))
     }
 
     @Test fun mapsAlistFailures() {
@@ -212,8 +214,27 @@ class ErrorMessageMapperTest {
 
     @Test fun mapsActionLabels() {
         assertEquals("重试", ErrorMessageMapper.toActionLabel(AppError.Timeout))
+        assertEquals("重试", ErrorMessageMapper.toActionLabel(AppError.Conflict))
         assertEquals("重新登录", ErrorMessageMapper.toActionLabel(AppError.Unauthorized))
         assertNull(ErrorMessageMapper.toActionLabel(AppError.Cancelled))
+        assertNull(ErrorMessageMapper.toActionLabel(AppError.CertificateUntrusted))
+    }
+
+    @Test fun retryLabelsMatchRetryability() {
+        val errors = listOf(
+            AppError.NetworkUnavailable,
+            AppError.ServerUnreachable,
+            AppError.NotFound,
+            AppError.Conflict,
+            AppError.Timeout,
+            AppError.SSLError,
+            AppError.CertificateUntrusted,
+            AppError.Cancelled,
+        )
+        errors.forEach { error ->
+            val retryLabel = ErrorMessageMapper.toActionLabel(error) == "重试"
+            assertEquals(error.toString(), ErrorMessageMapper.isRetryable(error), retryLabel)
+        }
     }
 }
 ```
@@ -267,6 +288,7 @@ sealed interface AppError {
 ```kotlin
 package com.textvision.alistclient.common.error
 
+import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -277,6 +299,7 @@ import javax.net.ssl.SSLProtocolException
 
 object ErrorMapper {
     fun mapThrowable(t: Throwable): AppError = when (t) {
+        is CancellationException -> AppError.Cancelled
         is SSLHandshakeException -> AppError.CertificateUntrusted
         is SSLProtocolException -> AppError.SSLError
         is SSLException -> AppError.SSLError
@@ -329,10 +352,8 @@ object ErrorMessageMapper {
         AppError.ServerUnreachable,
         AppError.Timeout,
         AppError.NotFound,
-        AppError.SSLError,
-        AppError.CertificateUntrusted -> "重试"
+        AppError.Conflict -> "重试"
         AppError.Unauthorized -> "重新登录"
-        AppError.Cancelled -> null
         else -> null
     }
 
