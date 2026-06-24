@@ -1,5 +1,6 @@
 package com.textvision.alistclient.common.error
 
+import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,6 +13,7 @@ class ErrorMapperTest {
         assertEquals(AppError.ServerUnreachable, ErrorMapper.mapThrowable(ConnectException()))
         assertEquals(AppError.Timeout, ErrorMapper.mapThrowable(SocketTimeoutException()))
         assertEquals(AppError.CertificateUntrusted, ErrorMapper.mapThrowable(SSLHandshakeException("bad cert")))
+        assertEquals(AppError.Cancelled, ErrorMapper.mapThrowable(CancellationException("cancelled")))
     }
 
     @Test fun mapsAlistFailures() {

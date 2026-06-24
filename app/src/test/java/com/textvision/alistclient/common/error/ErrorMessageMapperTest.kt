@@ -14,7 +14,26 @@ class ErrorMessageMapperTest {
 
     @Test fun mapsActionLabels() {
         assertEquals("重试", ErrorMessageMapper.toActionLabel(AppError.Timeout))
+        assertEquals("重试", ErrorMessageMapper.toActionLabel(AppError.Conflict))
         assertEquals("重新登录", ErrorMessageMapper.toActionLabel(AppError.Unauthorized))
         assertNull(ErrorMessageMapper.toActionLabel(AppError.Cancelled))
+        assertNull(ErrorMessageMapper.toActionLabel(AppError.CertificateUntrusted))
+    }
+
+    @Test fun retryLabelsMatchRetryability() {
+        val errors = listOf(
+            AppError.NetworkUnavailable,
+            AppError.ServerUnreachable,
+            AppError.NotFound,
+            AppError.Conflict,
+            AppError.Timeout,
+            AppError.SSLError,
+            AppError.CertificateUntrusted,
+            AppError.Cancelled,
+        )
+        errors.forEach { error ->
+            val retryLabel = ErrorMessageMapper.toActionLabel(error) == "重试"
+            assertEquals(error.toString(), ErrorMessageMapper.isRetryable(error), retryLabel)
+        }
     }
 }

@@ -22,10 +22,8 @@ object ErrorMessageMapper {
         AppError.ServerUnreachable,
         AppError.Timeout,
         AppError.NotFound,
-        AppError.SSLError,
-        AppError.CertificateUntrusted -> "重试"
+        AppError.Conflict -> "重试"
         AppError.Unauthorized -> "重新登录"
-        AppError.Cancelled -> null
         else -> null
     }
 
