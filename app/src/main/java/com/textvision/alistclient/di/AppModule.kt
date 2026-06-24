@@ -11,6 +11,9 @@ import com.textvision.alistclient.data.secure.EncryptedCredentialStore
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.api.AlistApi
 import dagger.Binds
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import javax.inject.Qualifier
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -22,6 +25,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import java.util.concurrent.TimeUnit
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class IoDispatcher
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -49,6 +56,10 @@ object DatabaseModule {
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    @Provides
+    @IoDispatcher
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
     @Provides
     @Singleton
     fun provideJson(): Json = Json {

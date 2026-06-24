@@ -9,7 +9,6 @@ import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.util.ServerUrlNormalizer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import com.textvision.alistclient.di.IoDispatcher
 
 interface AuthRepositoryContract {
     suspend fun login(serverUrl: String, username: String, password: String): ApiResult<SavedSession>
@@ -34,12 +34,8 @@ data class LoginUiState(
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepositoryContract,
+    @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    constructor(authRepository: AuthRepositoryContract, dispatcher: CoroutineDispatcher) : this(authRepository) {
-        this.dispatcher = dispatcher
-    }
-
-    private var dispatcher: CoroutineDispatcher = Dispatchers.IO
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 

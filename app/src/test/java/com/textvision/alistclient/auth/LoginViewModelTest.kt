@@ -1,5 +1,7 @@
 package com.textvision.alistclient.auth
 
+import javax.inject.Inject
+
 import com.textvision.alistclient.auth.model.SavedSession
 import com.textvision.alistclient.common.result.ApiResult
 import kotlin.coroutines.CoroutineContext
@@ -42,6 +44,14 @@ class LoginViewModelTest {
                 }
             }
         }
+    }
+
+    @Test fun injectedConstructorAcceptsBackgroundDispatcher() {
+        val injectedConstructor = LoginViewModel::class.java.constructors.single {
+            it.isAnnotationPresent(Inject::class.java)
+        }
+
+        assertTrue(injectedConstructor.parameterTypes.contains(CoroutineDispatcher::class.java))
     }
 
     @Test fun httpWarningUpdatesFromServerUrl() = runTest {

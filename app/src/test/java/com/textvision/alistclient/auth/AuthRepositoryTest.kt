@@ -1,4 +1,11 @@
 package com.textvision.alistclient.auth
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import retrofit2.Retrofit
 
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.data.secure.CredentialStore
@@ -23,11 +30,11 @@ class AuthRepositoryTest {
     }
 
     private class FakeApi(private val response: AlistResponse<AlistLoginData>) : AlistApi {
-        override suspend fun login(request: LoginRequest): AlistResponse<AlistLoginData> = response
+        override suspend fun login(url: String, request: LoginRequest): AlistResponse<AlistLoginData> = response
     }
 
     private class CancellingApi : AlistApi {
-        override suspend fun login(request: LoginRequest): AlistResponse<AlistLoginData> {
+        override suspend fun login(url: String, request: LoginRequest): AlistResponse<AlistLoginData> {
             throw CancellationException("cancelled")
         }
     }
@@ -43,6 +50,32 @@ class AuthRepositoryTest {
         }
 
         throw AssertionError("Expected CancellationException")
+    }
+
+    @Test fun loginUsesSelectedServerUrlForApiRequest() = runTest {
+        val defaultServer = MockWebServer()
+        val selectedServer = MockWebServer()
+        defaultServer.start()
+        selectedServer.start()
+        try {
+            selectedServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"code":200,"message":"success","data":{"token":"tok"}}"""))
+            val api = Retrofit.Builder()
+                .baseUrl(defaultServer.url("/"))
+                .client(OkHttpClient())
+                .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(AlistApi::class.java)
+            val repo = AuthRepository(api, SessionManager(MemoryStore(), AuthTokenProvider()))
+
+            val result = repo.login(selectedServer.url("/").toString(), "admin", "pass")
+
+            assertTrue(result is ApiResult.Success<*>)
+            assertEquals("/api/auth/login", selectedServer.takeRequest().path)
+            assertEquals(0, defaultServer.requestCount)
+        } finally {
+            defaultServer.shutdown()
+            selectedServer.shutdown()
+        }
     }
 
     @Test fun loginSuccessPersistsSessionAndToken() = runTest {
