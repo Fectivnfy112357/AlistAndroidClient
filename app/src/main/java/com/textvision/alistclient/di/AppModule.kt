@@ -2,16 +2,24 @@ package com.textvision.alistclient.di
 
 import android.content.Context
 import androidx.room.Room
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.textvision.alistclient.data.local.AppDatabase
 import com.textvision.alistclient.data.secure.CredentialStore
 import com.textvision.alistclient.data.secure.EncryptedCredentialStore
+import com.textvision.alistclient.network.AuthInterceptor
+import com.textvision.alistclient.network.api.AlistApi
 import dagger.Binds
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import retrofit2.Retrofit
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -30,4 +38,41 @@ object DatabaseModule {
         Room.databaseBuilder(context, AppDatabase::class.java, "transfer_tasks.db")
             .fallbackToDestructiveMigration()
             .build()
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides
+    @Singleton
+    fun provideJson(): Json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .addInterceptor(authInterceptor)
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(
+        client: OkHttpClient,
+        json: Json,
+    ): Retrofit = Retrofit.Builder()
+        .baseUrl("http://127.0.0.1:5244/")
+        .client(client)
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+
+    @Provides
+    @Singleton
+    fun provideAlistApi(retrofit: Retrofit): AlistApi =
+        retrofit.create(AlistApi::class.java)
 }
