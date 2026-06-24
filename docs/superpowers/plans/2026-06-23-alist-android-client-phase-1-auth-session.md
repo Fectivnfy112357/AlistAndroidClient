@@ -69,7 +69,7 @@ app/src/main/java/com/textvision/alistclient/ui/screens/SettingsScreen.kt
 - Produces: `object ServerUrlNormalizer { fun normalize(input: String): Result<String>; fun isHttp(input: String): Boolean }`
 - Consumes: none.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```kotlin
 package com.textvision.alistclient.util
@@ -101,7 +101,7 @@ class ServerUrlNormalizerTest {
 }
 ```
 
-- [ ] **Step 2: Run test and verify failure**
+- [x] **Step 2: Run test and verify failure**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.util.ServerUrlNormalizerTest"
@@ -109,7 +109,7 @@ class ServerUrlNormalizerTest {
 
 Expected: FAIL because `ServerUrlNormalizer` does not exist.
 
-- [ ] **Step 3: Implement normalizer**
+- [x] **Step 3: Implement normalizer**
 
 ```kotlin
 package com.textvision.alistclient.util
@@ -131,7 +131,7 @@ object ServerUrlNormalizer {
 }
 ```
 
-- [ ] **Step 4: Run test and verify pass**
+- [x] **Step 4: Run test and verify pass**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.util.ServerUrlNormalizerTest"
@@ -139,7 +139,7 @@ object ServerUrlNormalizer {
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/util/ServerUrlNormalizer.kt app/src/test/java/com/textvision/alistclient/util/ServerUrlNormalizerTest.kt
@@ -162,7 +162,7 @@ git commit -m "feat: add server url normalization"
 - Produces: `ApiResult<T>`, `AppError`, `ErrorMapper.mapThrowable(Throwable)`, `ErrorMapper.mapAlistFailure(Int, String?)`, `ErrorMessageMapper.toUserMessage(AppError)`.
 - Consumes: none.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `ErrorMapperTest.kt`:
 
@@ -239,7 +239,7 @@ class ErrorMessageMapperTest {
 }
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.common.error.*"
@@ -247,7 +247,7 @@ class ErrorMessageMapperTest {
 
 Expected: FAIL because error classes do not exist.
 
-- [ ] **Step 3: Implement result and errors**
+- [x] **Step 3: Implement result and errors**
 
 `ApiResult.kt`:
 
@@ -368,7 +368,7 @@ object ErrorMessageMapper {
 }
 ```
 
-- [ ] **Step 4: Run tests and verify pass**
+- [x] **Step 4: Run tests and verify pass**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.common.error.*"
@@ -376,7 +376,7 @@ object ErrorMessageMapper {
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/common app/src/test/java/com/textvision/alistclient/common
@@ -402,7 +402,7 @@ git commit -m "feat: add api and error mapping foundations"
 - Produces: `SkipAuthRetry` marker infrastructure that strips `X-Skip-Auth-Retry` before network I/O while preserving an internal request marker for later `Authenticator` opt-out checks.
 - Consumes: none. `CredentialStore` consumption starts in Task 1.4 via `SessionManager`, which persists and restores tokens into `AuthTokenProvider`.
 
-- [ ] **Step 1: Add DTOs and API interface**
+- [x] **Step 1: Add DTOs and API interface**
 
 `AlistResponse.kt`:
 
@@ -456,7 +456,7 @@ interface AlistApi {
 }
 ```
 
-- [ ] **Step 2: Add token provider and interceptor**
+- [x] **Step 2: Add token provider and interceptor**
 
 `AuthTokenProvider.kt`:
 
@@ -510,7 +510,7 @@ class AuthInterceptor @Inject constructor(
 }
 ```
 
-- [ ] **Step 3: Add Retrofit and OkHttp Hilt providers**
+- [x] **Step 3: Add Retrofit and OkHttp Hilt providers**
 
 Append to `AppModule.kt`:
 
@@ -560,7 +560,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import okhttp3.MediaType.Companion.toMediaType
 ```
 
-- [ ] **Step 4: Build generated code**
+- [x] **Step 4: Build generated code**
 
 ```bash
 ./gradlew :app:assembleDebug
@@ -568,7 +568,7 @@ import okhttp3.MediaType.Companion.toMediaType
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/network app/src/main/java/com/textvision/alistclient/di/AppModule.kt
@@ -590,7 +590,7 @@ git commit -m "feat: add auth api network bindings"
 - Produces: `SessionManager.loadSavedSession()`, `saveSession`, `clearSession`.
 - Consumes: `AlistApi`, `CredentialStore`, `AuthTokenProvider`, `ApiResult`.
 
-- [ ] **Step 1: Write repository tests with fake API**
+- [x] **Step 1: Write repository tests with fake API**
 
 ```kotlin
 package com.textvision.alistclient.auth
@@ -647,7 +647,7 @@ class AuthRepositoryTest {
 }
 ```
 
-- [ ] **Step 2: Run test and verify failure**
+- [x] **Step 2: Run test and verify failure**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.auth.AuthRepositoryTest"
@@ -655,7 +655,7 @@ class AuthRepositoryTest {
 
 Expected: FAIL because classes do not exist.
 
-- [ ] **Step 3: Implement session and repository**
+- [x] **Step 3: Implement session and repository**
 
 `SavedSession.kt`:
 
@@ -760,7 +760,7 @@ class AuthRepository @Inject constructor(
 }
 ```
 
-- [ ] **Step 4: Run tests and verify pass**
+- [x] **Step 4: Run tests and verify pass**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.auth.AuthRepositoryTest"
@@ -768,7 +768,7 @@ class AuthRepository @Inject constructor(
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/auth app/src/test/java/com/textvision/alistclient/auth/AuthRepositoryTest.kt
@@ -788,7 +788,7 @@ git commit -m "feat: add auth repository and session manager"
 - Produces: `LoginUiState`, `LoginViewModel.updateServerUrl`, `updateUsername`, `updatePassword`, `login`.
 - Consumes: `AuthRepository`, `ServerUrlNormalizer`, `ErrorMessageMapper`.
 
-- [ ] **Step 1: Write ViewModel tests**
+- [x] **Step 1: Write ViewModel tests**
 
 ```kotlin
 package com.textvision.alistclient.auth
@@ -826,7 +826,7 @@ class LoginViewModelTest {
 }
 ```
 
-- [ ] **Step 2: Run test and verify failure**
+- [x] **Step 2: Run test and verify failure**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.auth.LoginViewModelTest"
@@ -834,7 +834,7 @@ class LoginViewModelTest {
 
 Expected: FAIL because ViewModel contract/classes do not exist.
 
-- [ ] **Step 3: Implement ViewModel and contract**
+- [x] **Step 3: Implement ViewModel and contract**
 
 Create `LoginViewModel.kt`:
 
@@ -933,7 +933,7 @@ Modify `AuthRepository` declaration:
 class AuthRepository @Inject constructor(...) : AuthRepositoryContract {
 ```
 
-- [ ] **Step 4: Update LoginScreen**
+- [x] **Step 4: Update LoginScreen**
 
 Replace `LoginScreen.kt` with:
 
@@ -1021,7 +1021,7 @@ fun LoginScreen(
 }
 ```
 
-- [ ] **Step 5: Bind AuthRepositoryContract**
+- [x] **Step 5: Bind AuthRepositoryContract**
 
 Add to `CredentialModule` in `AppModule.kt`:
 
@@ -1031,7 +1031,7 @@ Add to `CredentialModule` in `AppModule.kt`:
 abstract fun bindAuthRepository(impl: com.textvision.alistclient.auth.AuthRepository): com.textvision.alistclient.auth.AuthRepositoryContract
 ```
 
-- [ ] **Step 6: Run tests and build**
+- [x] **Step 6: Run tests and build**
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests "com.textvision.alistclient.auth.LoginViewModelTest" :app:assembleDebug
@@ -1039,7 +1039,7 @@ abstract fun bindAuthRepository(impl: com.textvision.alistclient.auth.AuthReposi
 
 Expected: PASS and `BUILD SUCCESSFUL`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/auth app/src/main/java/com/textvision/alistclient/ui/screens/LoginScreen.kt app/src/main/java/com/textvision/alistclient/di/AppModule.kt app/src/test/java/com/textvision/alistclient/auth/LoginViewModelTest.kt
