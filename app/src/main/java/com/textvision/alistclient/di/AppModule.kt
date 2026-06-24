@@ -8,6 +8,8 @@ import com.textvision.alistclient.auth.AuthRepositoryContract
 import com.textvision.alistclient.data.local.AppDatabase
 import com.textvision.alistclient.data.secure.CredentialStore
 import com.textvision.alistclient.data.secure.EncryptedCredentialStore
+import com.textvision.alistclient.file.FileRepository
+import com.textvision.alistclient.file.FileRepositoryContract
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.api.AlistApi
 import dagger.Binds
@@ -40,6 +42,10 @@ abstract class CredentialModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(impl: AuthRepository): AuthRepositoryContract
+
+    @Binds
+    @Singleton
+    abstract fun bindFileRepository(impl: FileRepository): FileRepositoryContract
 }
 
 @Module

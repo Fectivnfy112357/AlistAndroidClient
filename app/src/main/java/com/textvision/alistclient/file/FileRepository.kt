@@ -15,10 +15,10 @@ import javax.inject.Singleton
 @Singleton
 class FileRepository @Inject constructor(
     private val api: AlistApi,
-) {
+) : FileRepositoryContract {
     private val baseUrl: String = "" // Phase 1 dynamic base URL replacement can update this provider later.
 
-    suspend fun list(path: String): ApiResult<List<FileItem>> = runAlist {
+    override suspend fun list(path: String): ApiResult<List<FileItem>> = runAlist {
         val response = api.list(FsListRequest(path = path))
         if (response.code == 200) response.data?.content.orEmpty()
             .map { it.toFileItem(path, baseUrl) }
@@ -27,7 +27,7 @@ class FileRepository @Inject constructor(
         else ApiResult.Failure(response.code, response.message)
     }
 
-    suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>> = runAlist {
+    override suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>> = runAlist {
         val response = api.search(FsSearchRequest(path = path, keywords = keyword))
         if (response.code == 200) ApiResult.Success(response.data?.content.orEmpty().map { it.toFileItem(path, baseUrl) })
         else ApiResult.Failure(response.code, response.message)
