@@ -9,6 +9,7 @@ import com.textvision.alistclient.network.dto.MkdirRequest
 import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
 import com.textvision.alistclient.network.dto.toFileItem
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,5 +49,5 @@ class FileRepository @Inject constructor(
         if (response.code == 200) ApiResult.Success(Unit) else ApiResult.Failure(response.code, response.message)
     }
 
-    private suspend fun <T> runAlist(block: suspend () -> ApiResult<T>): ApiResult<T> = try { block() } catch (t: Throwable) { ApiResult.NetworkError(t) }
+    private suspend fun <T> runAlist(block: suspend () -> ApiResult<T>): ApiResult<T> = try { block() } catch (t: CancellationException) { throw t } catch (t: Throwable) { ApiResult.NetworkError(t) }
 }
