@@ -3,6 +3,8 @@ package com.textvision.alistclient.di
 import android.content.Context
 import androidx.room.Room
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.textvision.alistclient.auth.AuthRepository
+import com.textvision.alistclient.auth.AuthRepositoryContract
 import com.textvision.alistclient.data.local.AppDatabase
 import com.textvision.alistclient.data.secure.CredentialStore
 import com.textvision.alistclient.data.secure.EncryptedCredentialStore
@@ -27,6 +29,10 @@ abstract class CredentialModule {
     @Binds
     @Singleton
     abstract fun bindCredentialStore(impl: EncryptedCredentialStore): CredentialStore
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(impl: AuthRepository): AuthRepositoryContract
 }
 
 @Module

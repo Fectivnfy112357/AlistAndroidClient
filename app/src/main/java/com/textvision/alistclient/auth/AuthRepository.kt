@@ -11,8 +11,8 @@ import javax.inject.Singleton
 class AuthRepository @Inject constructor(
     private val api: AlistApi,
     private val sessionManager: SessionManager,
-) {
-    suspend fun login(serverUrl: String, username: String, password: String): ApiResult<SavedSession> = try {
+) : AuthRepositoryContract {
+    override suspend fun login(serverUrl: String, username: String, password: String): ApiResult<SavedSession> = try {
         val response = api.login(LoginRequest(username, password))
         if (response.code == 200 && response.data?.token?.isNotBlank() == true) {
             val session = SavedSession(serverUrl, username, password, response.data.token)
