@@ -12,6 +12,6 @@ class AppLaunchTest {
 
     @Test
     fun launchesToLoginScreen() {
-        composeRule.onNodeWithText("Alist 登录").assertIsDisplayed()
+        composeRule.onNodeWithText("登录 Alist").assertIsDisplayed()
     }
 }

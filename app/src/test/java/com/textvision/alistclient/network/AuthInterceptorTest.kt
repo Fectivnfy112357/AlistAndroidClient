@@ -6,6 +6,7 @@ import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,6 +27,39 @@ class AuthInterceptorTest {
         val proceededRequest = requireNotNull(chain.proceededRequest)
         assertNull(proceededRequest.header(SkipAuthRetry.HEADER))
         assertTrue(SkipAuthRetry.shouldSkip(proceededRequest))
+    }
+
+    @Test
+    fun skipAuthRetryHeaderPreventsAuthorizationAndIsRemovedBeforeProceed() {
+        val tokenProvider = AuthTokenProvider().apply { setToken("old-token") }
+        val interceptor = AuthInterceptor(tokenProvider)
+        val initialRequest = Request.Builder()
+            .url("https://example.test/api/auth/login")
+            .header(SkipAuthRetry.HEADER, "true")
+            .build()
+        val chain = CapturingChain(initialRequest)
+
+        interceptor.intercept(chain)
+
+        val proceededRequest = requireNotNull(chain.proceededRequest)
+        assertNull(proceededRequest.header(SkipAuthRetry.HEADER))
+        assertNull(proceededRequest.header("Authorization"))
+        assertTrue(SkipAuthRetry.shouldSkip(proceededRequest))
+    }
+
+    @Test
+    fun tokenIsAddedWhenSkipAuthRetryHeaderIsAbsent() {
+        val tokenProvider = AuthTokenProvider().apply { setToken("old-token") }
+        val interceptor = AuthInterceptor(tokenProvider)
+        val initialRequest = Request.Builder()
+            .url("https://example.test/api/fs/list")
+            .build()
+        val chain = CapturingChain(initialRequest)
+
+        interceptor.intercept(chain)
+
+        val proceededRequest = requireNotNull(chain.proceededRequest)
+        assertEquals("Bearer old-token", proceededRequest.header("Authorization"))
     }
 
     private class CapturingChain(

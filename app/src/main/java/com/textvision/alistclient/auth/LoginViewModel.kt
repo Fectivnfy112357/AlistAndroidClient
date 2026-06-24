@@ -40,7 +40,7 @@ class LoginViewModel @Inject constructor(
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun updateServerUrl(value: String) {
-        _uiState.update { it.copy(serverUrl = value, showHttpWarning = ServerUrlNormalizer.isHttp(value), errorMessage = null) }
+        _uiState.update { it.copy(serverUrl = value, showHttpWarning = ServerUrlNormalizer.willUseHttp(value), errorMessage = null) }
     }
 
     fun updateUsername(value: String) {

@@ -14,4 +14,9 @@ object ServerUrlNormalizer {
     }
 
     fun isHttp(input: String): Boolean = input.trim().startsWith("http://", ignoreCase = true)
+
+    fun willUseHttp(input: String): Boolean = normalize(input)
+        .getOrNull()
+        ?.startsWith("http://", ignoreCase = true)
+        ?: false
 }

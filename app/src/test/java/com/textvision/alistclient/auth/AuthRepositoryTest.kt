@@ -9,7 +9,9 @@ import retrofit2.Retrofit
 
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.data.secure.CredentialStore
+import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.AuthTokenProvider
+import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
@@ -30,11 +32,11 @@ class AuthRepositoryTest {
     }
 
     private class FakeApi(private val response: AlistResponse<AlistLoginData>) : AlistApi {
-        override suspend fun login(url: String, request: LoginRequest): AlistResponse<AlistLoginData> = response
+        override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> = response
     }
 
     private class CancellingApi : AlistApi {
-        override suspend fun login(url: String, request: LoginRequest): AlistResponse<AlistLoginData> {
+        override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> {
             throw CancellationException("cancelled")
         }
     }
@@ -72,6 +74,35 @@ class AuthRepositoryTest {
             assertTrue(result is ApiResult.Success<*>)
             assertEquals("/api/auth/login", selectedServer.takeRequest().path)
             assertEquals(0, defaultServer.requestCount)
+        } finally {
+            defaultServer.shutdown()
+            selectedServer.shutdown()
+        }
+    }
+
+    @Test fun loginSkipsAuthHeaderInjectionAndDoesNotSendSkipMarkerHeader() = runTest {
+        val defaultServer = MockWebServer()
+        val selectedServer = MockWebServer()
+        val tokenProvider = AuthTokenProvider().apply { setToken("old-token") }
+        defaultServer.start()
+        selectedServer.start()
+        try {
+            selectedServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"code":200,"message":"success","data":{"token":"new-token"}}"""))
+            val api = Retrofit.Builder()
+                .baseUrl(defaultServer.url("/"))
+                .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build())
+                .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(AlistApi::class.java)
+            val repo = AuthRepository(api, SessionManager(MemoryStore(), tokenProvider))
+
+            val result = repo.login(selectedServer.url("/").toString(), "admin", "pass")
+
+            assertTrue(result is ApiResult.Success<*>)
+            val loginRequest = selectedServer.takeRequest()
+            assertEquals("/api/auth/login", loginRequest.path)
+            assertEquals(null, loginRequest.getHeader("Authorization"))
+            assertEquals(null, loginRequest.getHeader(SkipAuthRetry.HEADER))
         } finally {
             defaultServer.shutdown()
             selectedServer.shutdown()

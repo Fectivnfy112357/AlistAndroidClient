@@ -60,6 +60,32 @@ class LoginViewModelTest {
         assertTrue(vm.uiState.value.showHttpWarning)
     }
 
+    @Test fun schemelessServerUrlShowsHttpWarningBecauseItNormalizesToHttp() = runTest {
+        val vm = LoginViewModel(FakeAuthRepository(), StandardTestDispatcher(testScheduler))
+
+        vm.updateServerUrl("example.com")
+
+        assertTrue(vm.uiState.value.showHttpWarning)
+    }
+
+    @Test fun httpsServerUrlDoesNotShowHttpWarning() = runTest {
+        val vm = LoginViewModel(FakeAuthRepository(), StandardTestDispatcher(testScheduler))
+
+        vm.updateServerUrl("https://example.com")
+
+        assertFalse(vm.uiState.value.showHttpWarning)
+    }
+
+    @Test fun blankAndInvalidServerUrlsDoNotShowMisleadingHttpWarning() = runTest {
+        val vm = LoginViewModel(FakeAuthRepository(), StandardTestDispatcher(testScheduler))
+
+        vm.updateServerUrl("   ")
+        assertFalse(vm.uiState.value.showHttpWarning)
+
+        vm.updateServerUrl("ftp://bad")
+        assertFalse(vm.uiState.value.showHttpWarning)
+    }
+
     @Test fun invalidUrlShowsError() = runTest {
         val vm = LoginViewModel(FakeAuthRepository(), StandardTestDispatcher(testScheduler))
         vm.updateServerUrl("ftp://bad")
