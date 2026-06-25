@@ -59,7 +59,7 @@ class AuthInterceptorTest {
         interceptor.intercept(chain)
 
         val proceededRequest = requireNotNull(chain.proceededRequest)
-        assertEquals("Bearer old-token", proceededRequest.header("Authorization"))
+        assertEquals("old-token", proceededRequest.header("Authorization"))
     }
 
     private class CapturingChain(

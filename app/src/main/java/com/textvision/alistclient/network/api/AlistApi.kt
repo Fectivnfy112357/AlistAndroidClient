@@ -19,18 +19,18 @@ interface AlistApi {
     @POST
     suspend fun login(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String, @Body request: LoginRequest): AlistResponse<AlistLoginData>
 
-    @POST("api/fs/list")
-    suspend fun list(@Body request: FsListRequest): AlistResponse<AlistFsList>
+    @POST
+    suspend fun list(@Url url: String, @Body request: FsListRequest): AlistResponse<AlistFsList>
 
-    @POST("api/fs/search")
-    suspend fun search(@Body request: FsSearchRequest): AlistResponse<AlistFsList>
+    @POST
+    suspend fun search(@Url url: String, @Body request: FsSearchRequest): AlistResponse<AlistFsList>
 
-    @POST("api/fs/mkdir")
-    suspend fun mkdir(@Body request: MkdirRequest): AlistResponse<Unit>
+    @POST
+    suspend fun mkdir(@Url url: String, @Body request: MkdirRequest): AlistResponse<Unit>
 
-    @POST("api/fs/rename")
-    suspend fun rename(@Body request: RenameRequest): AlistResponse<Unit>
+    @POST
+    suspend fun rename(@Url url: String, @Body request: RenameRequest): AlistResponse<Unit>
 
-    @POST("api/fs/remove")
-    suspend fun remove(@Body request: RemoveRequest): AlistResponse<Unit>
+    @POST
+    suspend fun remove(@Url url: String, @Body request: RemoveRequest): AlistResponse<Unit>
 }

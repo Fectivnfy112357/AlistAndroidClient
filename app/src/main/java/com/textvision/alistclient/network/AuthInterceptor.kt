@@ -17,7 +17,7 @@ class AuthInterceptor @Inject constructor(
         }
         builder.removeHeader(SkipAuthRetry.HEADER)
         if (!skipAuth && !token.isNullOrBlank()) {
-            builder.header("Authorization", "Bearer $token")
+            builder.header("Authorization", token)
         }
         return chain.proceed(builder.build())
     }
