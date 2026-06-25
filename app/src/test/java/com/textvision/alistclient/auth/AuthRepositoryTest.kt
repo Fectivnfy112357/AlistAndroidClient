@@ -15,8 +15,10 @@ import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
+import com.textvision.alistclient.network.dto.CopyMovePathRequest
 import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.LoginRequest
+import com.textvision.alistclient.network.dto.RemoveRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -38,7 +40,9 @@ class AuthRepositoryTest {
         override suspend fun search(url: String, request: com.textvision.alistclient.network.dto.FsSearchRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsList> = throw UnsupportedOperationException("search is not used by this test")
         override suspend fun mkdir(url: String, request: com.textvision.alistclient.network.dto.MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException("mkdir is not used by this test")
         override suspend fun rename(url: String, request: com.textvision.alistclient.network.dto.RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException("rename is not used by this test")
-        override suspend fun remove(url: String, request: com.textvision.alistclient.network.dto.RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
+        override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
+        override suspend fun copy(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("copy is not used by this test")
+        override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("move is not used by this test")
     }
 
     private class CancellingApi : AlistApi {
@@ -49,7 +53,9 @@ class AuthRepositoryTest {
         override suspend fun search(url: String, request: com.textvision.alistclient.network.dto.FsSearchRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsList> = throw UnsupportedOperationException("search is not used by this test")
         override suspend fun mkdir(url: String, request: com.textvision.alistclient.network.dto.MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException("mkdir is not used by this test")
         override suspend fun rename(url: String, request: com.textvision.alistclient.network.dto.RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException("rename is not used by this test")
-        override suspend fun remove(url: String, request: com.textvision.alistclient.network.dto.RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
+        override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
+        override suspend fun copy(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("copy is not used by this test")
+        override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("move is not used by this test")
     }
 
     @Test fun loginRethrowsCancellationException() = runTest {
