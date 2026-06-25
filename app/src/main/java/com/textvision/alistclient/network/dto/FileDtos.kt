@@ -41,6 +41,12 @@ data class RenameRequest(val path: String, val name: String)
 @Serializable
 data class RemoveRequest(val dir: String, val names: List<String>)
 
+@Serializable
+data class CopyMovePathRequest(
+    @SerialName("src_path") val srcPath: String,
+    @SerialName("dst_path") val dstPath: String,
+)
+
 fun AlistFileDto.toFileItem(parentPath: String, baseUrl: String): FileItem {
     val normalizedParent = parentPath.trimEnd('/')
     val fullPath = if (normalizedParent.isEmpty()) "/$name" else "$normalizedParent/$name"

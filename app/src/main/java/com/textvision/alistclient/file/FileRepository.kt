@@ -4,6 +4,7 @@ import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.network.api.AlistApi
+import com.textvision.alistclient.network.dto.CopyMovePathRequest
 import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.FsSearchRequest
 import com.textvision.alistclient.network.dto.MkdirRequest
@@ -48,6 +49,12 @@ class FileRepository @Inject constructor(
         val names = paths.map { it.substringAfterLast('/') }
         return runUnit { api.remove("${baseUrl()}api/fs/remove", RemoveRequest(dir, names)) }
     }
+
+    suspend fun copy(srcPath: String, dstDir: String): ApiResult<Unit> =
+        runUnit { api.copy("${baseUrl()}api/fs/copy", CopyMovePathRequest(srcPath = srcPath, dstPath = dstDir)) }
+
+    suspend fun move(srcPath: String, dstDir: String): ApiResult<Unit> =
+        runUnit { api.move("${baseUrl()}api/fs/move", CopyMovePathRequest(srcPath = srcPath, dstPath = dstDir)) }
 
     private suspend fun runUnit(block: suspend () -> com.textvision.alistclient.network.dto.AlistResponse<Unit>): ApiResult<Unit> = runAlist {
         val response = block()
