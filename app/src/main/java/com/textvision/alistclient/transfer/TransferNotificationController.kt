@@ -1,12 +1,14 @@
 package com.textvision.alistclient.transfer
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.textvision.alistclient.R
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +25,11 @@ class TransferNotificationController @Inject constructor(
     }
 
     fun showProgressSummary(activeCount: Int, percent: Int?) {
+        val manager = NotificationManagerCompat.from(context)
+        if (!manager.areNotificationsEnabled()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
         val text = if (percent == null) "正在传输 $activeCount 个文件" else "正在传输 $activeCount 个文件（总进度 $percent%）"
         val notification = NotificationCompat.Builder(context, PROGRESS_CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
@@ -31,7 +38,7 @@ class TransferNotificationController @Inject constructor(
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
-        NotificationManagerCompat.from(context).notify(PROGRESS_ID, notification)
+        manager.notify(PROGRESS_ID, notification)
     }
 
     fun clearProgress() {
