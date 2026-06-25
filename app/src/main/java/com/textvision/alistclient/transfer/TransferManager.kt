@@ -1,6 +1,7 @@
 package com.textvision.alistclient.transfer
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.network.SkipAuthRetry
@@ -68,6 +69,7 @@ class TransferManager @Inject constructor(
     }
 
     fun enqueueUpload(uri: Uri, targetPath: String): String {
+        persistUploadUriPermission(uri)
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val fileName = UriDisplayNameResolver.resolve(context.contentResolver, uri, now)
@@ -129,19 +131,19 @@ class TransferManager @Inject constructor(
                 call.execute().use { response ->
                     if (generation != clearGeneration || isCancelled(id)) return
                     if (!response.isSuccessful) {
-                        updateStatusUnlessCancelled(id, TransferStatus.Failed, "下载失败：HTTP ${response.code}")
+                        updateStatusUnlessCancelled(id, TransferStatus.Failed, "下载失败：HTTP ${response.code}", generation)
                         return
                     }
                     val body = response.body ?: error("响应体为空")
                     val progressBody = TransferProgressResponseBody(body) { done, total ->
-                        scope.launch { updateProgressUnlessCancelled(id, done, total) }
+                        scope.launch { updateProgressUnlessCancelled(id, done, total, generation) }
                     }
                     localFile.outputStream().use { output -> progressBody.byteStream().use { input -> input.copyTo(output) } }
-                    updateStatusUnlessCancelled(id, TransferStatus.Success, null)
+                    updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
                 }
             } catch (t: Throwable) {
                 if (!isCancellation(t) && !isCancelled(id)) {
-                    updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "下载失败")
+                    updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "下载失败", generation)
                 }
             } finally {
                 activeCalls.remove(id, call)
@@ -174,12 +176,12 @@ class TransferManager @Inject constructor(
                 }
                 val uploadPath = sanitizeUploadPath(targetPath, fileName)
                 if (uploadPath == null) {
-                    updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传路径无效，请重命名后重试")
+                    updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传路径无效，请重命名后重试", generation)
                     return
                 }
                 val request = Request.Builder()
                     .url(transferUrl("api/fs/put"))
-                    .put(TransferProgressRequestBody(streamBody) { done, length -> scope.launch { updateProgressUnlessCancelled(id, done, length) } })
+                    .put(TransferProgressRequestBody(streamBody) { done, length -> scope.launch { updateProgressUnlessCancelled(id, done, length, generation) } })
                     .header("File-Path", uploadPath)
                     .also { SkipAuthRetry.mark(it) }
                     .build()
@@ -188,15 +190,15 @@ class TransferManager @Inject constructor(
                 call.execute().use { response ->
                     if (generation != clearGeneration || isCancelled(id)) return
                     when {
-                        response.code == 401 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传中断，请重试")
-                        response.isSuccessful -> updateStatusUnlessCancelled(id, TransferStatus.Success, null)
-                        response.code == 409 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "文件已存在，请重命名后重试")
-                        else -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传失败：HTTP ${response.code}")
+                        response.code == 401 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传中断，请重试", generation)
+                        response.isSuccessful -> updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
+                        response.code == 409 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "文件已存在，请重命名后重试", generation)
+                        else -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传失败：HTTP ${response.code}", generation)
                     }
                 }
             } catch (t: Throwable) {
                 if (!isCancellation(t) && !isCancelled(id)) {
-                    updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "上传失败")
+                    updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "上传失败", generation)
                 }
             } finally {
                 activeCalls.remove(id, call)
@@ -206,13 +208,20 @@ class TransferManager @Inject constructor(
 
     private fun transferUrl(path: String): String = transferUrl(path, null)
 
+    private fun persistUploadUriPermission(uri: Uri) {
+        if (uri.scheme != "content") return
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
     private fun transferUrl(rootPath: String, remotePath: String?): String {
         val session = requireNotNull(sessionManager.loadSavedSession()) { "未登录" }
         val builder = session.serverUrl.toHttpUrl().newBuilder()
             .query(null)
             .fragment(null)
         rootPath.trim('/').split('/').filter { it.isNotBlank() }.forEach { builder.addPathSegment(it) }
-        remotePath?.trim('/')?.split('/')?.filter { it.isNotBlank() }?.forEach { builder.addEncodedPathSegment(it.replace("%25", "%")) }
+        remotePath?.trim('/')?.split('/')?.filter { it.isNotBlank() }?.forEach { builder.addPathSegment(it) }
         return builder.build().toString()
     }
 
@@ -228,14 +237,14 @@ class TransferManager @Inject constructor(
         path.trim('/').split('/').filter { it.isNotBlank() }.forEach { addPathSegment(it) }
     }
 
-    private suspend fun updateStatusUnlessCancelled(id: String, status: TransferStatus, reason: String?) {
-        if (!isCancelled(id)) {
+    private suspend fun updateStatusUnlessCancelled(id: String, status: TransferStatus, reason: String?, generation: Long) {
+        if (generation == clearGeneration && !isCancelled(id)) {
             dao.updateStatus(id, status, reason, System.currentTimeMillis())
         }
     }
 
-    private suspend fun updateProgressUnlessCancelled(id: String, bytesDone: Long, totalBytes: Long) {
-        if (!isCancelled(id)) {
+    private suspend fun updateProgressUnlessCancelled(id: String, bytesDone: Long, totalBytes: Long, generation: Long) {
+        if (generation == clearGeneration && !isCancelled(id)) {
             dao.updateProgress(id, bytesDone, totalBytes, System.currentTimeMillis())
         }
     }

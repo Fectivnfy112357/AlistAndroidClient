@@ -53,9 +53,9 @@ class TransferManagerTest {
         val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), client, sessionManager)
 
         val url = TransferManager::class.java.getDeclaredMethod("transferUrl", String::class.java, String::class.java).apply { isAccessible = true }
-            .invoke(manager, "d", "/space name/hash#name/percent%/雪.txt")
+            .invoke(manager, "d", "/space name/hash#name/percent%/a%2Fb.txt/雪.txt")
 
-        assertEquals("http://example.com/alist/d/space%20name/hash%23name/percent%/%E9%9B%AA.txt", url)
+        assertEquals("http://example.com/alist/d/space%20name/hash%23name/percent%25/a%252Fb.txt/%E9%9B%AA.txt", url)
     }
 
     private fun savedSessionManager(serverUrl: String): SessionManager {
