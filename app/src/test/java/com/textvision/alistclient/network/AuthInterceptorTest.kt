@@ -30,7 +30,7 @@ class AuthInterceptorTest {
     }
 
     @Test
-    fun skipAuthRetryHeaderPreventsAuthorizationAndIsRemovedBeforeProceed() {
+    fun skipAuthRetryHeaderSkipsRetryButStillAddsAuthorization() {
         val tokenProvider = AuthTokenProvider().apply { setToken("old-token") }
         val interceptor = AuthInterceptor(tokenProvider)
         val initialRequest = Request.Builder()
@@ -43,7 +43,7 @@ class AuthInterceptorTest {
 
         val proceededRequest = requireNotNull(chain.proceededRequest)
         assertNull(proceededRequest.header(SkipAuthRetry.HEADER))
-        assertNull(proceededRequest.header("Authorization"))
+        assertEquals("old-token", proceededRequest.header("Authorization"))
         assertTrue(SkipAuthRetry.shouldSkip(proceededRequest))
     }
 

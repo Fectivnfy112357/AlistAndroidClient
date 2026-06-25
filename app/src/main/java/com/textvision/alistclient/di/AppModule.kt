@@ -76,6 +76,15 @@ object DatabaseModule {
                 )
                 """.trimIndent()
             )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `smoke` (
+                    `id` TEXT NOT NULL,
+                    `value` TEXT NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
         }
     }
 

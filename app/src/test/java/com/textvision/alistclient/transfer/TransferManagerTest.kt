@@ -31,7 +31,7 @@ class TransferManagerTest {
         manager.enqueueDownload("/folder/file.txt", "file.txt")
         client.awaitRequest()
 
-        assertEquals("http://example.com/d/folder/file.txt", client.request!!.url.toString())
+        assertEquals("http://example.com/alist/d/folder/file.txt", client.request!!.url.toString())
     }
 
     @Test
@@ -43,7 +43,19 @@ class TransferManagerTest {
         val url = TransferManager::class.java.getDeclaredMethod("transferUrl", String::class.java).apply { isAccessible = true }
             .invoke(manager, "api/fs/put")
 
-        assertEquals("http://example.com/api/fs/put", url)
+        assertEquals("http://example.com/alist/api/fs/put", url)
+    }
+
+    @Test
+    fun downloadEncodesRawPathSegmentsWithoutDoubleEncoding() {
+        val client = CapturingOkHttpClient()
+        val sessionManager = savedSessionManager("http://example.com/alist/")
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), client, sessionManager)
+
+        val url = TransferManager::class.java.getDeclaredMethod("transferUrl", String::class.java, String::class.java).apply { isAccessible = true }
+            .invoke(manager, "d", "/space name/hash#name/percent%/雪.txt")
+
+        assertEquals("http://example.com/alist/d/space%20name/hash%23name/percent%/%E9%9B%AA.txt", url)
     }
 
     private fun savedSessionManager(serverUrl: String): SessionManager {
