@@ -1,0 +1,108 @@
+package com.textvision.alistclient.transfer
+
+import org.robolectric.RuntimeEnvironment
+import com.textvision.alistclient.auth.SessionManager
+import com.textvision.alistclient.auth.model.SavedSession
+import com.textvision.alistclient.data.secure.CredentialStore
+import com.textvision.alistclient.network.AuthTokenProvider
+import com.textvision.alistclient.transfer.data.TransferDao
+import com.textvision.alistclient.transfer.data.TransferEntity
+import com.textvision.alistclient.transfer.model.TransferStatus
+import com.textvision.alistclient.transfer.model.TransferType
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import okhttp3.Call
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+class TransferManagerTest {
+    @Test
+    fun downloadUsesRootDPathWhenSavedServerUrlContainsPathPrefix() {
+        val client = CapturingOkHttpClient()
+        val sessionManager = savedSessionManager("http://example.com/alist/")
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), client, sessionManager)
+
+        manager.enqueueDownload("/folder/file.txt", "file.txt")
+        client.awaitRequest()
+
+        assertEquals("http://example.com/d/folder/file.txt", client.request!!.url.toString())
+    }
+
+    @Test
+    fun uploadUsesRootApiFsPutWhenSavedServerUrlContainsPathPrefix() {
+        val client = CapturingOkHttpClient()
+        val sessionManager = savedSessionManager("http://example.com/alist/")
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), client, sessionManager)
+
+        val url = TransferManager::class.java.getDeclaredMethod("transferUrl", String::class.java).apply { isAccessible = true }
+            .invoke(manager, "api/fs/put")
+
+        assertEquals("http://example.com/api/fs/put", url)
+    }
+
+    private fun savedSessionManager(serverUrl: String): SessionManager {
+        val store = MemoryStore()
+        val manager = SessionManager(store, AuthTokenProvider())
+        manager.saveSession(SavedSession(serverUrl, "user", "pass", "token"))
+        return manager
+    }
+
+    private class MemoryStore : CredentialStore {
+        private val map = mutableMapOf<String, String>()
+        override fun saveString(key: String, value: String) { map[key] = value }
+        override fun readString(key: String): String? = map[key]
+        override fun remove(key: String) { map.remove(key) }
+        override fun clearAll() { map.clear() }
+    }
+
+    private class MemoryTransferDao : TransferDao {
+        private val entities = mutableMapOf<String, TransferEntity>()
+        override fun observeAll(): Flow<List<TransferEntity>> = flowOf(entities.values.toList())
+        override suspend fun find(id: String): TransferEntity? = entities[id]
+        override suspend fun upsert(entity: TransferEntity) { entities[entity.id] = entity }
+        override suspend fun updateStatus(id: String, status: TransferStatus, reason: String?, updatedAtMillis: Long) {
+            entities[id]?.let { entities[id] = it.copy(status = status, failureReason = reason, updatedAtMillis = updatedAtMillis) }
+        }
+        override suspend fun updateProgress(id: String, bytesDone: Long, totalBytes: Long, updatedAtMillis: Long) {
+            entities[id]?.let { entities[id] = it.copy(bytesDone = bytesDone, totalBytes = totalBytes, updatedAtMillis = updatedAtMillis) }
+        }
+        override suspend fun markActiveTasksInterrupted(updatedAtMillis: Long) = Unit
+        override suspend fun deleteAll() { entities.clear() }
+    }
+
+    private class CapturingOkHttpClient : OkHttpClient() {
+        @Volatile var request: Request? = null
+        fun awaitRequest(): Request {
+            repeat(100) {
+                request?.let { return it }
+                Thread.sleep(10)
+            }
+            throw AssertionError("Expected request")
+        }
+        override fun newCall(request: Request): Call {
+            this.request = request
+            return object : Call {
+                override fun request(): Request = request
+                override fun execute(): Response = Response.Builder()
+                    .request(request)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body("ok".toResponseBody())
+                    .build()
+                override fun enqueue(responseCallback: okhttp3.Callback) = throw UnsupportedOperationException()
+                override fun cancel() = Unit
+                override fun isExecuted(): Boolean = false
+                override fun isCanceled(): Boolean = false
+                override fun timeout(): okio.Timeout = okio.Timeout.NONE
+                override fun clone(): Call = this
+            }
+        }
+    }
+}

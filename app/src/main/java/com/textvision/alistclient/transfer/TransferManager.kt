@@ -99,13 +99,14 @@ class TransferManager @Inject constructor(
 
     private suspend fun runDownload(id: String, remotePath: String, localFile: File) {
         downloadSemaphore.withPermit {
+            var call: Call? = null
             try {
                 if (isCancelled(id)) return
                 dao.updateStatus(id, TransferStatus.Downloading, null, System.currentTimeMillis())
                 localFile.parentFile?.mkdirs()
                 val encoded = remotePath.trimStart('/')
                 val request = Request.Builder().url(transferUrl("d/$encoded")).get().build()
-                val call = okHttpClient.newCall(request)
+                call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
                     if (isCancelled(id)) return
@@ -125,13 +126,14 @@ class TransferManager @Inject constructor(
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "下载失败")
                 }
             } finally {
-                activeCalls.remove(id)
+                activeCalls.remove(id, call)
             }
         }
     }
 
     private suspend fun runUpload(id: String, uri: Uri, targetPath: String, fileName: String) {
         uploadSemaphore.withPermit {
+            var call: Call? = null
             try {
                 if (isCancelled(id)) return
                 dao.updateStatus(id, TransferStatus.Uploading, null, System.currentTimeMillis())
@@ -158,7 +160,7 @@ class TransferManager @Inject constructor(
                     .header("File-Path", targetPath.trimEnd('/') + "/" + fileName)
                     .header(SkipAuthRetry.HEADER, "true")
                     .build()
-                val call = okHttpClient.newCall(request)
+                call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
                     if (isCancelled(id)) return
@@ -174,7 +176,7 @@ class TransferManager @Inject constructor(
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "上传失败")
                 }
             } finally {
-                activeCalls.remove(id)
+                activeCalls.remove(id, call)
             }
         }
     }
@@ -182,6 +184,7 @@ class TransferManager @Inject constructor(
     private fun transferUrl(path: String): String {
         val session = requireNotNull(sessionManager.loadSavedSession()) { "未登录" }
         return session.serverUrl.toHttpUrl().newBuilder()
+            .encodedPath("/")
             .addPathSegments(path.trimStart('/'))
             .build()
             .toString()
