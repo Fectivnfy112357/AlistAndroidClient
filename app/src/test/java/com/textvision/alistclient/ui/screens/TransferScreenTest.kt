@@ -33,7 +33,7 @@ class TransferScreenTest {
             updatedAtMillis = 2,
         )
 
-        assertEquals("Failed：网络错误", task.statusText)
+        assertEquals("失败：网络错误", task.statusText)
         assertTrue(task.showRetry)
         assertEquals("重试", task.retryButtonLabel)
     }

@@ -30,6 +30,7 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,7 +46,7 @@ class TransferManager @Inject constructor(
     private val downloadSemaphore = Semaphore(3)
     private val activeJobs = ConcurrentHashMap<String, Job>()
     private val activeCalls = ConcurrentHashMap<String, Call>()
-    @Volatile private var clearGeneration = 0L
+    private val clearGeneration = AtomicLong(0L)
 
     /**
      * Throttled progress writer per transfer ID.
@@ -63,7 +64,7 @@ class TransferManager @Inject constructor(
         private val debounceByteThreshold = 65_536L
 
         suspend fun update(bytesDone: Long, totalBytes: Long, force: Boolean = false) {
-            if (generation != clearGeneration || isCancelled(id)) return
+            if (generation != clearGeneration.get() || isCancelled(id)) return
             latestBytes = bytesDone
             latestTotal = totalBytes
             val now = System.currentTimeMillis()
@@ -90,9 +91,9 @@ class TransferManager @Inject constructor(
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val local = File(File(context.filesDir, "downloads"), LocalDownloadNamer.fileNameFor(remotePath))
-        val generation = clearGeneration
+        val generation = clearGeneration.get()
         val job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
-            if (generation != clearGeneration) return@launch
+            if (generation != clearGeneration.get()) return@launch
             dao.upsert(TransferEntity(id, fileName, remotePath, local.absolutePath, null, 0, 0, TransferType.Download, TransferStatus.Waiting, null, now, now))
             runDownload(id, remotePath, local, generation)
         }
@@ -107,9 +108,9 @@ class TransferManager @Inject constructor(
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val fileName = UriDisplayNameResolver.resolve(context.contentResolver, uri, now)
-        val generation = clearGeneration
+        val generation = clearGeneration.get()
         val job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
-            if (generation != clearGeneration) return@launch
+            if (generation != clearGeneration.get()) return@launch
             dao.upsert(TransferEntity(id, fileName, targetPath, null, uri.toString(), 0, 0, TransferType.Upload, TransferStatus.Waiting, null, now, now))
             runUpload(id, uri, targetPath, fileName, generation)
         }
@@ -122,14 +123,17 @@ class TransferManager @Inject constructor(
     fun cancel(id: String) {
         activeCalls.remove(id)?.cancel()
         activeJobs.remove(id)?.cancel()
-        scope.launch { dao.updateStatus(id, TransferStatus.Cancelled, null, System.currentTimeMillis()) }
+        scope.launch {
+            // Only transitions Cancelled from active states; never clobbers Success/Failed/Interrupted/Cancelled.
+            dao.cancelActiveTask(id, null, System.currentTimeMillis())
+        }
     }
 
     fun retry(id: String) {
-        val generation = clearGeneration
+        val generation = clearGeneration.get()
         val job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
             val task = dao.find(id) ?: return@launch
-            if (generation != clearGeneration || !task.status.canRetry) return@launch
+            if (generation != clearGeneration.get() || !task.status.canRetry) return@launch
             updateStatusUnlessCancelled(id, TransferStatus.Waiting, null, generation)
             when (task.type) {
                 TransferType.Download -> runDownload(id, task.remotePath, File(requireNotNull(task.localPath)), generation)
@@ -145,7 +149,9 @@ class TransferManager @Inject constructor(
     }
 
     fun clearAllTasks() {
-        clearGeneration++
+        // Atomic incrementAndGet: captures the new generation and publishes it
+        // so any later reader sees a consistent value.
+        clearGeneration.incrementAndGet()
         activeCalls.forEach { (_, call) -> call.cancel() }
         activeJobs.forEach { (_, job) -> job.cancel() }
         activeCalls.clear()
@@ -157,7 +163,7 @@ class TransferManager @Inject constructor(
         downloadSemaphore.withPermit {
             var call: Call? = null
             try {
-                if (generation != clearGeneration || isCancelled(id)) return
+                if (generation != clearGeneration.get() || isCancelled(id)) return
                 updateStatusUnlessCancelled(id, TransferStatus.Downloading, null, generation)
                 localFile.parentFile?.mkdirs()
                 val progress = ThrottledProgress(id, generation)
@@ -165,7 +171,7 @@ class TransferManager @Inject constructor(
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
-                    if (generation != clearGeneration || isCancelled(id)) return
+                    if (generation != clearGeneration.get() || isCancelled(id)) return
                     if (!response.isSuccessful) {
                         updateStatusUnlessCancelled(id, TransferStatus.Failed, "下载失败：HTTP ${response.code}", generation)
                         return
@@ -196,7 +202,7 @@ class TransferManager @Inject constructor(
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传路径无效，请重命名后重试", generation)
                     return
                 }
-                if (generation != clearGeneration || isCancelled(id)) return
+                if (generation != clearGeneration.get() || isCancelled(id)) return
                 updateStatusUnlessCancelled(id, TransferStatus.Uploading, null, generation)
                 val progress = ThrottledProgress(id, generation)
                 val resolver = context.contentResolver
@@ -230,7 +236,7 @@ class TransferManager @Inject constructor(
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
-                    if (generation != clearGeneration || isCancelled(id)) return
+                    if (generation != clearGeneration.get() || isCancelled(id)) return
                     when {
                         response.code == 401 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传中断，请重试", generation)
                         response.isSuccessful -> {
@@ -283,18 +289,18 @@ class TransferManager @Inject constructor(
     }
 
     private suspend fun updateStatusUnlessCancelled(id: String, status: TransferStatus, reason: String?, generation: Long) {
-        if (generation == clearGeneration && !isCancelled(id)) {
+        if (generation == clearGeneration.get() && !isCancelled(id)) {
             dao.updateStatus(id, status, reason, System.currentTimeMillis())
-        }
-    }
-
-    private suspend fun updateProgressUnlessCancelled(id: String, bytesDone: Long, totalBytes: Long, generation: Long) {
-        if (generation == clearGeneration && !isCancelled(id)) {
-            dao.updateProgress(id, bytesDone, totalBytes, System.currentTimeMillis())
         }
     }
 
     private suspend fun isCancelled(id: String): Boolean = dao.find(id)?.status == TransferStatus.Cancelled
 
-    private fun isCancellation(t: Throwable): Boolean = t is kotlinx.coroutines.CancellationException || t is IOException && t.message == "Canceled"
+    private fun isCancellation(t: Throwable): Boolean {
+        if (t is kotlinx.coroutines.CancellationException) return true
+        if (t is IOException && (t.message == "Canceled" || t.message == "Cancelled")) return true
+        // Some providers wrap the cancellation message; fall back to a substring check.
+        if (t is IOException && t.message?.contains("cancel", ignoreCase = true) == true) return true
+        return false
+    }
 }

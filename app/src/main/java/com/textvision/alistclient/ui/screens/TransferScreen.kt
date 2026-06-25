@@ -34,7 +34,7 @@ data class TransferListUiState(val transfers: List<TransferEntity>) {
 }
 
 val TransferEntity.statusText: String
-    get() = status.name + (failureReason?.let { "：$it" } ?: "")
+    get() = status.displayName + (failureReason?.let { "：$it" } ?: "")
 
 val TransferEntity.showRetry: Boolean
     get() = status.canRetry

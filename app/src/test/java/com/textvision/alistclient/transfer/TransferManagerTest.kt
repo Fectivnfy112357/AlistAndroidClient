@@ -110,6 +110,12 @@ class TransferManagerTest {
         override suspend fun updateStatus(id: String, status: TransferStatus, reason: String?, updatedAtMillis: Long) {
             entities[id]?.let { entities[id] = it.copy(status = status, failureReason = reason, updatedAtMillis = updatedAtMillis) }
         }
+        override suspend fun cancelActiveTask(id: String, reason: String?, updatedAtMillis: Long): Int {
+            val current = entities[id] ?: return 0
+            if (current.status !in setOf(TransferStatus.Waiting, TransferStatus.Uploading, TransferStatus.Downloading)) return 0
+            entities[id] = current.copy(status = TransferStatus.Cancelled, failureReason = reason, updatedAtMillis = updatedAtMillis)
+            return 1
+        }
         override suspend fun updateProgress(id: String, bytesDone: Long, totalBytes: Long, updatedAtMillis: Long) {
             entities[id]?.let { entities[id] = it.copy(bytesDone = bytesDone, totalBytes = totalBytes, updatedAtMillis = updatedAtMillis) }
         }

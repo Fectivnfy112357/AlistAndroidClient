@@ -24,6 +24,9 @@ interface TransferDao {
     @Query("UPDATE transfer_tasks SET bytesDone = :bytesDone, totalBytes = :totalBytes, updatedAtMillis = :updatedAtMillis WHERE id = :id")
     suspend fun updateProgress(id: String, bytesDone: Long, totalBytes: Long, updatedAtMillis: Long)
 
+    @Query("UPDATE transfer_tasks SET status = 'Cancelled', failureReason = :reason, updatedAtMillis = :updatedAtMillis WHERE id = :id AND status IN ('Waiting', 'Uploading', 'Downloading')")
+    suspend fun cancelActiveTask(id: String, reason: String?, updatedAtMillis: Long): Int
+
     @Query("UPDATE transfer_tasks SET status = 'Interrupted', failureReason = '传输中断', updatedAtMillis = :updatedAtMillis WHERE status IN ('Waiting', 'Uploading', 'Downloading')")
     suspend fun markActiveTasksInterrupted(updatedAtMillis: Long)
 
