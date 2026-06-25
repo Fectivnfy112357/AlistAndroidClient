@@ -12,6 +12,7 @@ import com.textvision.alistclient.file.FileRepository
 import com.textvision.alistclient.file.FileRepositoryContract
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.api.AlistApi
+import com.textvision.alistclient.transfer.data.TransferDao
 import dagger.Binds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,8 @@ object DatabaseModule {
         Room.databaseBuilder(context, AppDatabase::class.java, "transfer_tasks.db")
             .fallbackToDestructiveMigration()
             .build()
+    @Provides
+    fun provideTransferDao(database: AppDatabase): TransferDao = database.transferDao()
 }
 
 @Module
