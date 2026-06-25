@@ -93,6 +93,10 @@ class TransferManager @Inject constructor(
         dao.markActiveTasksInterrupted(System.currentTimeMillis())
     }
 
+    fun initialize() {
+        scope.launch { markInterruptedOnStartup() }
+    }
+
     fun enqueueDownload(remotePath: String, fileName: String): String {
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
