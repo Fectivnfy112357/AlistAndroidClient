@@ -2,6 +2,8 @@ package com.textvision.alistclient.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.textvision.alistclient.auth.AuthRepository
 import com.textvision.alistclient.auth.AuthRepositoryContract
@@ -53,11 +55,35 @@ abstract class CredentialModule {
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `transfer_tasks` (
+                    `id` TEXT NOT NULL,
+                    `fileName` TEXT NOT NULL,
+                    `remotePath` TEXT NOT NULL,
+                    `localPath` TEXT,
+                    `sourceUri` TEXT,
+                    `bytesDone` INTEGER NOT NULL,
+                    `totalBytes` INTEGER NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `status` TEXT NOT NULL,
+                    `failureReason` TEXT,
+                    `createdAtMillis` INTEGER NOT NULL,
+                    `updatedAtMillis` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "transfer_tasks.db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_1_2)
             .build()
     @Provides
     fun provideTransferDao(database: AppDatabase): TransferDao = database.transferDao()

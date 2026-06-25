@@ -18,6 +18,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import okhttp3.Call
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -82,8 +83,10 @@ class TransferManager @Inject constructor(
     }
 
     fun retry(id: String) {
+        if (activeJobs.containsKey(id)) return
         val job = scope.launch {
             val task = dao.find(id) ?: return@launch
+            if (!task.status.canRetry) return@launch
             when (task.type) {
                 TransferType.Download -> runDownload(id, task.remotePath, File(requireNotNull(task.localPath)))
                 TransferType.Upload -> runUpload(id, Uri.parse(requireNotNull(task.sourceUri)), task.remotePath, task.fileName)
@@ -94,6 +97,10 @@ class TransferManager @Inject constructor(
     }
 
     fun clearAllTasks() {
+        activeCalls.forEach { (_, call) -> call.cancel() }
+        activeJobs.forEach { (_, job) -> job.cancel() }
+        activeCalls.clear()
+        activeJobs.clear()
         scope.launch { dao.deleteAll() }
     }
 
@@ -104,8 +111,7 @@ class TransferManager @Inject constructor(
                 if (isCancelled(id)) return
                 dao.updateStatus(id, TransferStatus.Downloading, null, System.currentTimeMillis())
                 localFile.parentFile?.mkdirs()
-                val encoded = remotePath.trimStart('/')
-                val request = Request.Builder().url(transferUrl("d/$encoded")).get().build()
+                val request = Request.Builder().url(transferUrl("d", remotePath)).get().build()
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
@@ -154,11 +160,16 @@ class TransferManager @Inject constructor(
                         }
                     }
                 }
+                val uploadPath = sanitizeUploadPath(targetPath, fileName)
+                if (uploadPath == null) {
+                    updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传路径无效，请重命名后重试")
+                    return
+                }
                 val request = Request.Builder()
                     .url(transferUrl("api/fs/put"))
                     .put(TransferProgressRequestBody(streamBody) { done, length -> scope.launch { updateProgressUnlessCancelled(id, done, length) } })
-                    .header("File-Path", targetPath.trimEnd('/') + "/" + fileName)
-                    .header(SkipAuthRetry.HEADER, "true")
+                    .header("File-Path", uploadPath)
+                    .also { SkipAuthRetry.mark(it) }
                     .build()
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
@@ -181,13 +192,27 @@ class TransferManager @Inject constructor(
         }
     }
 
-    private fun transferUrl(path: String): String {
+    private fun transferUrl(path: String): String = transferUrl(path, null)
+
+    private fun transferUrl(rootPath: String, remotePath: String?): String {
         val session = requireNotNull(sessionManager.loadSavedSession()) { "未登录" }
-        return session.serverUrl.toHttpUrl().newBuilder()
+        val builder = session.serverUrl.toHttpUrl().newBuilder()
             .encodedPath("/")
-            .addPathSegments(path.trimStart('/'))
-            .build()
-            .toString()
+        rootPath.trim('/').split('/').filter { it.isNotBlank() }.forEach { builder.addPathSegment(it) }
+        remotePath?.trim('/')?.split('/')?.filter { it.isNotBlank() }?.forEach { builder.addPathSegment(it) }
+        return builder.build().toString()
+    }
+
+    private fun sanitizeUploadPath(targetPath: String, fileName: String): String? {
+        val cleanName = fileName.trim().replace(Regex("[\\r\\n\\u0000]"), "")
+        if (cleanName.isBlank() || cleanName.contains('/')) return null
+        val cleanTarget = targetPath.trim().replace(Regex("[\\r\\n\\u0000]"), "").trimEnd('/')
+        val fullPath = if (cleanTarget.isBlank()) "/$cleanName" else "$cleanTarget/$cleanName"
+        return if ("http://localhost".toHttpUrlOrNull()?.newBuilder()?.addHeaderPath(fullPath)?.build() == null) null else fullPath
+    }
+
+    private fun okhttp3.HttpUrl.Builder.addHeaderPath(path: String): okhttp3.HttpUrl.Builder = apply {
+        path.trim('/').split('/').filter { it.isNotBlank() }.forEach { addPathSegment(it) }
     }
 
     private suspend fun updateStatusUnlessCancelled(id: String, status: TransferStatus, reason: String?) {

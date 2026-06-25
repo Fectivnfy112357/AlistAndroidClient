@@ -9,7 +9,7 @@ object SkipAuthRetry {
 
     fun shouldSkip(request: Request): Boolean = request.tag(marker) != null
 
-    internal fun mark(requestBuilder: Request.Builder): Request.Builder =
+    fun mark(requestBuilder: Request.Builder): Request.Builder =
         requestBuilder.tag(marker, Marker)
 
     private object Marker
