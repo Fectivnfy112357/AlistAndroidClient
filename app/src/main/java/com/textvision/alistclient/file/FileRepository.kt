@@ -19,7 +19,7 @@ import javax.inject.Singleton
 class FileRepository @Inject constructor(
     private val api: AlistApi,
     private val sessionManager: SessionManager,
-) : FileRepositoryContract {
+) : FileRepositoryContract, FileOperationRepositoryContract {
     private fun baseUrl(): String =
         sessionManager.loadSavedSession()?.serverUrl ?: error("No active session — cannot resolve server URL")
 
@@ -50,10 +50,10 @@ class FileRepository @Inject constructor(
         return runUnit { api.remove("${baseUrl()}api/fs/remove", RemoveRequest(dir, names)) }
     }
 
-    suspend fun copy(srcPath: String, dstDir: String): ApiResult<Unit> =
+    override suspend fun copy(srcPath: String, dstDir: String): ApiResult<Unit> =
         runUnit { api.copy("${baseUrl()}api/fs/copy", CopyMovePathRequest(srcPath = srcPath, dstPath = dstDir)) }
 
-    suspend fun move(srcPath: String, dstDir: String): ApiResult<Unit> =
+    override suspend fun move(srcPath: String, dstDir: String): ApiResult<Unit> =
         runUnit { api.move("${baseUrl()}api/fs/move", CopyMovePathRequest(srcPath = srcPath, dstPath = dstDir)) }
 
     private suspend fun runUnit(block: suspend () -> com.textvision.alistclient.network.dto.AlistResponse<Unit>): ApiResult<Unit> = runAlist {
