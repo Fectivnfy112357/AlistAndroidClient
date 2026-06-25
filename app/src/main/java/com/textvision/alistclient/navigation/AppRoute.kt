@@ -5,4 +5,5 @@ sealed class AppRoute(val route: String) {
     data object Files : AppRoute("files")
     data object Transfers : AppRoute("transfers")
     data object Settings : AppRoute("settings")
+    data object MoveCopyPicker : AppRoute("copy_move_picker")
 }

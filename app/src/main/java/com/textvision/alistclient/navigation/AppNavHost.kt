@@ -19,6 +19,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.textvision.alistclient.ui.screens.FileScreen
 import com.textvision.alistclient.ui.screens.LoginScreen
+import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
 import com.textvision.alistclient.ui.screens.SettingsScreen
 import com.textvision.alistclient.ui.screens.TransferScreen
 
@@ -71,6 +72,9 @@ fun AppNavHost(startAuthenticated: Boolean) {
             composable(AppRoute.Files.route) { FileScreen() }
             composable(AppRoute.Transfers.route) { TransferScreen() }
             composable(AppRoute.Settings.route) { SettingsScreen() }
+            composable(AppRoute.MoveCopyPicker.route) {
+                MoveCopyTargetPickerScreen(onTargetSelected = { navController.popBackStack() })
+            }
         }
     }
 }
