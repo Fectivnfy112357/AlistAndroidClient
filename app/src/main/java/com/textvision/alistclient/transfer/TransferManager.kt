@@ -47,6 +47,12 @@ class TransferManager @Inject constructor(
     private val activeJobs = ConcurrentHashMap<String, Job>()
     private val activeCalls = ConcurrentHashMap<String, Call>()
     private val clearGeneration = AtomicLong(0L)
+    /**
+     * Local cancel-notification cache keyed by transfer id. Populated when the
+     * UI requests cancellation so subsequent status/progress writes can avoid a
+     * `dao.find(id)` per write; falls back to the DB read on miss.
+     */
+    private val cancelNotified = ConcurrentHashMap<String, Boolean>()
 
     /**
      * Throttled progress writer per transfer ID.
@@ -64,7 +70,7 @@ class TransferManager @Inject constructor(
         private val debounceByteThreshold = 65_536L
 
         suspend fun update(bytesDone: Long, totalBytes: Long, force: Boolean = false) {
-            if (generation != clearGeneration.get() || isCancelled(id)) return
+            if (!isActive(generation, id)) return
             latestBytes = bytesDone
             latestTotal = totalBytes
             val now = System.currentTimeMillis()
@@ -121,6 +127,7 @@ class TransferManager @Inject constructor(
     }
 
     fun cancel(id: String) {
+        cancelNotified[id] = true
         activeCalls.remove(id)?.cancel()
         activeJobs.remove(id)?.cancel()
         scope.launch {
@@ -156,6 +163,7 @@ class TransferManager @Inject constructor(
         activeJobs.forEach { (_, job) -> job.cancel() }
         activeCalls.clear()
         activeJobs.clear()
+        cancelNotified.clear()
         scope.launch { dao.deleteAll() }
     }
 
@@ -163,7 +171,7 @@ class TransferManager @Inject constructor(
         downloadSemaphore.withPermit {
             var call: Call? = null
             try {
-                if (generation != clearGeneration.get() || isCancelled(id)) return
+                if (!isActive(generation, id)) return
                 updateStatusUnlessCancelled(id, TransferStatus.Downloading, null, generation)
                 localFile.parentFile?.mkdirs()
                 val progress = ThrottledProgress(id, generation)
@@ -171,7 +179,7 @@ class TransferManager @Inject constructor(
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
-                    if (generation != clearGeneration.get() || isCancelled(id)) return
+                    if (!isActive(generation, id)) return
                     if (!response.isSuccessful) {
                         updateStatusUnlessCancelled(id, TransferStatus.Failed, "下载失败：HTTP ${response.code}", generation)
                         return
@@ -185,7 +193,7 @@ class TransferManager @Inject constructor(
                     updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
                 }
             } catch (t: Throwable) {
-                if (!isCancellation(t) && !isCancelled(id)) {
+                if (!isCancellation(t)) {
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "下载失败", generation)
                 }
             } finally {
@@ -202,7 +210,7 @@ class TransferManager @Inject constructor(
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传路径无效，请重命名后重试", generation)
                     return
                 }
-                if (generation != clearGeneration.get() || isCancelled(id)) return
+                if (!isActive(generation, id)) return
                 updateStatusUnlessCancelled(id, TransferStatus.Uploading, null, generation)
                 val progress = ThrottledProgress(id, generation)
                 val resolver = context.contentResolver
@@ -236,7 +244,7 @@ class TransferManager @Inject constructor(
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
-                    if (generation != clearGeneration.get() || isCancelled(id)) return
+                    if (!isActive(generation, id)) return
                     when {
                         response.code == 401 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传中断，请重试", generation)
                         response.isSuccessful -> {
@@ -248,7 +256,7 @@ class TransferManager @Inject constructor(
                     }
                 }
             } catch (t: Throwable) {
-                if (!isCancellation(t) && !isCancelled(id)) {
+                if (!isCancellation(t)) {
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "上传失败", generation)
                 }
             } finally {
@@ -289,12 +297,32 @@ class TransferManager @Inject constructor(
     }
 
     private suspend fun updateStatusUnlessCancelled(id: String, status: TransferStatus, reason: String?, generation: Long) {
-        if (generation == clearGeneration.get() && !isCancelled(id)) {
+        if (isActive(generation, id)) {
             dao.updateStatus(id, status, reason, System.currentTimeMillis())
         }
     }
 
-    private suspend fun isCancelled(id: String): Boolean = dao.find(id)?.status == TransferStatus.Cancelled
+    /**
+     * Single cancel-guard predicate used by every in-flight status and progress
+     * write path. Returns true if the captured [generation] is still current
+     * and the row is not already Cancelled.
+     */
+    private suspend fun isActive(generation: Long, id: String): Boolean =
+        generation == clearGeneration.get() && !isCancelled(id)
+
+    /**
+     * Single source of truth for "is this row already cancelled?" for in-flight
+     * status and progress writes. The local cache is populated by [cancel] and
+     * is cheaper than a per-write `dao.find(id)`. On cache miss we still fall
+     * back to the DB so external processes (e.g. retry from another path) are
+     * honoured.
+     */
+    private suspend fun isCancelled(id: String): Boolean {
+        cancelNotified[id]?.let { if (it) return true }
+        val cancelled = dao.find(id)?.status == TransferStatus.Cancelled
+        if (cancelled) cancelNotified[id] = true
+        return cancelled
+    }
 
     private fun isCancellation(t: Throwable): Boolean {
         if (t is kotlinx.coroutines.CancellationException) return true

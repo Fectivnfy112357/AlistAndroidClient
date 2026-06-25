@@ -9,9 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-fun BreadcrumbBar(path: String, onNavigate: (String) -> Unit) {
+fun BreadcrumbBar(path: String, onNavigate: (String) -> Unit, modifier: Modifier = Modifier) {
     val parts = path.trim('/').split('/').filter { it.isNotBlank() }
-    Row(Modifier.horizontalScroll(rememberScrollState())) {
+    Row(modifier.horizontalScroll(rememberScrollState())) {
         TextButton(onClick = { onNavigate("/") }) { Text("/") }
         var current = ""
         parts.forEach { part ->

@@ -1,5 +1,6 @@
 package com.textvision.alistclient.file
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.textvision.alistclient.common.error.ErrorMapper
@@ -7,6 +8,7 @@ import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileSort
 import com.textvision.alistclient.file.model.FileUiState
+import com.textvision.alistclient.transfer.TransferManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -31,8 +33,13 @@ interface FileRepositoryContract {
 @HiltViewModel
 class FileViewModel @Inject constructor(
     private val repository: FileRepositoryContract,
+    private val transferManager: TransferManager,
 ) : ViewModel() {
-    constructor(repository: FileRepositoryContract, dispatcher: CoroutineDispatcher) : this(repository) {
+    constructor(
+        repository: FileRepositoryContract,
+        transferManager: TransferManager,
+        dispatcher: CoroutineDispatcher,
+    ) : this(repository, transferManager) {
         this.dispatcher = dispatcher
     }
 
@@ -68,6 +75,24 @@ class FileViewModel @Inject constructor(
         sort = value
         val current = _uiState.value
         if (current is FileUiState.Success) _uiState.value = current.copy(items = applySort(current.items))
+    }
+
+    /**
+     * Enqueue a download for the given file item. The current path is the
+     * parent directory of [item] in the UI; the file is only a row reference
+     * and the manager computes its own remote path.
+     */
+    fun enqueueDownload(item: FileItem) {
+        if (item.isDir) return
+        transferManager.enqueueDownload(item.path, item.name)
+    }
+
+    /**
+     * Enqueue an upload of the picked [uri] into the current directory.
+     * The manager is responsible for resolving the display name from the URI.
+     */
+    fun enqueueUpload(uri: Uri) {
+        transferManager.enqueueUpload(uri, currentPath)
     }
 
     private fun observeSearch() {

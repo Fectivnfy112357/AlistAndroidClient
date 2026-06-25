@@ -15,6 +15,6 @@ object UriDisplayNameResolver {
         return queried?.takeIf { it.isNotBlank() } ?: fallbackName(uri, nowMillis)
     }
 
-    fun fallbackName(uri: Uri, nowMillis: Long): String = uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+    fun fallbackName(uri: Uri, nowMillis: Long): String = uri.lastPathSegment?.takeIf { it.isNotBlank() }
         ?: "upload-$nowMillis"
 }
