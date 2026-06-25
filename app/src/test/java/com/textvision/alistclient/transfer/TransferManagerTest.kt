@@ -58,6 +58,35 @@ class TransferManagerTest {
         assertEquals("http://example.com/alist/d/space%20name/hash%23name/percent%25/a%252Fb.txt/%E9%9B%AA.txt", url)
     }
 
+
+    @Test
+    fun markInterruptedOnStartupMarksActiveTasks() = kotlinx.coroutines.runBlocking {
+        val dao = MemoryTransferDao()
+        val now = System.currentTimeMillis()
+        dao.upsert(TransferEntity("waiting", "a", "/a", null, null, 0, 0, TransferType.Download, TransferStatus.Waiting, null, now, now))
+        dao.upsert(TransferEntity("failed", "b", "/b", null, null, 0, 0, TransferType.Download, TransferStatus.Failed, "x", now, now))
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), dao, CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
+
+        manager.markInterruptedOnStartup()
+
+        assertEquals(TransferStatus.Interrupted, dao.find("waiting")!!.status)
+        assertEquals(TransferStatus.Failed, dao.find("failed")!!.status)
+    }
+
+    @Test
+    fun sanitizeUploadPathRejectsFileNamesInvalidInFileBrowser() {
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
+        val sanitize = TransferManager::class.java.getDeclaredMethod("sanitizeUploadPath", String::class.java, String::class.java).apply { isAccessible = true }
+
+        assertEquals(null, sanitize.invoke(manager, "/target", "."))
+        assertEquals(null, sanitize.invoke(manager, "/target", ".."))
+        assertEquals(null, sanitize.invoke(manager, "/target", "a/b.txt"))
+        assertEquals(null, sanitize.invoke(manager, "/target", "a\b.txt"))
+        assertEquals(null, sanitize.invoke(manager, "/target", "ab.txt"))
+        assertEquals(null, sanitize.invoke(manager, "/target", "a".repeat(256)))
+        assertEquals("/target/good.txt", sanitize.invoke(manager, "/target", "good.txt"))
+    }
+
     private fun savedSessionManager(serverUrl: String): SessionManager {
         val store = MemoryStore()
         val manager = SessionManager(store, AuthTokenProvider())
@@ -84,7 +113,15 @@ class TransferManagerTest {
         override suspend fun updateProgress(id: String, bytesDone: Long, totalBytes: Long, updatedAtMillis: Long) {
             entities[id]?.let { entities[id] = it.copy(bytesDone = bytesDone, totalBytes = totalBytes, updatedAtMillis = updatedAtMillis) }
         }
-        override suspend fun markActiveTasksInterrupted(updatedAtMillis: Long) = Unit
+        override suspend fun markActiveTasksInterrupted(updatedAtMillis: Long) {
+            entities.replaceAll { _, entity ->
+                if (entity.status in setOf(TransferStatus.Waiting, TransferStatus.Uploading, TransferStatus.Downloading)) {
+                    entity.copy(status = TransferStatus.Interrupted, failureReason = "传输中断", updatedAtMillis = updatedAtMillis)
+                } else {
+                    entity
+                }
+            }
+        }
         override suspend fun deleteAll() { entities.clear() }
     }
 

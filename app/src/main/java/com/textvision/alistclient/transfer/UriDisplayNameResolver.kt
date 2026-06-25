@@ -12,7 +12,7 @@ object UriDisplayNameResolver {
                 if (idx >= 0) cursor.getString(idx) else null
             } else null
         }
-        return queried ?: fallbackName(uri, nowMillis)
+        return queried?.takeIf { it.isNotBlank() } ?: fallbackName(uri, nowMillis)
     }
 
     fun fallbackName(uri: Uri, nowMillis: Long): String = uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() }

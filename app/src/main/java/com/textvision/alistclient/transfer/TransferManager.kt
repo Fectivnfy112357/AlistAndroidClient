@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.textvision.alistclient.auth.SessionManager
+import com.textvision.alistclient.file.FileNameValidator
 import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.transfer.data.TransferDao
 import com.textvision.alistclient.transfer.data.TransferEntity
@@ -45,6 +46,39 @@ class TransferManager @Inject constructor(
     private val activeJobs = ConcurrentHashMap<String, Job>()
     private val activeCalls = ConcurrentHashMap<String, Call>()
     @Volatile private var clearGeneration = 0L
+
+    /**
+     * Throttled progress writer per transfer ID.
+     * Flushes at most once per 250ms or 64KB of progress to avoid per-chunk Room writes.
+     */
+    private inner class ThrottledProgress(
+        private val id: String,
+        private val generation: Long,
+    ) {
+        private var lastWrittenBytes = 0L
+        private var lastWriteMillis = 0L
+        private var latestBytes = 0L
+        private var latestTotal = 0L
+        private val debounceIntervalMs = 250L
+        private val debounceByteThreshold = 65_536L
+
+        suspend fun update(bytesDone: Long, totalBytes: Long, force: Boolean = false) {
+            if (generation != clearGeneration || isCancelled(id)) return
+            latestBytes = bytesDone
+            latestTotal = totalBytes
+            val now = System.currentTimeMillis()
+            val deltaBytes = bytesDone - lastWrittenBytes
+            val deltaTime = now - lastWriteMillis
+            if (!force && deltaBytes < debounceByteThreshold && deltaTime < debounceIntervalMs) return
+            dao.updateProgress(id, latestBytes, latestTotal, now)
+            lastWrittenBytes = latestBytes
+            lastWriteMillis = now
+        }
+
+        suspend fun flush() {
+            update(latestBytes, latestTotal, force = true)
+        }
+    }
 
     fun observeTransfers(): kotlinx.coroutines.flow.Flow<List<TransferEntity>> = dao.observeAll()
 
@@ -96,6 +130,7 @@ class TransferManager @Inject constructor(
         val job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
             val task = dao.find(id) ?: return@launch
             if (generation != clearGeneration || !task.status.canRetry) return@launch
+            updateStatusUnlessCancelled(id, TransferStatus.Waiting, null, generation)
             when (task.type) {
                 TransferType.Download -> runDownload(id, task.remotePath, File(requireNotNull(task.localPath)), generation)
                 TransferType.Upload -> runUpload(id, Uri.parse(requireNotNull(task.sourceUri)), task.remotePath, task.fileName, generation)
@@ -123,8 +158,9 @@ class TransferManager @Inject constructor(
             var call: Call? = null
             try {
                 if (generation != clearGeneration || isCancelled(id)) return
-                dao.updateStatus(id, TransferStatus.Downloading, null, System.currentTimeMillis())
+                updateStatusUnlessCancelled(id, TransferStatus.Downloading, null, generation)
                 localFile.parentFile?.mkdirs()
+                val progress = ThrottledProgress(id, generation)
                 val request = Request.Builder().url(transferUrl("d", remotePath)).get().build()
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
@@ -136,9 +172,10 @@ class TransferManager @Inject constructor(
                     }
                     val body = response.body ?: error("响应体为空")
                     val progressBody = TransferProgressResponseBody(body) { done, total ->
-                        scope.launch { updateProgressUnlessCancelled(id, done, total, generation) }
+                        scope.launch { progress.update(done, total) }
                     }
                     localFile.outputStream().use { output -> progressBody.byteStream().use { input -> input.copyTo(output) } }
+                    progress.flush()
                     updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
                 }
             } catch (t: Throwable) {
@@ -155,8 +192,13 @@ class TransferManager @Inject constructor(
         uploadSemaphore.withPermit {
             var call: Call? = null
             try {
+                if (FileNameValidator.errorMessage(fileName) != null) {
+                    updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传路径无效，请重命名后重试", generation)
+                    return
+                }
                 if (generation != clearGeneration || isCancelled(id)) return
-                dao.updateStatus(id, TransferStatus.Uploading, null, System.currentTimeMillis())
+                updateStatusUnlessCancelled(id, TransferStatus.Uploading, null, generation)
+                val progress = ThrottledProgress(id, generation)
                 val resolver = context.contentResolver
                 val total = resolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
                 val streamBody = object : RequestBody() {
@@ -181,7 +223,7 @@ class TransferManager @Inject constructor(
                 }
                 val request = Request.Builder()
                     .url(transferUrl("api/fs/put"))
-                    .put(TransferProgressRequestBody(streamBody) { done, length -> scope.launch { updateProgressUnlessCancelled(id, done, length, generation) } })
+                    .put(TransferProgressRequestBody(streamBody) { done, length -> scope.launch { progress.update(done, length) } })
                     .header("File-Path", uploadPath)
                     .also { SkipAuthRetry.mark(it) }
                     .build()
@@ -191,7 +233,10 @@ class TransferManager @Inject constructor(
                     if (generation != clearGeneration || isCancelled(id)) return
                     when {
                         response.code == 401 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传中断，请重试", generation)
-                        response.isSuccessful -> updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
+                        response.isSuccessful -> {
+                            progress.flush()
+                            updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
+                        }
                         response.code == 409 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "文件已存在，请重命名后重试", generation)
                         else -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传失败：HTTP ${response.code}", generation)
                     }
@@ -226,9 +271,9 @@ class TransferManager @Inject constructor(
     }
 
     private fun sanitizeUploadPath(targetPath: String, fileName: String): String? {
-        val cleanName = fileName.trim().replace(Regex("[\\r\\n\\u0000]"), "")
-        if (cleanName.isBlank() || cleanName.contains('/')) return null
-        val cleanTarget = targetPath.trim().replace(Regex("[\\r\\n\\u0000]"), "").trimEnd('/')
+        val cleanName = fileName.trim()
+        if (FileNameValidator.errorMessage(cleanName) != null) return null
+        val cleanTarget = targetPath.trim().replace(Regex("[\r\n\u0000]"), "").trimEnd('/')
         val fullPath = if (cleanTarget.isBlank()) "/$cleanName" else "$cleanTarget/$cleanName"
         return if ("http://localhost".toHttpUrlOrNull()?.newBuilder()?.addHeaderPath(fullPath)?.build() == null) null else fullPath
     }
