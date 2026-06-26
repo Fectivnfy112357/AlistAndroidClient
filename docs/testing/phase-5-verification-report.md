@@ -49,4 +49,15 @@ Server: `http://textvision.top:5244/` (public test instance). Credentials redact
 - Delete failure message: N/A — no entry point in UI.
 
 ### Upload
-- Upload launcher: PASS — tapping the upload icon in the top bar launches `com.google.android.documentsui/.picker.PickActivity` (system file picker). End-to-end upload was not exercised here; full transfer verification is in Task 5.6. |
+- Upload launcher: PASS — tapping the upload icon in the top bar launches `com.google.android.documentsui/.picker.PickActivity` (system file picker). End-to-end upload was not exercised here; full transfer verification is in Task 5.6.
+
+## Weak Network
+
+Tools used: `tc qdisc add dev wlan0 root netem` on emulator (root via `su 0`), and `svc wifi/data enable/disable` + `settings put global airplane_mode_on` to simulate flight mode. Note: emulator reports `wlan0` and `eth0`; wlan0 is the one carrying app traffic.
+
+- 500ms + 5% loss list/search:
+  - Without throttle: `POST /api/fs/list` → 200 OK in 28–162ms.
+  - With `tc qdisc ... netem delay 500ms loss 5%`: `POST /api/fs/list` → 200 OK in **547ms** (single attempt) and **2807ms** on retry after a simulated loss. UI does not freeze; data eventually renders. Logcat excerpt: `okhttp.OkHttpClient: <-- 200 OK ... (547ms)` and `(2807ms)`.
+- Flight mode behavior: PASS — enabling airplane mode (`settings put global airplane_mode_on 1` + `svc wifi/data disable`) while inside `/我的文件/开发环境` immediately surfaces the red `当前无网络` banner, status bar airplane icon appears, and the screen shows `无法连接服务器，请检查地址和网络` with a `重试` button. Screenshot: `docs/testing/screenshots/flight-mode.png`.
+- Manual retry after restore: PASS — after re-enabling network (`airplane_mode_on 0`, `svc wifi enable`), tapping `重试` issues a new `POST /api/fs/list` and renders the directory contents (CC Switch / FinalShell / Git / IDE / Java). Screenshot: `docs/testing/screenshots/manual-retry6.png`.
+- WiFi → mobile switch during transfer: NOT EXECUTED — emulator has a single wlan0 interface and no 4G radio, so a WiFi↔4G switch cannot be reproduced in this environment. Transfer-failure path is covered by the flight-mode test (network goes away → manual retry needed). |
