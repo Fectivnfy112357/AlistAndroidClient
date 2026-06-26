@@ -13,13 +13,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import android.net.Uri
 import com.textvision.alistclient.ui.screens.FileScreen
 import com.textvision.alistclient.ui.screens.LoginScreen
 import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
+import com.textvision.alistclient.ui.screens.PreviewScreen
 import com.textvision.alistclient.ui.screens.SettingsScreen
 import com.textvision.alistclient.ui.screens.TransferScreen
 
@@ -74,6 +78,18 @@ fun AppNavHost(startAuthenticated: Boolean) {
             composable(AppRoute.Settings.route) { SettingsScreen() }
             composable(AppRoute.MoveCopyPicker.route) {
                 MoveCopyTargetPickerScreen(onTargetSelected = { navController.popBackStack() })
+            }
+            composable(
+                route = AppRoute.Preview.route,
+                arguments = listOf(navArgument("filePath") { type = NavType.StringType })
+            ) { entry ->
+                val encoded = requireNotNull(entry.arguments?.getString("filePath"))
+                val filePath = Uri.decode(encoded)
+                PreviewScreen(
+                    filePath = filePath,
+                    onDownload = { navController.popBackStack() },
+                    onExternalOpen = { navController.popBackStack() },
+                )
             }
         }
     }
