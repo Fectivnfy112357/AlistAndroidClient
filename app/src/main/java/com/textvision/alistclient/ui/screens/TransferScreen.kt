@@ -2,13 +2,13 @@ package com.textvision.alistclient.ui.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -20,7 +20,14 @@ import androidx.lifecycle.viewModelScope
 import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
+import com.textvision.alistclient.ui.components.CloudCard
+import com.textvision.alistclient.ui.components.CloudEmptyState
+import com.textvision.alistclient.ui.components.CloudListItem
+import com.textvision.alistclient.ui.components.CloudScaffold
+import com.textvision.alistclient.ui.components.CloudTopBar
 import com.textvision.alistclient.ui.components.TransferProgress
+import com.textvision.alistclient.ui.theme.CloudErrorText
+import com.textvision.alistclient.ui.theme.CloudPrimary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -68,12 +75,19 @@ fun TransferScreenContent(
     onRetry: (String) -> Unit,
 ) {
     val state = TransferListUiState(transfers)
-    Column(Modifier.fillMaxSize().padding(12.dp)) {
-        Text("传输")
-        if (state.shouldShowEmptyState) Text(state.emptyMessage)
-        LazyColumn {
-            items(transfers, key = { it.id }) { task ->
-                TransferRow(task, onCancel = { onCancel(task.id) }, onRetry = { onRetry(task.id) })
+    CloudScaffold(showBottomPadding = true) {
+        CloudTopBar(title = "传输", subtitle = "上传与下载任务")
+        if (state.shouldShowEmptyState) {
+            CloudCard {
+                CloudEmptyState(title = state.emptyMessage, message = "上传和下载任务会显示在这里")
+            }
+        } else {
+            CloudCard {
+                LazyColumn {
+                    items(transfers, key = { it.id }) { task ->
+                        TransferRow(task, onCancel = { onCancel(task.id) }, onRetry = { onRetry(task.id) })
+                    }
+                }
             }
         }
     }
@@ -81,21 +95,21 @@ fun TransferScreenContent(
 
 @Composable
 private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(task.fileName) },
-        supportingContent = {
-            Column {
-                Text(task.statusText)
-                TransferProgress(task.bytesDone, task.totalBytes)
-                Row {
-                    if (task.status in setOf(TransferStatus.Waiting, TransferStatus.Uploading, TransferStatus.Downloading)) {
-                        Button(onClick = onCancel) { Text("取消") }
-                    }
-                    if (task.showRetry) {
-                        Button(onClick = onRetry) { Text(task.retryButtonLabel) }
-                    }
-                }
+    CloudListItem(
+        title = task.fileName,
+        subtitle = task.statusText,
+        trailing = {},
+    )
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
+        TransferProgress(task.bytesDone, task.totalBytes)
+        Spacer(Modifier.height(6.dp))
+        Row {
+            if (task.status in setOf(TransferStatus.Waiting, TransferStatus.Uploading, TransferStatus.Downloading)) {
+                TextButton(onClick = onCancel) { Text("取消", color = CloudErrorText) }
+            }
+            if (task.showRetry) {
+                TextButton(onClick = onRetry) { Text(task.retryButtonLabel, color = CloudPrimary) }
             }
         }
-    )
+    }
 }

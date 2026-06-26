@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.textvision.alistclient.navigation.AppNavHost
 import com.textvision.alistclient.ui.theme.AlistClientTheme
 import org.junit.Rule
@@ -41,13 +42,29 @@ class AppLaunchTest {
 
     @Test
     fun authenticatedShellShowsFileUploadEntry() {
-        composeRule.setContent {
+        testRule.activity.setContent {
             AlistClientTheme {
                 AppNavHost(startAuthenticated = true)
             }
         }
 
-        composeRule.onNodeWithText("我的文件").assertIsDisplayed()
-        composeRule.onNodeWithText("搜索").assertIsDisplayed()
+        testRule.onNodeWithText("我的文件").assertIsDisplayed()
+        testRule.onNodeWithText("搜索").assertIsDisplayed()
+    }
+
+    @Test
+    fun authenticatedShellNavigatesToTransfersAndSettings() {
+        testRule.activity.setContent {
+            AlistClientTheme {
+                AppNavHost(startAuthenticated = true)
+            }
+        }
+
+        testRule.onNodeWithText("传输").performClick()
+        testRule.onNodeWithText("暂无传输任务").assertIsDisplayed()
+
+        testRule.onNodeWithText("设置").performClick()
+        testRule.onNodeWithText("清理临时预览文件").assertIsDisplayed()
+        testRule.onNodeWithText("退出登录").assertIsDisplayed()
     }
 }
