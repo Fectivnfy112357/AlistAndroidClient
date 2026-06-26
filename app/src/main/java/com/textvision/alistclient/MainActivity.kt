@@ -3,6 +3,7 @@ package com.textvision.alistclient
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import com.textvision.alistclient.navigation.AppNavHost
 import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.transfer.TransferNotificationController
@@ -16,6 +17,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var notificationController: TransferNotificationController
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         notificationController.ensureChannels()
         transferManager.initialize()
