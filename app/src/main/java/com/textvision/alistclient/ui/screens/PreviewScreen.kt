@@ -3,8 +3,8 @@ package com.textvision.alistclient.ui.screens
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -38,7 +38,7 @@ fun PreviewScreen(filePath: String, onDownload: () -> Unit, onExternalOpen: () -
             action = {
                 Row {
                     CloudRoundIconButton(Icons.Outlined.Download, "下载", onDownload)
-                    Spacer(Modifier.height(0.dp).padding(horizontal = 3.dp))
+                    Spacer(Modifier.width(6.dp))
                     CloudRoundIconButton(Icons.AutoMirrored.Outlined.OpenInNew, "外部打开", onExternalOpen)
                 }
             },

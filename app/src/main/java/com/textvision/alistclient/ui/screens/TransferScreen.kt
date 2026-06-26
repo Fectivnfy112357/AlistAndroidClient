@@ -3,6 +3,7 @@ package com.textvision.alistclient.ui.screens
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -83,7 +84,7 @@ fun TransferScreenContent(
             }
         } else {
             CloudCard {
-                LazyColumn {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(transfers, key = { it.id }) { task ->
                         TransferRow(task, onCancel = { onCancel(task.id) }, onRetry = { onRetry(task.id) })
                     }
