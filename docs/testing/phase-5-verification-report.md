@@ -60,7 +60,7 @@ Tools used: `tc qdisc add dev wlan0 root netem` on emulator (root via `su 0`), a
   - With `tc qdisc ... netem delay 500ms loss 5%`: `POST /api/fs/list` → 200 OK in **547ms** (single attempt) and **2807ms** on retry after a simulated loss. UI does not freeze; data eventually renders. Logcat excerpt: `okhttp.OkHttpClient: <-- 200 OK ... (547ms)` and `(2807ms)`.
 - Flight mode behavior: PASS — enabling airplane mode (`settings put global airplane_mode_on 1` + `svc wifi/data disable`) while inside `/我的文件/开发环境` immediately surfaces the red `当前无网络` banner, status bar airplane icon appears, and the screen shows `无法连接服务器，请检查地址和网络` with a `重试` button. Screenshot: `docs/testing/screenshots/flight-mode.png`.
 - Manual retry after restore: PASS — after re-enabling network (`airplane_mode_on 0`, `svc wifi enable`), tapping `重试` issues a new `POST /api/fs/list` and renders the directory contents (CC Switch / FinalShell / Git / IDE / Java). Screenshot: `docs/testing/screenshots/manual-retry6.png`.
-- WiFi → mobile switch during transfer: NOT EXECUTED — emulator has a single wlan0 interface and no 4G radio, so a WiFi↔4G switch cannot be reproduced in this environment. Transfer-failure path is covered by the flight-mode test (network goes away → manual retry needed). |
+- WiFi → mobile switch during transfer: NOT EXECUTED — emulator has a single wlan0 interface and no 4G radio, so a WiFi↔4G switch cannot be reproduced in this environment. Transfer-failure path is covered by the flight-mode test (network goes away → manual retry needed).
 
 ## 500MB Transfer
 
@@ -92,4 +92,40 @@ sha256sum alist-500mb-test.bin
   - Hash match: PASS.
   - Additional bug fixed: the app wrote the full file and hash matched, but progress status remained `下载中`; download progress now uses the same conflated progress collector as upload, and `TransferProgressResponseBody` now forces final completion progress.
 - Progress behavior: PASS after fixes — large uploads/downloads stream without loading the full body into memory and progress events are coalesced.
-- Notification behavior: PARTIAL — notification permission/resilience checks are covered separately in Task 5.7.
+- Notification behavior: PASS — detailed notification permission checks are recorded in Task 5.7.
+
+## Resilience
+
+### Kill Process
+- Command path: started a 500MB download, then tested both `adb shell am kill com.textvision.alistclient` and `adb shell am force-stop com.textvision.alistclient`.
+- `am kill` result: DID NOT KILL while the app was foreground/top; transfer remained `下载中`. This command is insufficient for foreground process-kill simulation on this emulator.
+- `am force-stop` result: PASS — after force-stopping mid-download and reopening, transfer row changed to `已中断：传输中断`; button label changed to `重新传输`. Screenshot: `docs/testing/screenshots/resilience-interrupted-after-login.png`.
+- Retry restarts at 0%: PASS — tapping `重新传输` changed status to `下载中`, and a new private download file started near 11MB instead of resuming from the previous ~70MB partial file. Screenshot: `docs/testing/screenshots/resilience-retry-after-interrupt.png`.
+- Note: a transient ANR dialog occurred when an automation script typed before the first post-clear launch had a focused window. Logcat reason was `Input dispatching timed out (Application does not have a focused window)` and the Activity displayed afterward; subsequent wait-for-login automation avoided the issue. Screenshot: `docs/testing/screenshots/resilience-anr-dialog.png`.
+
+### Backup Exclusion
+- Backup rules inspected:
+  - `app/src/main/res/xml/backup_rules.xml` excludes `secure_prefs.xml`, `transfer_tasks.db`, `transfer_tasks.db-shm`, `transfer_tasks.db-wal`, `files/downloads/`, and `files/preview/`.
+  - `app/src/main/res/xml/data_extraction_rules.xml` excludes `secure_prefs.xml`, `transfer_tasks.db`, `files/downloads/`, and `files/preview/` from cloud backup; device-transfer excludes `secure_prefs.xml` and `transfer_tasks.db`.
+- `adb shell bmgr backupnow com.textvision.alistclient`: SKIPPED by emulator/system — command returned `Backup finished with result: Backup is not allowed`.
+- `adb shell bmgr restore com.textvision.alistclient`: SKIPPED by Android version — command returned `restore <package> is no longer supported; use restore <token> <package>`.
+- Uninstall/reinstall validation: PASS.
+  - Login page has no credential prefill after reinstall. Screenshot: `docs/testing/screenshots/resilience-after-reinstall-login.png`.
+  - `files/downloads/`: absent/empty after reinstall.
+  - `cache/preview/`: absent/empty after reinstall.
+  - `transfer_tasks.db`: newly created but no `transfer_tasks` table yet (`OperationalError no such table: transfer_tasks`), equivalent to empty transfer state.
+
+### Notifications
+- API level: 34.
+- Denied permission behavior: PASS — `pm revoke com.textvision.alistclient android.permission.POST_NOTIFICATIONS`, then started a download. Transfer page worked (`下载中` + `取消`) and `dumpsys notification` showed app importance `NONE` with no active `Alist 传输` notification. Screenshot: `docs/testing/screenshots/resilience-notification-denied.png`.
+- Granted permission behavior: PASS after integration fix — wired `TransferManager` to `TransferNotificationController`. With `pm grant ... POST_NOTIFICATIONS`, starting a download produced notification record `pkg=com.textvision.alistclient id=1001 channel=transfer_progress_channel`, title `Alist 传输`, text `正在传输 1 个文件`, importance 2 (low priority). Screenshot: `docs/testing/screenshots/resilience-notification-granted-active.png`.
+
+### Monkey
+- Command:
+
+```bash
+adb shell monkey -p com.textvision.alistclient --throttle 500 -v 1000
+```
+
+- Result: PASS — `Events injected: 1000`, `Monkey finished`, exit code 0.
+- Crash/ANR log check after monkey: PASS — no `FATAL EXCEPTION`, no `ANR in com.textvision.alistclient`, no `OutOfMemory` in post-monkey logcat. Log saved to `docs/testing/monkey-1000.log`.

@@ -43,6 +43,7 @@ class TransferManager @Inject constructor(
     private val dao: TransferDao,
     private val okHttpClient: OkHttpClient,
     private val sessionManager: SessionManager,
+    private val notificationController: TransferNotificationController = TransferNotificationController(context),
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val uploadSemaphore = Semaphore(2)
@@ -355,6 +356,11 @@ class TransferManager @Inject constructor(
     private suspend fun updateStatusUnlessCancelled(id: String, status: TransferStatus, reason: String?, generation: Long) {
         if (isActive(generation, id)) {
             dao.updateStatus(id, status, reason, System.currentTimeMillis())
+            when (status) {
+                TransferStatus.Uploading, TransferStatus.Downloading -> notificationController.showProgressSummary(activeCalls.size.coerceAtLeast(1), null)
+                TransferStatus.Success, TransferStatus.Failed, TransferStatus.Cancelled, TransferStatus.Interrupted -> notificationController.clearProgress()
+                TransferStatus.Waiting -> Unit
+            }
         }
     }
 
