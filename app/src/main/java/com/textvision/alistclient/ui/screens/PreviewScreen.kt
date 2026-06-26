@@ -9,7 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,7 +39,7 @@ fun PreviewScreen(filePath: String, onDownload: () -> Unit, onExternalOpen: () -
                 Row {
                     CloudRoundIconButton(Icons.Outlined.Download, "下载", onDownload)
                     Spacer(Modifier.height(0.dp).padding(horizontal = 3.dp))
-                    CloudRoundIconButton(Icons.Outlined.OpenInNew, "外部打开", onExternalOpen)
+                    CloudRoundIconButton(Icons.AutoMirrored.Outlined.OpenInNew, "外部打开", onExternalOpen)
                 }
             },
         )

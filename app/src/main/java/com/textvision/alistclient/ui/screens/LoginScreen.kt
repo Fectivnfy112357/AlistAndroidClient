@@ -45,24 +45,29 @@ fun LoginScreen(
 
     CloudScaffold(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 24.dp)) {
         Spacer(Modifier.height(28.dp))
-        Icon(
-            imageVector = Icons.Outlined.Cloud,
-            contentDescription = null,
-            tint = CloudPrimary,
-            modifier = Modifier
-                .size(58.dp)
-                .clip(CloudShapes.Panel)
-                .background(CloudPrimarySoft)
-                .padding(14.dp),
-        )
-        Spacer(Modifier.height(18.dp))
-        Text("Alist Cloud", style = MaterialTheme.typography.headlineLarge)
-        Text(
-            text = "连接你的私人网盘，安全访问所有文件",
-            modifier = Modifier.padding(top = 8.dp),
-            color = CloudTextSecondary,
-            style = MaterialTheme.typography.bodyLarge,
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Cloud,
+                contentDescription = null,
+                tint = CloudPrimary,
+                modifier = Modifier
+                    .size(58.dp)
+                    .clip(CloudShapes.Panel)
+                    .background(CloudPrimarySoft)
+                    .padding(14.dp),
+            )
+            Spacer(Modifier.height(18.dp))
+            Text("Alist Cloud", style = MaterialTheme.typography.headlineLarge)
+            Text(
+                text = "连接你的私人网盘，安全访问所有文件",
+                modifier = Modifier.padding(top = 8.dp),
+                color = CloudTextSecondary,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
         Spacer(Modifier.height(26.dp))
         CloudCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)) {
             LoginField(

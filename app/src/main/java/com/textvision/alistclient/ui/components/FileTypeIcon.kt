@@ -4,10 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,8 +36,8 @@ fun FileTypeIcon(
     val style = when (type) {
         FileType.Folder -> FileIconStyle(Icons.Default.Folder, FolderTint, FolderIconTint)
         FileType.Image -> FileIconStyle(Icons.Default.Image, ImageTint, ImageIconTint)
-        FileType.Text -> FileIconStyle(Icons.Default.Article, TextTint, TextIconTint)
-        else -> FileIconStyle(Icons.Default.InsertDriveFile, GenericFileTint, GenericFileIconTint)
+        FileType.Text -> FileIconStyle(Icons.AutoMirrored.Default.Article, TextTint, TextIconTint)
+        else -> FileIconStyle(Icons.AutoMirrored.Default.InsertDriveFile, GenericFileTint, GenericFileIconTint)
     }
     if (tiled) {
         Box(
