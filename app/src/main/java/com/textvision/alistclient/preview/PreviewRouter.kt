@@ -33,4 +33,20 @@ object PreviewRouter {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
+
+    const val LINK_SHARE_WARNING = "此链接需要登录 Alist 账号才能访问。如果服务器在内网，对方可能无法打开。"
+
+    fun shareFileIntent(context: Context, file: File, name: String): Intent {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        return Intent(Intent.ACTION_SEND).apply {
+            type = MimeTypeResolver.infer(name)
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    fun shareLinkIntent(link: String): Intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, "$link\n\n$LINK_SHARE_WARNING")
+    }
 }
