@@ -38,4 +38,16 @@ class AppLaunchTest {
         testRule.onNodeWithText("传输").assertIsDisplayed()
         testRule.onNodeWithText("设置").assertIsDisplayed()
     }
+
+    @Test
+    fun authenticatedShellShowsFileUploadEntry() {
+        composeRule.setContent {
+            AlistClientTheme {
+                AppNavHost(startAuthenticated = true)
+            }
+        }
+
+        composeRule.onNodeWithText("我的文件").assertIsDisplayed()
+        composeRule.onNodeWithText("搜索").assertIsDisplayed()
+    }
 }
