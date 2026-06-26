@@ -20,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +47,7 @@ import com.textvision.alistclient.ui.components.FileTypeIcon
 fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.load("/") }
 
     val uploadLauncher = rememberLauncherForActivityResult(
@@ -55,6 +57,9 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
     }
 
     Column(Modifier.fillMaxSize().padding(12.dp)) {
+        if (!isOnline) {
+            Text("当前无网络", color = MaterialTheme.colorScheme.error)
+        }
         val currentPath = when (val s = state) {
             is FileUiState.Loading -> s.path
             is FileUiState.Success -> s.path

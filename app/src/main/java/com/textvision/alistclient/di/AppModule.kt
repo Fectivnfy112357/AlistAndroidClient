@@ -14,6 +14,8 @@ import com.textvision.alistclient.file.FileRepository
 import com.textvision.alistclient.file.FileRepositoryContract
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.api.AlistApi
+import com.textvision.alistclient.common.network.NetworkMonitor
+import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.transfer.data.TransferDao
 import dagger.Binds
 import kotlinx.coroutines.CoroutineDispatcher
@@ -50,6 +52,10 @@ abstract class CredentialModule {
     @Binds
     @Singleton
     abstract fun bindFileRepository(impl: FileRepository): FileRepositoryContract
+
+    @Binds
+    @Singleton
+    abstract fun bindNetworkMonitor(impl: NetworkMonitor): NetworkMonitorContract
 }
 
 @Module

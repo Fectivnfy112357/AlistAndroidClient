@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.textvision.alistclient.common.error.ErrorMapper
+import com.textvision.alistclient.common.network.NetworkMonitor
+import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileSort
@@ -34,12 +36,13 @@ interface FileRepositoryContract {
 class FileViewModel @Inject constructor(
     private val repository: FileRepositoryContract,
     private val transferManager: TransferManager,
+    networkMonitor: NetworkMonitorContract,
 ) : ViewModel() {
     constructor(
         repository: FileRepositoryContract,
         transferManager: TransferManager,
         dispatcher: CoroutineDispatcher,
-    ) : this(repository, transferManager) {
+    ) : this(repository, transferManager, StubNetworkMonitor()) {
         this.dispatcher = dispatcher
     }
 
@@ -51,6 +54,8 @@ class FileViewModel @Inject constructor(
     val uiState: StateFlow<FileUiState> = _uiState.asStateFlow()
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
 
     init { observeSearch() }
 
@@ -123,4 +128,9 @@ class FileViewModel @Inject constructor(
         FileSort.SizeDesc -> items.sortedWith(compareByDescending<FileItem> { it.isDir }.thenByDescending { it.size })
         FileSort.ModifiedDesc -> items.sortedWith(compareByDescending<FileItem> { it.isDir }.thenByDescending { it.modifiedAt })
     }
+}
+
+private class StubNetworkMonitor : NetworkMonitorContract {
+    private val _isOnline = MutableStateFlow(true)
+    override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 }
