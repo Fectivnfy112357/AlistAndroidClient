@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.file.model.FileType
+import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.FolderIconTint
 import com.textvision.alistclient.ui.theme.FolderTint
 import com.textvision.alistclient.ui.theme.GenericFileIconTint
@@ -25,7 +26,6 @@ import com.textvision.alistclient.ui.theme.ImageIconTint
 import com.textvision.alistclient.ui.theme.ImageTint
 import com.textvision.alistclient.ui.theme.TextIconTint
 import com.textvision.alistclient.ui.theme.TextTint
-import com.textvision.alistclient.ui.theme.CloudShapes
 
 @Composable
 fun FileTypeIcon(

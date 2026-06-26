@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.textvision.alistclient.navigation.AppNavHost
+import com.textvision.alistclient.ui.screens.PreviewScreen
 import com.textvision.alistclient.ui.theme.AlistClientTheme
 import org.junit.Rule
 import org.junit.Test
@@ -66,5 +67,20 @@ class AppLaunchTest {
         testRule.onNodeWithText("设置").performClick()
         testRule.onNodeWithText("清理临时预览文件").assertIsDisplayed()
         testRule.onNodeWithText("退出登录").assertIsDisplayed()
+    }
+
+    @Test
+    fun previewRouteUsesCloudShell() {
+        testRule.activity.setContent {
+            AlistClientTheme {
+                PreviewScreen(
+                    filePath = "missing-preview-file.txt",
+                    onDownload = {},
+                    onExternalOpen = {},
+                )
+            }
+        }
+
+        testRule.onNodeWithText("文件预览").assertIsDisplayed()
     }
 }
