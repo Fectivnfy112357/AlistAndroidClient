@@ -75,7 +75,15 @@ fun AppNavHost(startAuthenticated: Boolean) {
             }
             composable(AppRoute.Files.route) { FileScreen() }
             composable(AppRoute.Transfers.route) { TransferScreen() }
-            composable(AppRoute.Settings.route) { SettingsScreen() }
+            composable(AppRoute.Settings.route) {
+                SettingsScreen(
+                    onLoggedOut = {
+                        navController.navigate(AppRoute.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(AppRoute.MoveCopyPicker.route) {
                 MoveCopyTargetPickerScreen(onTargetSelected = { navController.popBackStack() })
             }

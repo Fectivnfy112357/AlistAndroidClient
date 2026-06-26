@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.screens
 
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -40,6 +43,7 @@ import com.textvision.alistclient.common.error.ErrorMessageMapper
 import com.textvision.alistclient.file.FileViewModel
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileUiState
+import com.textvision.alistclient.preview.PreviewRouter
 import com.textvision.alistclient.ui.components.BreadcrumbBar
 import com.textvision.alistclient.ui.components.FileTypeIcon
 
@@ -48,6 +52,7 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     LaunchedEffect(Unit) { viewModel.load("/") }
 
     val uploadLauncher = rememberLauncherForActivityResult(
@@ -96,6 +101,11 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
                             item = item,
                             onOpenDir = { viewModel.load(item.path) },
                             onDownload = { viewModel.enqueueDownload(item) },
+                            onShare = {
+                                val intent = PreviewRouter.shareLinkIntent(item.path)
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            },
                         )
                     }
                 }
@@ -109,6 +119,7 @@ private fun FileRow(
     item: FileItem,
     onOpenDir: () -> Unit,
     onDownload: () -> Unit,
+    onShare: () -> Unit,
 ) {
     ListItem(
         headlineContent = { Text(item.name) },
@@ -121,15 +132,23 @@ private fun FileRow(
         },
         leadingContent = { FileTypeIcon(item.type) },
         trailingContent = {
-            if (!item.isDir) {
-                IconButton(
-                    onClick = onDownload,
-                    modifier = Modifier.testTag("download_button"),
-                ) {
-                    Icon(Icons.Default.Download, contentDescription = "下载")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!item.isDir) {
+                    IconButton(
+                        onClick = onShare,
+                        modifier = Modifier.testTag("share_button"),
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "分享链接")
+                    }
+                    IconButton(
+                        onClick = onDownload,
+                        modifier = Modifier.testTag("download_button"),
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = "下载")
+                    }
+                } else {
+                    TextButton(onClick = onOpenDir) { Text("打开") }
                 }
-            } else {
-                TextButton(onClick = onOpenDir) { Text("打开") }
             }
         },
         modifier = Modifier.clickable(enabled = item.isDir) { onOpenDir() }

@@ -65,10 +65,13 @@ class SafeCrashHandlerTest {
         val crashDir = File(context.filesDir, "crash_logs").apply { mkdirs() }
         // Clear any leftovers from previous tests.
         crashDir.listFiles()?.forEach { it.delete() }
-        // Write 12 files with distinct, ascending timestamps so sort order is deterministic.
+        // Write 12 files with distinct, explicit timestamps so sort order is deterministic
+        // regardless of filesystem mtime resolution.
         val base = 1_700_000_000_000L
         for (i in 0 until 12) {
-            File(crashDir, "crash-test-${base + i}.log").writeText("crash $i")
+            val f = File(crashDir, "crash-test-${base + i}.log")
+            f.writeText("crash $i")
+            f.setLastModified(base + i)
         }
         // Invoke the real retention helper that production code uses.
         SafeCrashHandler.enforceRetention(crashDir, SafeCrashHandler.MAX_CRASH_LOGS)
@@ -87,7 +90,9 @@ class SafeCrashHandlerTest {
         crashDir.listFiles()?.forEach { it.delete() }
         val base = 1_700_000_000_000L
         for (i in 0 until 5) {
-            File(crashDir, "crash-test-${base + i}.log").writeText("crash $i")
+            val f = File(crashDir, "crash-test-${base + i}.log")
+            f.writeText("crash $i")
+            f.setLastModified(base + i)
         }
         SafeCrashHandler.enforceRetention(crashDir, SafeCrashHandler.MAX_CRASH_LOGS)
         assertEquals(5, crashDir.listFiles().orEmpty().size)
