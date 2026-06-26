@@ -129,3 +129,24 @@ adb shell monkey -p com.textvision.alistclient --throttle 500 -v 1000
 
 - Result: PASS — `Events injected: 1000`, `Monkey finished`, exit code 0.
 - Crash/ANR log check after monkey: PASS — no `FATAL EXCEPTION`, no `ANR in com.textvision.alistclient`, no `OutOfMemory` in post-monkey logcat. Log saved to `docs/testing/monkey-1000.log`.
+
+## Completion Gate
+
+Command:
+
+```bash
+./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest
+```
+
+Result: PASS — `BUILD SUCCESSFUL in 5s`.
+
+Evidence summary:
+- assembleDebug: PASS
+- lintDebug: PASS
+- testDebugUnitTest: PASS — 21 suites, 67 tests, 0 failures, 0 errors
+
+Required file existence:
+- `README.md`: PASS
+- `docs/testing/known-limitations.md`: PASS
+- `docs/testing/phase-5-verification-report.md`: PASS
+- `app/build/outputs/apk/debug/app-debug.apk`: PASS
