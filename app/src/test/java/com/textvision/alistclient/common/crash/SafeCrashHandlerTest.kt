@@ -32,7 +32,9 @@ class SafeCrashHandlerTest {
         val ex = RuntimeException("body: {\"username\":\"u\",\"password\":\"myP@ss\"}")
         val sanitized = handler.sanitizeStackTrace(ex)
         assertTrue(sanitized.contains("password=***"))
+        // The full secret (including the @ character) must be scrubbed, not just the word prefix.
         assertTrue(!sanitized.contains("myP@ss"))
+        assertTrue(!sanitized.contains("@ss"))
     }
 
     @Test fun sanitizeStackTraceReplacesTokenEquals() {
@@ -68,12 +70,8 @@ class SafeCrashHandlerTest {
         for (i in 0 until 12) {
             File(crashDir, "crash-test-${base + i}.log").writeText("crash $i")
         }
-        val handler = SafeCrashHandler(context, null)
-        // Triggers the same retention logic used by uncaughtException (without rethrowing).
-        handler.sanitizeStackTrace(RuntimeException("noop")).let { /* discard */ }
-        // Invoke the retention pass by calling uncaughtException with a swallowing default handler
-        // is not safe (it re-throws), so replicate the retention step directly.
-        crashDir.listFiles()?.sortedByDescending { it.lastModified() }?.drop(10)?.forEach { it.delete() }
+        // Invoke the real retention helper that production code uses.
+        SafeCrashHandler.enforceRetention(crashDir, SafeCrashHandler.MAX_CRASH_LOGS)
 
         val remaining = crashDir.listFiles().orEmpty()
         assertEquals(10, remaining.size)
@@ -91,7 +89,7 @@ class SafeCrashHandlerTest {
         for (i in 0 until 5) {
             File(crashDir, "crash-test-${base + i}.log").writeText("crash $i")
         }
-        crashDir.listFiles()?.sortedByDescending { it.lastModified() }?.drop(10)?.forEach { it.delete() }
+        SafeCrashHandler.enforceRetention(crashDir, SafeCrashHandler.MAX_CRASH_LOGS)
         assertEquals(5, crashDir.listFiles().orEmpty().size)
     }
 }

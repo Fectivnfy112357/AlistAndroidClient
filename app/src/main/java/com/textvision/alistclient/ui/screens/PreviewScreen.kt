@@ -8,24 +8,31 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.textvision.alistclient.preview.PreviewRouter
 import java.io.File
 
 @Composable
 fun PreviewScreen(filePath: String, onDownload: () -> Unit, onExternalOpen: () -> Unit) {
     val file = File(filePath)
-    val text = produceState(initialValue = "加载中", filePath) {
-        value = runCatching { file.readText() }.getOrElse { "无法读取文件" }
-    }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        if (file.length() > 2L * 1024L * 1024L) {
+        if (file.length() > PreviewRouter.TEXT_PREVIEW_LIMIT_BYTES) {
             Text("文件过大，是否下载或用其他应用打开？")
             Button(onClick = onDownload) { Text("下载") }
             Button(onClick = onExternalOpen) { Text("外部打开") }
         } else {
-            Text(text.value, modifier = Modifier.verticalScroll(rememberScrollState()))
+            // Read on first composition and when filePath changes; updates the visible text state.
+            var text by remember(filePath) { mutableStateOf("加载中") }
+            LaunchedEffect(filePath) {
+                text = runCatching { file.readText() }.getOrElse { "无法读取文件" }
+            }
+            Text(text, modifier = Modifier.verticalScroll(rememberScrollState()))
         }
     }
 }
