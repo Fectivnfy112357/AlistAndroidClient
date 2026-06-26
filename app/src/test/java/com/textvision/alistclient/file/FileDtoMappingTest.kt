@@ -32,4 +32,12 @@ class FileDtoMappingTest {
         assertEquals(0L, item.size)
         assertNull(item.modifiedAt)
     }
+
+    @Test fun mapsAlistTypeZeroFileAsFileWhenIsDirIsFalse() {
+        val item = AlistFileDto(name = "alist-500mb-test-host.bin", size = 524288000, isDir = false, fileType = 0).toFileItem("/我的文件", "http://s/")
+
+        assertFalse(item.isDir)
+        assertEquals(FileType.Other, item.type)
+        assertEquals(524288000L, item.size)
+    }
 }

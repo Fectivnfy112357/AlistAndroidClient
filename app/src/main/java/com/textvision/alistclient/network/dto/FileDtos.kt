@@ -50,7 +50,7 @@ data class CopyMovePathRequest(
 fun AlistFileDto.toFileItem(parentPath: String, baseUrl: String): FileItem {
     val normalizedParent = parentPath.trimEnd('/')
     val fullPath = if (normalizedParent.isEmpty()) "/$name" else "$normalizedParent/$name"
-    val directory = isDir || fileType == 0
+    val directory = isDir
     val extension = name.substringAfterLast('.', missingDelimiterValue = "")
         .lowercase()
         .takeIf { it.isNotBlank() && it != name.lowercase() }

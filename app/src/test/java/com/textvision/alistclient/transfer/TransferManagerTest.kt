@@ -11,6 +11,7 @@ import com.textvision.alistclient.transfer.model.TransferStatus
 import com.textvision.alistclient.transfer.model.TransferType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -87,6 +88,26 @@ class TransferManagerTest {
         assertEquals("/target/good.txt", sanitize.invoke(manager, "/target", "good.txt"))
     }
 
+    @Test
+    fun sanitizeUploadPathEncodesNonAsciiSegmentsForFilePathHeader() {
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
+        val sanitize = TransferManager::class.java.getDeclaredMethod("sanitizeUploadPath", String::class.java, String::class.java).apply { isAccessible = true }
+
+        assertEquals("/%E6%88%91%E7%9A%84%E6%96%87%E4%BB%B6/alist-500mb-test.bin", sanitize.invoke(manager, "/我的文件", "alist-500mb-test.bin"))
+    }
+
+    @Test
+    fun alistUploadResultTreatsNon200JsonCodeAsFailure() {
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
+        val parser = TransferManager::class.java.getDeclaredMethod("toAlistUploadResult", String::class.java).apply { isAccessible = true }
+        val result = parser.invoke(manager, """{"code":500,"message":"object not found","data":null}""")
+        val isSuccess = result!!::class.java.getDeclaredMethod("isSuccess").apply { isAccessible = true }
+        val message = result::class.java.getDeclaredField("message").apply { isAccessible = true }
+
+        assertEquals(false, isSuccess.invoke(result))
+        assertEquals("object not found", message.get(result))
+    }
+
     private fun savedSessionManager(serverUrl: String): SessionManager {
         val store = MemoryStore()
         val manager = SessionManager(store, AuthTokenProvider())
@@ -131,7 +152,9 @@ class TransferManagerTest {
         override suspend fun deleteAll() { entities.clear() }
     }
 
-    private class CapturingOkHttpClient : OkHttpClient() {
+    private class CapturingOkHttpClient(
+        private val responseBody: String = "ok",
+    ) : OkHttpClient() {
         @Volatile var request: Request? = null
         fun awaitRequest(): Request {
             repeat(100) {
@@ -149,7 +172,7 @@ class TransferManagerTest {
                     .protocol(Protocol.HTTP_1_1)
                     .code(200)
                     .message("OK")
-                    .body("ok".toResponseBody())
+                    .body(responseBody.toResponseBody())
                     .build()
                 override fun enqueue(responseCallback: okhttp3.Callback) = throw UnsupportedOperationException()
                 override fun cancel() = Unit

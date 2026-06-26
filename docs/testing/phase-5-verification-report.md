@@ -13,7 +13,7 @@ Result: PASS
 Evidence summary:
 - assembleDebug: PASS — `app/build/outputs/apk/debug/app-debug.apk` (~19 MB)
 - lintDebug: PASS — `0 errors, 54 warnings` (per `app/build/reports/lint-results-debug.txt`; warnings are library-style / non-blocking)
-- testDebugUnitTest: PASS — 20 test suites, 61 tests, 0 failures, 0 errors
+- testDebugUnitTest: PASS — 21 test suites, 67 tests, 0 failures, 0 errors
 
 ## Compatibility Matrix
 
@@ -61,3 +61,35 @@ Tools used: `tc qdisc add dev wlan0 root netem` on emulator (root via `su 0`), a
 - Flight mode behavior: PASS — enabling airplane mode (`settings put global airplane_mode_on 1` + `svc wifi/data disable`) while inside `/我的文件/开发环境` immediately surfaces the red `当前无网络` banner, status bar airplane icon appears, and the screen shows `无法连接服务器，请检查地址和网络` with a `重试` button. Screenshot: `docs/testing/screenshots/flight-mode.png`.
 - Manual retry after restore: PASS — after re-enabling network (`airplane_mode_on 0`, `svc wifi enable`), tapping `重试` issues a new `POST /api/fs/list` and renders the directory contents (CC Switch / FinalShell / Git / IDE / Java). Screenshot: `docs/testing/screenshots/manual-retry6.png`.
 - WiFi → mobile switch during transfer: NOT EXECUTED — emulator has a single wlan0 interface and no 4G radio, so a WiFi↔4G switch cannot be reproduced in this environment. Transfer-failure path is covered by the flight-mode test (network goes away → manual retry needed). |
+
+## 500MB Transfer
+
+Original test file:
+
+```bash
+python - <<'PY'
+from pathlib import Path
+p = Path('alist-500mb-test.bin')
+p.write_bytes(b'\0' * 500 * 1024 * 1024)
+PY
+sha256sum alist-500mb-test.bin
+```
+
+- Original SHA256: `a08a92258f621b55d08ad1e84c90c2ea6286fc6b6c9a4dfa7156afb16c190170`
+- Original size: `524288000` bytes
+- Upload verification: PASS after integration fixes.
+  - Initial app upload exposed three bugs that were fixed with regression tests:
+    1. `File-Path` header rejected non-ASCII path `/我的文件/...`; fixed by percent-encoding header path segments.
+    2. `HttpLoggingInterceptor.Level.BODY` caused OOM for 500MB streaming upload; changed logging to `HEADERS`.
+    3. Alist `type: 0` regular files were rendered as folders; mapping now trusts `is_dir`.
+  - Direct Alist API 500MB upload to `/我的文件/alist-500mb-test-host.bin` returned `{"code":200,"message":"success"}` and app list displays it as a file with size `524288000 B`. Screenshot: `docs/testing/screenshots/500mb-file-visible-downloadable.png`.
+  - App upload path now sends encoded `File-Path: /%E6%88%91%E7%9A%84%E6%96%87%E4%BB%B6/...` and no longer OOMs; app also parses Alist JSON `code` instead of treating any HTTP 200 as success.
+- Download verification: PASS.
+  - Download started through app by tapping the download action for `alist-500mb-test-host.bin`. Screenshot: `docs/testing/screenshots/500mb-download-progress.png`.
+  - App-private downloaded file: `/data/user/0/com.textvision.alistclient/files/downloads/69c0edfd5fffc26c765a2bbe89920b160a6d20d2.bin`.
+  - Downloaded size: `524288000` bytes.
+  - Downloaded SHA256: `a08a92258f621b55d08ad1e84c90c2ea6286fc6b6c9a4dfa7156afb16c190170`
+  - Hash match: PASS.
+  - Additional bug fixed: the app wrote the full file and hash matched, but progress status remained `下载中`; download progress now uses the same conflated progress collector as upload, and `TransferProgressResponseBody` now forces final completion progress.
+- Progress behavior: PASS after fixes — large uploads/downloads stream without loading the full body into memory and progress events are coalesced.
+- Notification behavior: PARTIAL — notification permission/resilience checks are covered separately in Task 5.7.

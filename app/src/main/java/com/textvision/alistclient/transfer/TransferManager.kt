@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -28,6 +29,8 @@ import okhttp3.RequestBody
 import okio.BufferedSink
 import java.io.File
 import java.io.IOException
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -84,6 +87,34 @@ class TransferManager @Inject constructor(
 
         suspend fun flush() {
             update(latestBytes, latestTotal, force = true)
+        }
+    }
+
+    /**
+     * Serializes progress writes for one transfer. Producers use [tryUpdate], which
+     * is non-blocking and conflated, so fast network/body callbacks cannot enqueue
+     * unbounded coroutines or Room writes.
+     */
+    private inner class ProgressCollector(
+        id: String,
+        generation: Long,
+    ) {
+        private val progress = ThrottledProgress(id, generation)
+        private val channel = Channel<Pair<Long, Long>>(Channel.CONFLATED)
+        private val job = scope.launch {
+            for ((bytesDone, totalBytes) in channel) {
+                progress.update(bytesDone, totalBytes)
+            }
+        }
+
+        fun tryUpdate(bytesDone: Long, totalBytes: Long) {
+            channel.trySend(bytesDone to totalBytes)
+        }
+
+        suspend fun flush() {
+            channel.close()
+            job.join()
+            progress.flush()
         }
     }
 
@@ -178,7 +209,7 @@ class TransferManager @Inject constructor(
                 if (!isActive(generation, id)) return
                 updateStatusUnlessCancelled(id, TransferStatus.Downloading, null, generation)
                 localFile.parentFile?.mkdirs()
-                val progress = ThrottledProgress(id, generation)
+                val progress = ProgressCollector(id, generation)
                 val request = Request.Builder().url(transferUrl("d", remotePath)).get().build()
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
@@ -190,7 +221,7 @@ class TransferManager @Inject constructor(
                     }
                     val body = response.body ?: error("响应体为空")
                     val progressBody = TransferProgressResponseBody(body) { done, total ->
-                        scope.launch { progress.update(done, total) }
+                        progress.tryUpdate(done, total)
                     }
                     localFile.outputStream().use { output -> progressBody.byteStream().use { input -> input.copyTo(output) } }
                     progress.flush()
@@ -216,7 +247,7 @@ class TransferManager @Inject constructor(
                 }
                 if (!isActive(generation, id)) return
                 updateStatusUnlessCancelled(id, TransferStatus.Uploading, null, generation)
-                val progress = ThrottledProgress(id, generation)
+                val progress = ProgressCollector(id, generation)
                 val resolver = context.contentResolver
                 val total = resolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
                 val streamBody = object : RequestBody() {
@@ -241,7 +272,7 @@ class TransferManager @Inject constructor(
                 }
                 val request = Request.Builder()
                     .url(transferUrl("api/fs/put"))
-                    .put(TransferProgressRequestBody(streamBody) { done, length -> scope.launch { progress.update(done, length) } })
+                    .put(TransferProgressRequestBody(streamBody) { done, length -> progress.tryUpdate(done, length) })
                     .header("File-Path", uploadPath)
                     .also { SkipAuthRetry.mark(it) }
                     .build()
@@ -252,6 +283,11 @@ class TransferManager @Inject constructor(
                     when {
                         response.code == 401 -> updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传中断，请重试", generation)
                         response.isSuccessful -> {
+                            val result = response.body?.string().orEmpty().toAlistUploadResult()
+                            if (result != null && !result.isSuccess) {
+                                updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传失败：${result.message ?: "服务器返回失败"}", generation)
+                                return
+                            }
                             progress.flush()
                             updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
                         }
@@ -293,7 +329,23 @@ class TransferManager @Inject constructor(
         if (FileNameValidator.errorMessage(cleanName) != null) return null
         val cleanTarget = targetPath.trim().replace(Regex("[\r\n\u0000]"), "").trimEnd('/')
         val fullPath = if (cleanTarget.isBlank()) "/$cleanName" else "$cleanTarget/$cleanName"
-        return if ("http://localhost".toHttpUrlOrNull()?.newBuilder()?.addHeaderPath(fullPath)?.build() == null) null else fullPath
+        return if ("http://localhost".toHttpUrlOrNull()?.newBuilder()?.addHeaderPath(fullPath)?.build() == null) null else encodeHeaderPath(fullPath)
+    }
+
+    private fun encodeHeaderPath(path: String): String =
+        path.trim('/').split('/').filter { it.isNotBlank() }
+            .joinToString(separator = "/", prefix = "/") { segment ->
+                URLEncoder.encode(segment, StandardCharsets.UTF_8.name()).replace("+", "%20")
+            }
+
+    private data class AlistUploadResult(val code: Int, val message: String?) {
+        val isSuccess: Boolean get() = code == 200
+    }
+
+    private fun String.toAlistUploadResult(): AlistUploadResult? {
+        val code = Regex("\"code\"\\s*:\\s*(-?\\d+)").find(this)?.groupValues?.get(1)?.toIntOrNull() ?: return null
+        val message = Regex("\"message\"\\s*:\\s*\"([^\"]*)\"").find(this)?.groupValues?.get(1)
+        return AlistUploadResult(code, message)
     }
 
     private fun okhttp3.HttpUrl.Builder.addHeaderPath(path: String): okhttp3.HttpUrl.Builder = apply {
