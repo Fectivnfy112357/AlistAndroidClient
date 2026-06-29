@@ -50,7 +50,6 @@ class FileViewModel @Inject constructor(
     private var loadJob: Job? = null
     private var currentPath: String = "/"
     private var hasLoadedInitialContent = false
-    private var isObservingSearch = false
     private var sort: FileSort = FileSort.NameAsc
     private val _uiState = MutableStateFlow<FileUiState>(FileUiState.Loading("/"))
     val uiState: StateFlow<FileUiState> = _uiState.asStateFlow()
@@ -59,14 +58,14 @@ class FileViewModel @Inject constructor(
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
 
+    init { observeSearch() }
+
     fun load(path: String) {
         currentPath = path
         loadJob?.cancel()
         loadJob = viewModelScope.launch(dispatcher) {
-            _uiState.value = FileUiState.Loading(path)
-            if (!isObservingSearch) {
-                isObservingSearch = true
-                observeSearch()
+            if (_uiState.value !is FileUiState.Success) {
+                _uiState.value = FileUiState.Loading(path)
             }
             when (val result = repository.list(path)) {
                 is ApiResult.Success -> {
@@ -91,7 +90,10 @@ class FileViewModel @Inject constructor(
 
     fun refresh() = load(currentPath)
 
-    fun updateSearchQuery(value: String) { _searchQuery.value = value }
+    fun updateSearchQuery(value: String) {
+        if (value == _searchQuery.value) return
+        _searchQuery.value = value
+    }
 
     fun setSort(value: FileSort) {
         sort = value
@@ -119,8 +121,8 @@ class FileViewModel @Inject constructor(
 
     private fun observeSearch() {
         _searchQuery.debounce(300).distinctUntilChanged().onEach { query ->
-            if (!hasLoadedInitialContent) return@onEach
-            if (query.isBlank()) load(currentPath) else search(query.trim())
+            if (query.isBlank()) return@onEach
+            search(query.trim())
         }.launchIn(viewModelScope)
     }
 

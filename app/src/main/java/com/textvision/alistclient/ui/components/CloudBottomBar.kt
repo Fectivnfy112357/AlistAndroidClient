@@ -1,7 +1,6 @@
 package com.textvision.alistclient.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +30,7 @@ import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.CloudSurface
 import com.textvision.alistclient.ui.theme.CloudTextPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
+import com.textvision.alistclient.ui.theme.cloudClickable
 
 @Composable
 fun CloudBottomBar(
@@ -81,7 +81,7 @@ private fun CloudBottomBarItem(
     Column(
         modifier = Modifier
             .clip(CloudShapes.Control)
-            .clickable(onClick = onClick)
+            .cloudClickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

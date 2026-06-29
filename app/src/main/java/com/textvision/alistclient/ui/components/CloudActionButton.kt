@@ -1,7 +1,6 @@
 package com.textvision.alistclient.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -23,6 +22,7 @@ import com.textvision.alistclient.ui.theme.CloudOnPrimary
 import com.textvision.alistclient.ui.theme.CloudPrimary
 import com.textvision.alistclient.ui.theme.CloudPrimarySoft
 import com.textvision.alistclient.ui.theme.CloudShapes
+import com.textvision.alistclient.ui.theme.cloudClickable
 
 @Composable
 fun CloudRoundIconButton(
@@ -38,7 +38,7 @@ fun CloudRoundIconButton(
             .size(42.dp)
             .clip(CloudShapes.Control)
             .background(containerColor)
-            .clickable(onClick = onClick),
+            .cloudClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = contentDescription, tint = contentColor)
@@ -61,7 +61,7 @@ fun CloudPillButton(
             .height(48.dp)
             .clip(CloudShapes.Control)
             .background(if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(enabled = enabled && !loading, onClick = onClick)
+            .cloudClickable(enabled = enabled && !loading, onClick = onClick)
             .padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

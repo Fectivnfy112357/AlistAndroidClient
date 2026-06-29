@@ -60,6 +60,15 @@ class LoginViewModelTest {
         assertTrue(vm.uiState.value.showHttpWarning)
     }
 
+    @Test fun debugBuildPrefillsDevelopmentLoginFields() = runTest {
+        val vm = LoginViewModel(FakeAuthRepository(), StandardTestDispatcher(testScheduler))
+
+        assertEquals("http://textvision.top:5244/", vm.uiState.value.serverUrl)
+        assertEquals("fectivnfy", vm.uiState.value.username)
+        assertEquals("Yishengaini12345", vm.uiState.value.password)
+        assertTrue(vm.uiState.value.showHttpWarning)
+    }
+
     @Test fun schemelessServerUrlShowsHttpWarningBecauseItNormalizesToHttp() = runTest {
         val vm = LoginViewModel(FakeAuthRepository(), StandardTestDispatcher(testScheduler))
 

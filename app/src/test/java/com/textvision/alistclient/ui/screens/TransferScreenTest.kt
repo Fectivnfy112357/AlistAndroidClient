@@ -37,4 +37,24 @@ class TransferScreenTest {
         assertTrue(task.showRetry)
         assertEquals("重试", task.retryButtonLabel)
     }
+
+    @Test
+    fun transferProgressTextShowsPercentAndTransferredSize() {
+        val task = TransferEntity(
+            id = "1",
+            fileName = "alist-500mb-test.bin",
+            remotePath = "/alist-500mb-test.bin",
+            localPath = null,
+            sourceUri = null,
+            bytesDone = 2_424_832,
+            totalBytes = 524_288_000,
+            type = TransferType.Upload,
+            status = TransferStatus.Uploading,
+            failureReason = null,
+            createdAtMillis = 1,
+            updatedAtMillis = 2,
+        )
+
+        assertEquals("0.5% · 2.3 MB / 500.0 MB", task.progressText)
+    }
 }

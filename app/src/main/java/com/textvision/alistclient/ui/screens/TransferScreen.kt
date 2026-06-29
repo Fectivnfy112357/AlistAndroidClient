@@ -50,6 +50,21 @@ val TransferEntity.showRetry: Boolean
 val TransferEntity.retryButtonLabel: String
     get() = status.retryLabel ?: "重试"
 
+val TransferEntity.progressText: String
+    get() = if (totalBytes > 0L) {
+        val percent = (bytesDone.toDouble() / totalBytes.toDouble() * 100.0).coerceIn(0.0, 100.0)
+        "${"%.1f".format(percent)}% · ${bytesDone.formatBytes()} / ${totalBytes.formatBytes()}"
+    } else {
+        "${bytesDone.formatBytes()} / 未知大小"
+    }
+
+private fun Long.formatBytes(): String = when {
+    this < 1024L -> "$this B"
+    this < 1024L * 1024L -> "${"%.1f".format(this / 1024.0)} KB"
+    this < 1024L * 1024L * 1024L -> "${"%.1f".format(this / (1024.0 * 1024.0))} MB"
+    else -> "${"%.1f".format(this / (1024.0 * 1024.0 * 1024.0))} GB"
+}
+
 @HiltViewModel
 class TransferViewModel @Inject constructor(
     private val manager: TransferManager,
@@ -103,6 +118,11 @@ private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () 
     )
     Column(Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
         TransferProgress(task.bytesDone, task.totalBytes)
+        Text(
+            text = task.progressText,
+            color = CloudPrimary,
+            modifier = Modifier.padding(top = 4.dp),
+        )
         Spacer(Modifier.height(6.dp))
         Row {
             if (task.status in setOf(TransferStatus.Waiting, TransferStatus.Uploading, TransferStatus.Downloading)) {

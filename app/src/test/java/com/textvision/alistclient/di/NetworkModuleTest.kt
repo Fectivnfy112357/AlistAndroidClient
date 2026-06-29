@@ -3,8 +3,10 @@ package com.textvision.alistclient.di
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.AuthTokenProvider
 import okhttp3.logging.HttpLoggingInterceptor
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class NetworkModuleTest {
     @Test
@@ -13,5 +15,14 @@ class NetworkModuleTest {
         val logging = client.interceptors.filterIsInstance<HttpLoggingInterceptor>().single()
 
         assertNotEquals(HttpLoggingInterceptor.Level.BODY, logging.level)
+    }
+
+    @Test
+    fun okHttpAllowsLongRunningLargeFileTransfers() {
+        val client = NetworkModule.provideOkHttpClient(AuthInterceptor(AuthTokenProvider()))
+
+        assertEquals(TimeUnit.SECONDS.toMillis(15).toInt(), client.connectTimeoutMillis)
+        assertEquals(0, client.writeTimeoutMillis)
+        assertEquals(TimeUnit.MINUTES.toMillis(10).toInt(), client.readTimeoutMillis)
     }
 }

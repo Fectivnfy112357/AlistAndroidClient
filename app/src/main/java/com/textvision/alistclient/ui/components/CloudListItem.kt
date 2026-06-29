@@ -1,6 +1,5 @@
 package com.textvision.alistclient.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
+import com.textvision.alistclient.ui.theme.cloudClickable
 
 @Composable
 fun CloudListItem(
@@ -32,7 +32,7 @@ fun CloudListItem(
         modifier = modifier
             .fillMaxWidth()
             .clip(CloudShapes.Control)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.cloudClickable(onClick = onClick) else Modifier)
             .padding(horizontal = 8.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

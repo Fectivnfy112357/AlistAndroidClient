@@ -3,20 +3,16 @@ package com.textvision.alistclient.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavBackStackEntry
+import com.textvision.alistclient.ui.theme.CloudMotion
 
-internal const val AppNavMotionDurationMillis = 240
+internal const val AppNavMotionDurationMillis = CloudMotion.DurationMediumMillis
 
 private val MainTabRoutes = listOf(
     AppRoute.Files.route,
@@ -24,15 +20,9 @@ private val MainTabRoutes = listOf(
     AppRoute.Settings.route,
 )
 
-private val AppNavTween = tween<Float>(
-    durationMillis = AppNavMotionDurationMillis,
-    easing = FastOutSlowInEasing,
-)
+private val AppNavTween = CloudMotion.FloatTween
 
-private val AppNavOffsetTween = tween<IntOffset>(
-    durationMillis = AppNavMotionDurationMillis,
-    easing = FastOutSlowInEasing,
-)
+private val AppNavOffsetTween = CloudMotion.OffsetTween
 
 internal fun mainTabIndex(route: String?): Int? = MainTabRoutes.indexOf(route).takeIf { it >= 0 }
 
@@ -49,18 +39,16 @@ internal fun appRouteDepth(route: String?): Int = when (route) {
 internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTransition(): EnterTransition {
     val from = initialState.destination.route
     val to = targetState.destination.route
-    val tabDirection = tabDirection(from, to)
     return when {
         from == AppRoute.Login.route && appRouteDepth(to) == 1 ->
             fadeIn(AppNavTween, initialAlpha = 0.92f) +
-                scaleIn(AppNavTween, initialScale = 0.985f) +
-                slideInVertically(AppNavOffsetTween) { it / 24 }
-        tabDirection != 0 ->
-            fadeIn(AppNavTween, initialAlpha = 0.92f) +
-                slideInHorizontally(AppNavOffsetTween) { width -> width / 14 * tabDirection }
+                slideInVertically(AppNavOffsetTween) { it / 28 }
+        mainTabIndex(from) != null && mainTabIndex(to) != null ->
+            fadeIn(AppNavTween, initialAlpha = 0.82f) +
+                slideInHorizontally(AppNavOffsetTween) { width -> width / 8 }
         appRouteDepth(to) > appRouteDepth(from) ->
-            fadeIn(AppNavTween, initialAlpha = 0.92f) +
-                slideInHorizontally(AppNavOffsetTween) { width -> width / 10 }
+            fadeIn(AppNavTween, initialAlpha = 0.86f) +
+                slideInHorizontally(AppNavOffsetTween) { width -> width / 8 }
         else ->
             fadeIn(AppNavTween, initialAlpha = 0.94f)
     }
@@ -69,14 +57,12 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTrans
 internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsExitTransition(): ExitTransition {
     val from = initialState.destination.route
     val to = targetState.destination.route
-    val tabDirection = tabDirection(from, to)
     return when {
-        tabDirection != 0 ->
-            fadeOut(AppNavTween, targetAlpha = 0.88f) +
-                slideOutHorizontally(AppNavOffsetTween) { width -> -width / 18 * tabDirection }
+        mainTabIndex(from) != null && mainTabIndex(to) != null ->
+            fadeOut(AppNavTween, targetAlpha = 0.82f) +
+                slideOutHorizontally(AppNavOffsetTween) { width -> -width / 10 }
         appRouteDepth(to) > appRouteDepth(from) ->
-            fadeOut(AppNavTween, targetAlpha = 0.9f) +
-                scaleOut(AppNavTween, targetScale = 0.99f)
+            fadeOut(AppNavTween, targetAlpha = 0.9f)
         to == AppRoute.Login.route ->
             fadeOut(AppNavTween, targetAlpha = 0.9f) +
                 slideOutVertically(AppNavOffsetTween) { it / 28 }
@@ -90,8 +76,7 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopEnterTr
     val to = targetState.destination.route
     return when {
         appRouteDepth(to) < appRouteDepth(from) ->
-            fadeIn(AppNavTween, initialAlpha = 0.94f) +
-                scaleIn(AppNavTween, initialScale = 0.99f)
+            fadeIn(AppNavTween, initialAlpha = 0.94f)
         else -> hyperOsEnterTransition()
     }
 }
@@ -102,17 +87,7 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopExitTra
     return when {
         appRouteDepth(to) < appRouteDepth(from) ->
             fadeOut(AppNavTween, targetAlpha = 0.88f) +
-                slideOutHorizontally(AppNavOffsetTween) { width -> width / 10 }
+                slideOutHorizontally(AppNavOffsetTween) { width -> width / 8 }
         else -> hyperOsExitTransition()
-    }
-}
-
-private fun tabDirection(from: String?, to: String?): Int {
-    val fromIndex = mainTabIndex(from) ?: return 0
-    val toIndex = mainTabIndex(to) ?: return 0
-    return when {
-        toIndex > fromIndex -> 1
-        toIndex < fromIndex -> -1
-        else -> 0
     }
 }

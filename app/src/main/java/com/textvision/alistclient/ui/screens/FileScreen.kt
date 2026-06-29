@@ -59,7 +59,7 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) { viewModel.loadIfNeeded("/") }
 
     val uploadLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
+        contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) viewModel.enqueueUpload(uri)
     }
@@ -78,7 +78,7 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
                 CloudRoundIconButton(
                     icon = Icons.Default.UploadFile,
                     contentDescription = "上传",
-                    onClick = { uploadLauncher.launch("*/*") },
+                    onClick = { uploadLauncher.launch(arrayOf("*/*")) },
                     modifier = Modifier.testTag("upload_button"),
                 )
             },

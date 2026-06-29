@@ -2,6 +2,7 @@ package com.textvision.alistclient.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.textvision.alistclient.BuildConfig
 import com.textvision.alistclient.auth.model.SavedSession
 import com.textvision.alistclient.common.error.ErrorMapper
 import com.textvision.alistclient.common.error.ErrorMessageMapper
@@ -23,10 +24,10 @@ interface AuthRepositoryContract {
 }
 
 data class LoginUiState(
-    val serverUrl: String = "",
-    val username: String = "",
-    val password: String = "",
-    val showHttpWarning: Boolean = false,
+    val serverUrl: String = if (BuildConfig.DEBUG) "http://textvision.top:5244/" else "",
+    val username: String = if (BuildConfig.DEBUG) "fectivnfy" else "",
+    val password: String = if (BuildConfig.DEBUG) "Yishengaini12345" else "",
+    val showHttpWarning: Boolean = if (BuildConfig.DEBUG) ServerUrlNormalizer.willUseHttp("http://textvision.top:5244/") else false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
 )

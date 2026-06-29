@@ -9,6 +9,7 @@ import com.textvision.alistclient.transfer.TransferManager
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -37,6 +38,18 @@ class FileViewModelTest {
         override suspend fun search(path: String, keyword: String) = ApiResult.Success(listOf(item("match.txt")))
     }
 
+    private inner class PausedRepo : FileRepositoryContract {
+        var listCalls = 0
+        private val releaseSecondLoad = CompletableDeferred<Unit>()
+        override suspend fun list(path: String): ApiResult<List<FileItem>> {
+            listCalls++
+            if (listCalls > 1) releaseSecondLoad.await()
+            return ApiResult.Success(listOf(item("loaded-${path.trim('/')}.txt")))
+        }
+        override suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>> = ApiResult.Success(emptyList())
+        fun release() { releaseSecondLoad.complete(Unit) }
+    }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
@@ -61,13 +74,33 @@ class FileViewModelTest {
         val repo = FakeRepo()
         val vm = FileViewModel(repo, newManager(), StandardTestDispatcher(testScheduler))
         vm.load("/")
-        testScheduler.advanceUntilIdle()
+        testScheduler.runCurrent()
 
         vm.loadIfNeeded("/")
         testScheduler.advanceUntilIdle()
 
         assertEquals(1, repo.listCalls)
         assertEquals(listOf("docs", "a.txt", "b.txt"), (vm.uiState.value as FileUiState.Success).items.map { it.name })
+    }
+
+    @Test fun loadKeepsExistingContentVisibleWhileLoadingAnotherPath() = runTest {
+        val repo = PausedRepo()
+        val vm = FileViewModel(repo, newManager(), StandardTestDispatcher(testScheduler))
+        vm.load("/")
+        testScheduler.runCurrent()
+
+        vm.load("/docs")
+        testScheduler.runCurrent()
+
+        val state = vm.uiState.value as FileUiState.Success
+        assertEquals("/", state.path)
+        assertEquals(listOf("loaded-.txt"), state.items.map { it.name })
+
+        repo.release()
+        testScheduler.advanceUntilIdle()
+        val loadedState = vm.uiState.value as FileUiState.Success
+        assertEquals("/docs", loadedState.path)
+        assertEquals(listOf("loaded-docs.txt"), loadedState.items.map { it.name })
     }
 
     @Test fun searchDebouncesAndShowsResult() = runTest {
