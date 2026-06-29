@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.textvision.alistclient.auth.AuthRepository
 import com.textvision.alistclient.navigation.AppNavHost
 import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.transfer.TransferNotificationController
@@ -15,6 +16,7 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject lateinit var transferManager: TransferManager
     @Inject lateinit var notificationController: TransferNotificationController
+    @Inject lateinit var authRepository: AuthRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -23,7 +25,7 @@ class MainActivity : ComponentActivity() {
         transferManager.initialize()
         setContent {
             AlistClientTheme {
-                AppNavHost(startAuthenticated = false)
+                AppNavHost(startAuthenticated = authRepository.loadSavedSession() != null)
             }
         }
     }
