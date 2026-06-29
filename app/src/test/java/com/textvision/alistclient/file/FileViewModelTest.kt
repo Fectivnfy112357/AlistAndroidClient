@@ -26,10 +26,14 @@ class FileViewModelTest {
         FileItem(name, "/$name", dir, size, null, null, if (dir) FileType.Folder else FileType.Other, null, null)
 
     private inner class FakeRepo : FileRepositoryContract {
+        var listCalls = 0
         var listResult: ApiResult<List<FileItem>> = ApiResult.Success(
             listOf(item("b.txt"), item("docs", true), item("a.txt"))
         )
-        override suspend fun list(path: String) = listResult
+        override suspend fun list(path: String): ApiResult<List<FileItem>> {
+            listCalls++
+            return listResult
+        }
         override suspend fun search(path: String, keyword: String) = ApiResult.Success(listOf(item("match.txt")))
     }
 
@@ -51,6 +55,19 @@ class FileViewModelTest {
         testScheduler.advanceUntilIdle()
         val state = vm.uiState.value as FileUiState.Success
         assertEquals(listOf("docs", "a.txt", "b.txt"), state.items.map { it.name })
+    }
+
+    @Test fun loadIfNeededDoesNotReloadWhenContentAlreadyExistsForPath() = runTest {
+        val repo = FakeRepo()
+        val vm = FileViewModel(repo, newManager(), StandardTestDispatcher(testScheduler))
+        vm.load("/")
+        testScheduler.advanceUntilIdle()
+
+        vm.loadIfNeeded("/")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, repo.listCalls)
+        assertEquals(listOf("docs", "a.txt", "b.txt"), (vm.uiState.value as FileUiState.Success).items.map { it.name })
     }
 
     @Test fun searchDebouncesAndShowsResult() = runTest {

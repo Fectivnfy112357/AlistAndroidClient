@@ -44,43 +44,50 @@ class AppLaunchTest {
 
     @Test
     fun authenticatedShellShowsBottomNavigation() {
-        composeRule.setContent {
-            AlistClientTheme {
-                AppNavHost(startAuthenticated = true)
-            }
-        }
+        saveSessionForLaunch()
 
-        composeRule.onNodeWithText("文件").assertIsDisplayed()
-        composeRule.onNodeWithText("传输").assertIsDisplayed()
-        composeRule.onNodeWithText("设置").assertIsDisplayed()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            composeRule.onNodeWithText("文件").assertIsDisplayed()
+            composeRule.onNodeWithText("传输").assertIsDisplayed()
+            composeRule.onNodeWithText("设置").assertIsDisplayed()
+        }
     }
 
     @Test
     fun authenticatedShellShowsFileUploadEntry() {
-        composeRule.setContent {
-            AlistClientTheme {
-                AppNavHost(startAuthenticated = true)
-            }
-        }
+        saveSessionForLaunch()
 
-        composeRule.onNodeWithText("我的文件").assertIsDisplayed()
-        composeRule.onNodeWithText("搜索").assertIsDisplayed()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            composeRule.onNodeWithText("我的文件").assertIsDisplayed()
+            composeRule.onNodeWithText("搜索").assertIsDisplayed()
+        }
     }
 
     @Test
     fun authenticatedShellNavigatesToTransfersAndSettings() {
-        composeRule.setContent {
-            AlistClientTheme {
-                AppNavHost(startAuthenticated = true)
-            }
+        saveSessionForLaunch()
+
+        ActivityScenario.launch(MainActivity::class.java).use {
+            composeRule.onNodeWithText("传输").performClick()
+            composeRule.onNodeWithText("暂无传输任务").assertIsDisplayed()
+
+            composeRule.onNodeWithText("设置").performClick()
+            composeRule.onNodeWithText("清理临时预览文件").assertIsDisplayed()
+            composeRule.onNodeWithText("退出登录").assertIsDisplayed()
         }
+    }
 
-        composeRule.onNodeWithText("传输").performClick()
-        composeRule.onNodeWithText("暂无传输任务").assertIsDisplayed()
+    @Test
+    fun animatedShellCanNavigateBackToFilesFromSettings() {
+        saveSessionForLaunch()
 
-        composeRule.onNodeWithText("设置").performClick()
-        composeRule.onNodeWithText("清理临时预览文件").assertIsDisplayed()
-        composeRule.onNodeWithText("退出登录").assertIsDisplayed()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            composeRule.onNodeWithText("设置").performClick()
+            composeRule.onNodeWithText("退出登录").assertIsDisplayed()
+
+            composeRule.onNodeWithText("文件").performClick()
+            composeRule.onNodeWithText("我的文件").assertIsDisplayed()
+        }
     }
 
     @Test

@@ -56,7 +56,7 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    LaunchedEffect(Unit) { viewModel.load("/") }
+    LaunchedEffect(Unit) { viewModel.loadIfNeeded("/") }
 
     val uploadLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),

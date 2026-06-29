@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,6 +37,10 @@ fun AppNavHost(startAuthenticated: Boolean) {
                 navController = navController,
                 startDestination = startDestination,
                 modifier = Modifier.fillMaxSize(),
+                enterTransition = { hyperOsEnterTransition() },
+                exitTransition = { hyperOsExitTransition() },
+                popEnterTransition = { hyperOsPopEnterTransition() },
+                popExitTransition = { hyperOsPopExitTransition() },
             ) {
                 composable(AppRoute.Login.route) {
                     LoginScreen(onLoginSuccess = {
@@ -75,7 +80,11 @@ fun AppNavHost(startAuthenticated: Boolean) {
                 CloudBottomBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
-                        navController.navigate(route) { launchSingleTop = true }
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )

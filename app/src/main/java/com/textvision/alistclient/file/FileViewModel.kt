@@ -49,6 +49,8 @@ class FileViewModel @Inject constructor(
     private var dispatcher: CoroutineDispatcher = Dispatchers.IO
     private var loadJob: Job? = null
     private var currentPath: String = "/"
+    private var hasLoadedInitialContent = false
+    private var isObservingSearch = false
     private var sort: FileSort = FileSort.NameAsc
     private val _uiState = MutableStateFlow<FileUiState>(FileUiState.Loading("/"))
     val uiState: StateFlow<FileUiState> = _uiState.asStateFlow()
@@ -57,19 +59,34 @@ class FileViewModel @Inject constructor(
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
 
-    init { observeSearch() }
-
     fun load(path: String) {
         currentPath = path
         loadJob?.cancel()
         loadJob = viewModelScope.launch(dispatcher) {
             _uiState.value = FileUiState.Loading(path)
+            if (!isObservingSearch) {
+                isObservingSearch = true
+                observeSearch()
+            }
             when (val result = repository.list(path)) {
-                is ApiResult.Success -> _uiState.value = FileUiState.Success(path, applySort(result.data))
+                is ApiResult.Success -> {
+                    hasLoadedInitialContent = true
+                    _uiState.value = FileUiState.Success(path, applySort(result.data))
+                }
                 is ApiResult.Failure -> _uiState.value = FileUiState.Error(path, ErrorMapper.mapAlistFailure(result.code, result.message))
                 is ApiResult.NetworkError -> _uiState.value = FileUiState.Error(path, ErrorMapper.mapThrowable(result.cause))
             }
         }
+    }
+
+    fun loadIfNeeded(path: String) {
+        if (hasLoadedInitialContent && currentPath == path) return
+        val current = _uiState.value
+        if (current is FileUiState.Success && current.path == path) {
+            hasLoadedInitialContent = true
+            return
+        }
+        load(path)
     }
 
     fun refresh() = load(currentPath)
@@ -102,6 +119,7 @@ class FileViewModel @Inject constructor(
 
     private fun observeSearch() {
         _searchQuery.debounce(300).distinctUntilChanged().onEach { query ->
+            if (!hasLoadedInitialContent) return@onEach
             if (query.isBlank()) load(currentPath) else search(query.trim())
         }.launchIn(viewModelScope)
     }
