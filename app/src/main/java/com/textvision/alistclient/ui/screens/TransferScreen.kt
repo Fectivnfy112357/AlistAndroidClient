@@ -13,10 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +36,7 @@ import androidx.lifecycle.viewModelScope
 import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
+import com.textvision.alistclient.transfer.model.TransferType
 import com.textvision.alistclient.ui.components.CloudCard
 import com.textvision.alistclient.ui.components.CloudEmptyState
 import com.textvision.alistclient.ui.components.CloudScaffold
@@ -47,11 +54,22 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-private const val EmptyTransferMessage = "暂无传输任务"
+enum class TransferTab(
+    val type: TransferType,
+    val title: String,
+    val emptyMessage: String,
+) {
+    Upload(TransferType.Upload, "上传", "暂无上传任务"),
+    Download(TransferType.Download, "下载", "暂无下载任务"),
+}
 
-data class TransferListUiState(val transfers: List<TransferEntity>) {
-    val emptyMessage: String = EmptyTransferMessage
-    val shouldShowEmptyState: Boolean = transfers.isEmpty()
+data class TransferListUiState(
+    val transfers: List<TransferEntity>,
+    val selectedTab: TransferTab = TransferTab.Upload,
+) {
+    val visibleTransfers: List<TransferEntity> = transfers.filter { it.type == selectedTab.type }
+    val emptyMessage: String = selectedTab.emptyMessage
+    val shouldShowEmptyState: Boolean = visibleTransfers.isEmpty()
     val summaryText: String
         get() {
             if (transfers.isEmpty()) return "上传和下载任务"
@@ -113,6 +131,7 @@ class TransferViewModel @Inject constructor(
     val transfers = manager.observeTransfers().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     fun cancel(id: String) = manager.cancel(id)
     fun retry(id: String) = manager.retry(id)
+    fun delete(id: String) = manager.delete(id)
 }
 
 @Composable
@@ -122,6 +141,7 @@ fun TransferScreen(viewModel: TransferViewModel = hiltViewModel()) {
         transfers = transfers,
         onCancel = viewModel::cancel,
         onRetry = viewModel::retry,
+        onDelete = viewModel::delete,
     )
 }
 
@@ -130,18 +150,35 @@ fun TransferScreenContent(
     transfers: List<TransferEntity>,
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
+    onDelete: (String) -> Unit = {},
 ) {
-    val state = TransferListUiState(transfers)
+    var selectedTab by remember { mutableStateOf(TransferTab.Upload) }
+    val state = TransferListUiState(transfers, selectedTab)
     CloudScaffold(showBottomPadding = true) {
         CloudTopBar(title = "传输", subtitle = state.summaryText)
+        TabRow(selectedTabIndex = TransferTab.entries.indexOf(selectedTab)) {
+            TransferTab.entries.forEach { tab ->
+                Tab(
+                    selected = selectedTab == tab,
+                    onClick = { selectedTab = tab },
+                    text = { Text(tab.title) },
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
         if (state.shouldShowEmptyState) {
             CloudCard {
-                CloudEmptyState(title = state.emptyMessage, message = "上传和下载任务会显示在这里")
+                CloudEmptyState(title = state.emptyMessage, message = "对应类型的传输任务会显示在这里")
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(transfers, key = { it.id }) { task ->
-                    TransferRow(task, onCancel = { onCancel(task.id) }, onRetry = { onRetry(task.id) })
+                items(state.visibleTransfers, key = { it.id }) { task ->
+                    TransferRow(
+                        task,
+                        onCancel = { onCancel(task.id) },
+                        onRetry = { onRetry(task.id) },
+                        onDelete = { onDelete(task.id) },
+                    )
                 }
             }
         }
@@ -149,7 +186,19 @@ fun TransferScreenContent(
 }
 
 @Composable
-private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () -> Unit) {
+private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () -> Unit, onDelete: () -> Unit = {}) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    if (showDeleteDialog) {
+        DeleteTransferDialog(
+            task = task,
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete()
+            },
+            onDismiss = { showDeleteDialog = false },
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -179,7 +228,12 @@ private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () 
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            TransferAction(task, onCancel, onRetry)
+            Column(horizontalAlignment = Alignment.End) {
+                TransferAction(task, onCancel, onRetry)
+                TextButton(onClick = { showDeleteDialog = true }) {
+                    Text("删除", color = CloudErrorText)
+                }
+            }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -190,6 +244,34 @@ private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () 
             modifier = Modifier.padding(top = 5.dp),
         )
     }
+}
+
+@Composable
+private fun DeleteTransferDialog(task: TransferEntity, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val isActive = task.status in ActiveTransferStatuses
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("删除传输记录") },
+        text = {
+            Text(
+                if (isActive) {
+                    "删除后会取消当前传输，并永久删除这条记录。"
+                } else {
+                    "将永久删除这条传输记录。"
+                },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("删除", color = CloudErrorText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
 }
 
 @Composable

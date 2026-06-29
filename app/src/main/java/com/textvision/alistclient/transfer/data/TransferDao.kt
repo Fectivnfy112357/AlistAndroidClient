@@ -30,6 +30,9 @@ interface TransferDao {
     @Query("UPDATE transfer_tasks SET status = 'Interrupted', failureReason = '传输中断', updatedAtMillis = :updatedAtMillis WHERE status IN ('Waiting', 'Uploading', 'Downloading')")
     suspend fun markActiveTasksInterrupted(updatedAtMillis: Long)
 
+    @Query("DELETE FROM transfer_tasks WHERE id = :id")
+    suspend fun deleteById(id: String)
+
     @Query("DELETE FROM transfer_tasks")
     suspend fun deleteAll()
 }

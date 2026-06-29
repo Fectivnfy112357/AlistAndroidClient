@@ -10,10 +10,36 @@ import org.junit.Test
 class TransferScreenTest {
     @Test
     fun emptyTransferListShowsEmptyState() {
-        val state = TransferListUiState(transfers = emptyList())
+        val state = TransferListUiState(transfers = emptyList(), selectedTab = TransferTab.Upload)
 
-        assertEquals("暂无传输任务", state.emptyMessage)
+        assertEquals("暂无上传任务", state.emptyMessage)
         assertTrue(state.shouldShowEmptyState)
+    }
+
+    @Test
+    fun transferListStateFiltersRecordsBySelectedTab() {
+        val now = 1L
+        val transfers = listOf(
+            TransferEntity("upload", "upload.bin", "/upload.bin", null, null, 0, 100, TransferType.Upload, TransferStatus.Uploading, null, now, now),
+            TransferEntity("download", "download.zip", "/download.zip", null, null, 0, 100, TransferType.Download, TransferStatus.Downloading, null, now, now),
+        )
+
+        val uploadState = TransferListUiState(transfers, selectedTab = TransferTab.Upload)
+        val downloadState = TransferListUiState(transfers, selectedTab = TransferTab.Download)
+
+        assertEquals(listOf("upload"), uploadState.visibleTransfers.map { it.id })
+        assertEquals(listOf("download"), downloadState.visibleTransfers.map { it.id })
+    }
+
+    @Test
+    fun transferListEmptyMessageMatchesSelectedTab() {
+        val uploadState = TransferListUiState(emptyList(), selectedTab = TransferTab.Upload)
+        val downloadState = TransferListUiState(emptyList(), selectedTab = TransferTab.Download)
+
+        assertEquals("暂无上传任务", uploadState.emptyMessage)
+        assertEquals("暂无下载任务", downloadState.emptyMessage)
+        assertTrue(uploadState.shouldShowEmptyState)
+        assertTrue(downloadState.shouldShowEmptyState)
     }
 
     @Test
@@ -68,7 +94,7 @@ class TransferScreenTest {
             TransferEntity("4", "done.jpg", "/done.jpg", null, null, 100, 100, TransferType.Download, TransferStatus.Success, null, now, now),
         )
 
-        val state = TransferListUiState(transfers)
+        val state = TransferListUiState(transfers, selectedTab = TransferTab.Upload)
 
         assertEquals("2 个进行中 · 1 个失败 · 1 个完成", state.summaryText)
     }

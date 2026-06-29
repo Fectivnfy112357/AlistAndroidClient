@@ -173,6 +173,16 @@ class TransferManager @Inject constructor(
         }
     }
 
+    fun delete(id: String) {
+        cancelNotified[id] = true
+        activeCalls.remove(id)?.cancel()
+        activeJobs.remove(id)?.cancel()
+        scope.launch {
+            dao.deleteById(id)
+            cancelNotified.remove(id)
+        }
+    }
+
     fun retry(id: String) {
         val generation = clearGeneration.get()
         val job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {

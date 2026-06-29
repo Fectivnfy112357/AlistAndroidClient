@@ -22,6 +22,8 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
 class TransferManagerTest {
@@ -85,6 +87,35 @@ class TransferManagerTest {
 
         assertEquals(TransferStatus.Interrupted, dao.find("waiting")!!.status)
         assertEquals(TransferStatus.Failed, dao.find("failed")!!.status)
+    }
+
+    @Test
+    fun deleteRemovesCompletedTransferRecord() = runBlocking {
+        val dao = MemoryTransferDao()
+        val now = System.currentTimeMillis()
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), dao, CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
+        dao.upsert(TransferEntity("done", "done.jpg", "/done.jpg", null, null, 100, 100, TransferType.Download, TransferStatus.Success, null, now, now))
+
+        manager.delete("done")
+        dao.awaitMissing("done")
+
+        assertEquals(null, dao.find("done"))
+    }
+
+    @Test
+    fun deleteCancelsActiveTransferAndRemovesRecord() = runBlocking {
+        val dao = MemoryTransferDao()
+        val client = BlockingOkHttpClient()
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), dao, client, savedSessionManager("http://example.com/"))
+
+        val id = manager.enqueueDownload("/folder/file.txt", "file.txt")
+        client.awaitRequest()
+
+        manager.delete(id)
+        dao.awaitMissing(id)
+
+        assertEquals(true, client.cancelled.get())
+        assertEquals(null, dao.find(id))
     }
 
     @Test
@@ -162,6 +193,16 @@ class TransferManagerTest {
                 }
             }
         }
+        override suspend fun deleteById(id: String) { entities.remove(id) }
+
+        fun awaitMissing(id: String) {
+            repeat(100) {
+                if (!entities.containsKey(id)) return
+                Thread.sleep(10)
+            }
+            throw AssertionError("Expected transfer $id to be deleted")
+        }
+
         override suspend fun deleteAll() { entities.clear() }
     }
 
@@ -191,6 +232,38 @@ class TransferManagerTest {
                 override fun cancel() = Unit
                 override fun isExecuted(): Boolean = false
                 override fun isCanceled(): Boolean = false
+                override fun timeout(): okio.Timeout = okio.Timeout.NONE
+                override fun clone(): Call = this
+            }
+        }
+    }
+
+    private class BlockingOkHttpClient : OkHttpClient() {
+        @Volatile private var requestSeen = false
+        val cancelled = AtomicBoolean(false)
+
+        fun awaitRequest() {
+            repeat(100) {
+                if (requestSeen) return
+                Thread.sleep(10)
+            }
+            throw AssertionError("Expected request")
+        }
+
+        override fun newCall(request: Request): Call {
+            requestSeen = true
+            return object : Call {
+                override fun request(): Request = request
+                override fun execute(): Response {
+                    while (!cancelled.get()) {
+                        Thread.sleep(10)
+                    }
+                    throw IOException("Canceled")
+                }
+                override fun enqueue(responseCallback: okhttp3.Callback) = throw UnsupportedOperationException()
+                override fun cancel() { cancelled.set(true) }
+                override fun isExecuted(): Boolean = false
+                override fun isCanceled(): Boolean = cancelled.get()
                 override fun timeout(): okio.Timeout = okio.Timeout.NONE
                 override fun clone(): Call = this
             }
