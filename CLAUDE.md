@@ -5,7 +5,7 @@ Android SDK 目录 :D:\programming\devtools\android\sdk
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **alist** (1652 symbols, 3775 relationships, 126 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **alist** (1767 symbols, 4006 relationships, 134 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

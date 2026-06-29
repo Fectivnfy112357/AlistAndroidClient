@@ -103,6 +103,30 @@ class FileViewModelTest {
         assertEquals(listOf("loaded-docs.txt"), loadedState.items.map { it.name })
     }
 
+    @Test fun navigateBackFromNestedDirectoryLoadsParentInsteadOfExiting() = runTest {
+        val repo = FakeRepo()
+        val vm = FileViewModel(repo, newManager(), StandardTestDispatcher(testScheduler))
+        vm.load("/")
+        testScheduler.advanceUntilIdle()
+        vm.load("/docs/sub")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(true, vm.canNavigateUp)
+        assertEquals(true, vm.navigateUp())
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("/docs", (vm.uiState.value as FileUiState.Success).path)
+    }
+
+    @Test fun navigateBackAtRootIsNotHandledByFileViewModel() = runTest {
+        val vm = FileViewModel(FakeRepo(), newManager(), StandardTestDispatcher(testScheduler))
+        vm.load("/")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(false, vm.canNavigateUp)
+        assertEquals(false, vm.navigateUp())
+    }
+
     @Test fun searchDebouncesAndShowsResult() = runTest {
         val vm = FileViewModel(FakeRepo(), newManager(), StandardTestDispatcher(testScheduler))
         vm.load("/")

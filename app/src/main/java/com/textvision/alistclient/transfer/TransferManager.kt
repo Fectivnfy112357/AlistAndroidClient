@@ -1,8 +1,10 @@
 package com.textvision.alistclient.transfer
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.MediaStore
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.file.FileNameValidator
 import com.textvision.alistclient.network.SkipAuthRetry
@@ -27,7 +29,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okio.BufferedSink
-import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -132,12 +133,13 @@ class TransferManager @Inject constructor(
     fun enqueueDownload(remotePath: String, fileName: String): String {
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
-        val local = File(File(context.filesDir, "downloads"), LocalDownloadNamer.fileNameFor(remotePath))
+        val displayName = remotePath.substringAfterLast('/').takeIf { it.isNotBlank() } ?: fileName
+        val local = "${LocalDownloadNamer.publicDownloadsRelativePath}/$displayName"
         val generation = clearGeneration.get()
         val job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
             if (generation != clearGeneration.get()) return@launch
-            dao.upsert(TransferEntity(id, fileName, remotePath, local.absolutePath, null, 0, 0, TransferType.Download, TransferStatus.Waiting, null, now, now))
-            runDownload(id, remotePath, local, generation)
+            dao.upsert(TransferEntity(id, fileName, remotePath, local, null, 0, 0, TransferType.Download, TransferStatus.Waiting, null, now, now))
+            runDownload(id, remotePath, displayName, generation)
         }
         activeJobs[id] = job
         job.invokeOnCompletion { activeJobs.remove(id, job) }
@@ -179,7 +181,7 @@ class TransferManager @Inject constructor(
             if (generation != clearGeneration.get() || !task.status.canRetry) return@launch
             updateStatusUnlessCancelled(id, TransferStatus.Waiting, null, generation)
             when (task.type) {
-                TransferType.Download -> runDownload(id, task.remotePath, File(requireNotNull(task.localPath)), generation)
+                TransferType.Download -> runDownload(id, task.remotePath, task.fileName, generation)
                 TransferType.Upload -> runUpload(id, Uri.parse(requireNotNull(task.sourceUri)), task.remotePath, task.fileName, generation)
             }
         }
@@ -203,13 +205,13 @@ class TransferManager @Inject constructor(
         scope.launch { dao.deleteAll() }
     }
 
-    private suspend fun runDownload(id: String, remotePath: String, localFile: File, generation: Long) {
+    private suspend fun runDownload(id: String, remotePath: String, displayName: String, generation: Long) {
         downloadSemaphore.withPermit {
             var call: Call? = null
+            var uri: Uri? = null
             try {
                 if (!isActive(generation, id)) return
                 updateStatusUnlessCancelled(id, TransferStatus.Downloading, null, generation)
-                localFile.parentFile?.mkdirs()
                 val progress = ProgressCollector(id, generation)
                 val request = Request.Builder().url(transferUrl("d", remotePath)).get().build()
                 call = okHttpClient.newCall(request)
@@ -220,15 +222,19 @@ class TransferManager @Inject constructor(
                         updateStatusUnlessCancelled(id, TransferStatus.Failed, "下载失败：HTTP ${response.code}", generation)
                         return
                     }
+                    uri = createDownloadUri(displayName)
+                    val output = requireNotNull(context.contentResolver.openOutputStream(uri)) { "无法创建下载文件" }
                     val body = response.body ?: error("响应体为空")
                     val progressBody = TransferProgressResponseBody(body) { done, total ->
                         progress.tryUpdate(done, total)
                     }
-                    localFile.outputStream().use { output -> progressBody.byteStream().use { input -> input.copyTo(output) } }
+                    output.use { target -> progressBody.byteStream().use { input -> input.copyTo(target) } }
                     progress.flush()
+                    publishDownloadUri(uri)
                     updateStatusUnlessCancelled(id, TransferStatus.Success, null, generation)
                 }
             } catch (t: Throwable) {
+                uri?.let { discardDownloadUri(it) }
                 if (!isCancellation(t)) {
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "下载失败", generation)
                 }
@@ -307,6 +313,26 @@ class TransferManager @Inject constructor(
     }
 
     private fun transferUrl(path: String): String = transferUrl(path, null)
+
+    private fun createDownloadUri(displayName: String): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, LocalDownloadNamer.publicDownloadsRelativePath)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        return requireNotNull(context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)) {
+            "无法创建下载文件"
+        }
+    }
+
+    private fun publishDownloadUri(uri: Uri) {
+        val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+        context.contentResolver.update(uri, values, null, null)
+    }
+
+    private fun discardDownloadUri(uri: Uri) {
+        context.contentResolver.delete(uri, null, null)
+    }
 
     private fun persistUploadUriPermission(uri: Uri) {
         if (uri.scheme != "content") return

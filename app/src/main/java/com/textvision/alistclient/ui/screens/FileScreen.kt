@@ -1,6 +1,7 @@
 package com.textvision.alistclient.ui.screens
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +58,9 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(Unit) { viewModel.loadIfNeeded("/") }
+    BackHandler(enabled = viewModel.canNavigateUp) {
+        viewModel.navigateUp()
+    }
 
     val uploadLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),

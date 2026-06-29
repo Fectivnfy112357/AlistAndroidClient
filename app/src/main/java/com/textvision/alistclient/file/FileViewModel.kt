@@ -58,6 +58,9 @@ class FileViewModel @Inject constructor(
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
 
+    val canNavigateUp: Boolean
+        get() = currentPath.trim('/').isNotBlank()
+
     init { observeSearch() }
 
     fun load(path: String) {
@@ -86,6 +89,12 @@ class FileViewModel @Inject constructor(
             return
         }
         load(path)
+    }
+
+    fun navigateUp(): Boolean {
+        val parent = parentPath(currentPath) ?: return false
+        load(parent)
+        return true
     }
 
     fun refresh() = load(currentPath)
@@ -147,6 +156,12 @@ class FileViewModel @Inject constructor(
         FileSort.NameAsc -> items.sortedWith(compareByDescending<FileItem> { it.isDir }.thenBy { it.name.lowercase() })
         FileSort.SizeDesc -> items.sortedWith(compareByDescending<FileItem> { it.isDir }.thenByDescending { it.size })
         FileSort.ModifiedDesc -> items.sortedWith(compareByDescending<FileItem> { it.isDir }.thenByDescending { it.modifiedAt })
+    }
+
+    private fun parentPath(path: String): String? {
+        val parts = path.trim('/').split('/').filter { it.isNotBlank() }
+        if (parts.isEmpty()) return null
+        return parts.dropLast(1).joinToString(separator = "/", prefix = "/").ifBlank { "/" }
     }
 }
 
