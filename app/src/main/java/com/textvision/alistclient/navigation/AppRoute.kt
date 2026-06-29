@@ -1,12 +1,47 @@
 package com.textvision.alistclient.navigation
 
+import com.textvision.alistclient.file.model.FileType
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
+data class PreviewArgs(
+    val name: String,
+    val type: FileType,
+    val downloadUrl: String?,
+    val size: Long,
+)
+
 sealed class AppRoute(val route: String) {
     data object Login : AppRoute("login")
     data object Files : AppRoute("files")
     data object Transfers : AppRoute("transfers")
     data object Settings : AppRoute("settings")
     data object MoveCopyPicker : AppRoute("copy_move_picker")
-    data object Preview : AppRoute("preview/{filePath}") {
-        fun create(filePath: String): String = "preview/${android.net.Uri.encode(filePath)}"
+    data object Preview : AppRoute("preview/{payload}") {
+        fun create(name: String, type: FileType, downloadUrl: String?, size: Long): String {
+            val raw = listOf(
+                encode(name),
+                type.name,
+                encode(downloadUrl.orEmpty()),
+                size.toString(),
+            ).joinToString("|")
+            return "preview/${encode(raw)}"
+        }
+
+        fun decode(payload: String): PreviewArgs {
+            val raw = decodeValue(payload)
+            val parts = raw.split("|", limit = 4)
+            return PreviewArgs(
+                name = decodeValue(parts.getOrElse(0) { "" }),
+                type = runCatching { FileType.valueOf(parts.getOrElse(1) { FileType.Other.name }) }.getOrDefault(FileType.Other),
+                downloadUrl = decodeValue(parts.getOrElse(2) { "" }).takeIf { it.isNotBlank() },
+                size = parts.getOrElse(3) { "0" }.toLongOrNull() ?: 0L,
+            )
+        }
+
+        private fun encode(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+
+        private fun decodeValue(value: String): String = URLDecoder.decode(value, StandardCharsets.UTF_8.name())
     }
 }

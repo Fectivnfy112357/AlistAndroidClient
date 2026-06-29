@@ -7,6 +7,15 @@ import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileType
 import java.io.File
 
+sealed interface PreviewMode {
+    data class Image(val url: String) : PreviewMode
+    data class Text(val url: String, val size: Long) : PreviewMode
+    data class TextTooLarge(val size: Long) : PreviewMode
+    data class Audio(val url: String) : PreviewMode
+    data class External(val url: String) : PreviewMode
+    data object Unavailable : PreviewMode
+}
+
 sealed interface PreviewAction {
     data class InAppText(val file: File) : PreviewAction
     data class InAppImage(val uriString: String) : PreviewAction
@@ -16,6 +25,20 @@ sealed interface PreviewAction {
 
 object PreviewRouter {
     const val TEXT_PREVIEW_LIMIT_BYTES = 2L * 1024L * 1024L
+
+    fun route(item: FileItem): PreviewMode {
+        val url = item.downloadUrl ?: return PreviewMode.Unavailable
+        return when (item.type) {
+            FileType.Image -> PreviewMode.Image(url)
+            FileType.Text -> if (item.size <= TEXT_PREVIEW_LIMIT_BYTES) PreviewMode.Text(url, item.size) else PreviewMode.TextTooLarge(item.size)
+            FileType.Audio -> PreviewMode.Audio(url)
+            FileType.Pdf,
+            FileType.Video,
+            FileType.Archive,
+            FileType.Other -> PreviewMode.External(url)
+            FileType.Folder -> PreviewMode.Unavailable
+        }
+    }
 
     fun route(context: Context, item: FileItem, localFile: File): PreviewAction {
         return when (item.type) {

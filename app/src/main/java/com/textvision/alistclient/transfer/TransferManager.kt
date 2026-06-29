@@ -7,7 +7,6 @@ import android.net.Uri
 import android.provider.MediaStore
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.file.FileNameValidator
-import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.transfer.data.TransferDao
 import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
@@ -277,12 +276,7 @@ class TransferManager @Inject constructor(
                     updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传路径无效，请重命名后重试", generation)
                     return
                 }
-                val request = Request.Builder()
-                    .url(transferUrl("api/fs/put"))
-                    .put(TransferProgressRequestBody(streamBody) { done, length -> progress.tryUpdate(done, length) })
-                    .header("File-Path", uploadPath)
-                    .also { SkipAuthRetry.mark(it) }
-                    .build()
+                val request = uploadRequest(uploadPath, TransferProgressRequestBody(streamBody) { done, length -> progress.tryUpdate(done, length) })
                 call = okHttpClient.newCall(request)
                 activeCalls[id] = call
                 call.execute().use { response ->
@@ -311,6 +305,12 @@ class TransferManager @Inject constructor(
             }
         }
     }
+
+    private fun uploadRequest(uploadPath: String, body: RequestBody): Request = Request.Builder()
+        .url(transferUrl("api/fs/put"))
+        .put(body)
+        .header("File-Path", uploadPath)
+        .build()
 
     private fun transferUrl(path: String): String = transferUrl(path, null)
 

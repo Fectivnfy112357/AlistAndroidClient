@@ -1,6 +1,5 @@
 package com.textvision.alistclient.navigation
 
-import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +48,20 @@ fun AppNavHost(startAuthenticated: Boolean) {
                         }
                     })
                 }
-                composable(AppRoute.Files.route) { FileScreen() }
+                composable(AppRoute.Files.route) {
+                    FileScreen(
+                        onPreview = { item ->
+                            navController.navigate(
+                                AppRoute.Preview.create(
+                                    name = item.name,
+                                    type = item.type,
+                                    downloadUrl = item.downloadUrl,
+                                    size = item.size,
+                                )
+                            )
+                        }
+                    )
+                }
                 composable(AppRoute.Transfers.route) { TransferScreen() }
                 composable(AppRoute.Settings.route) {
                     SettingsScreen(
@@ -65,12 +77,15 @@ fun AppNavHost(startAuthenticated: Boolean) {
                 }
                 composable(
                     route = AppRoute.Preview.route,
-                    arguments = listOf(navArgument("filePath") { type = NavType.StringType })
+                    arguments = listOf(navArgument("payload") { type = NavType.StringType })
                 ) { entry ->
-                    val encoded = requireNotNull(entry.arguments?.getString("filePath"))
-                    val filePath = Uri.decode(encoded)
+                    val payload = requireNotNull(entry.arguments?.getString("payload"))
+                    val args = AppRoute.Preview.decode(payload)
                     PreviewScreen(
-                        filePath = filePath,
+                        name = args.name,
+                        type = args.type,
+                        downloadUrl = args.downloadUrl,
+                        size = args.size,
                         onDownload = { navController.popBackStack() },
                         onExternalOpen = { navController.popBackStack() },
                     )

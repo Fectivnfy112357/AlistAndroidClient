@@ -36,6 +36,7 @@ import com.textvision.alistclient.common.error.ErrorMessageMapper
 import com.textvision.alistclient.file.FileViewModel
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileUiState
+import com.textvision.alistclient.navigation.AppRoute
 import com.textvision.alistclient.preview.PreviewRouter
 import com.textvision.alistclient.ui.components.CloudBannerKind
 import com.textvision.alistclient.ui.components.CloudCard
@@ -52,7 +53,10 @@ import com.textvision.alistclient.ui.theme.CloudPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
 
 @Composable
-fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
+fun FileScreen(
+    viewModel: FileViewModel = hiltViewModel(),
+    onPreview: (FileItem) -> Unit = {},
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
@@ -131,6 +135,7 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
                                 FileRow(
                                     item = item,
                                     onOpenDir = { viewModel.load(item.path) },
+                                    onPreview = { onPreview(item) },
                                     onDownload = { viewModel.enqueueDownload(item) },
                                     onShare = {
                                         val intent = PreviewRouter.shareLinkIntent(item.path)
@@ -151,13 +156,14 @@ fun FileScreen(viewModel: FileViewModel = hiltViewModel()) {
 private fun FileRow(
     item: FileItem,
     onOpenDir: () -> Unit,
+    onPreview: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
 ) {
     CloudListItem(
         title = item.name,
         subtitle = item.subtitleText(),
-        onClick = if (item.isDir) onOpenDir else null,
+        onClick = if (item.isDir) onOpenDir else onPreview,
         leading = { FileTypeIcon(item.type) },
         trailing = {
             if (item.isDir) {

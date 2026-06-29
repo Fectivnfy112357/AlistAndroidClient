@@ -5,6 +5,7 @@ import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.auth.model.SavedSession
 import com.textvision.alistclient.data.secure.CredentialStore
 import com.textvision.alistclient.network.AuthTokenProvider
+import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.transfer.data.TransferDao
 import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
@@ -16,6 +17,7 @@ import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
@@ -59,6 +61,17 @@ class TransferManagerTest {
         assertEquals("http://example.com/alist/d/space%20name/hash%23name/percent%25/a%252Fb.txt/%E9%9B%AA.txt", url)
     }
 
+
+    @Test
+    fun uploadRequestAllowsAuthInterceptorToAttachToken() {
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
+        val uploadRequest = TransferManager::class.java.getDeclaredMethod("uploadRequest", String::class.java, okhttp3.RequestBody::class.java).apply { isAccessible = true }
+
+        val request = uploadRequest.invoke(manager, "/target/file.txt", "ok".toRequestBody()) as Request
+
+        assertEquals(null, request.header(SkipAuthRetry.HEADER))
+        assertEquals(false, SkipAuthRetry.shouldSkip(request))
+    }
 
     @Test
     fun markInterruptedOnStartupMarksActiveTasks() = kotlinx.coroutines.runBlocking {
