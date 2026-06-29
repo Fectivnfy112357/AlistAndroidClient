@@ -1,12 +1,15 @@
 package com.textvision.alistclient.file
 
 import com.textvision.alistclient.auth.SessionManager
+import com.textvision.alistclient.auth.model.SavedSession
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.file.model.FileItem
+import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.CopyMovePathRequest
 import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.FsSearchRequest
+import com.textvision.alistclient.network.dto.LoginRequest
 import com.textvision.alistclient.network.dto.MkdirRequest
 import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
@@ -23,15 +26,17 @@ class FileRepository @Inject constructor(
     private fun baseUrl(): String =
         sessionManager.loadSavedSession()?.serverUrl ?: error("No active session — cannot resolve server URL")
 
-    override suspend fun list(path: String): ApiResult<List<FileItem>> = runAlist {
-        val base = baseUrl()
-        val response = api.list("${base}api/fs/list", FsListRequest(path = path))
-        if (response.code == 200) response.data?.content.orEmpty()
-            .map { it.toFileItem(path, base) }
-            .sortedWith(compareByDescending<FileItem> { it.isDir }.thenBy { it.name.lowercase() })
-            .let { ApiResult.Success(it) }
-        else ApiResult.Failure(response.code, response.message)
-    }
+    override suspend fun list(path: String): ApiResult<List<FileItem>> = runAlistWithRefresh(
+        request = {
+            val base = baseUrl()
+            val response = api.list("${base}api/fs/list", FsListRequest(path = path))
+            if (response.code == 200) response.data?.content.orEmpty()
+                .map { it.toFileItem(path, base) }
+                .sortedWith(compareByDescending<FileItem> { it.isDir }.thenBy { it.name.lowercase() })
+                .let { ApiResult.Success(it) }
+            else ApiResult.Failure(response.code, response.message)
+        }
+    )
 
     override suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>> = runAlist {
         val base = baseUrl()
@@ -59,6 +64,32 @@ class FileRepository @Inject constructor(
     private suspend fun runUnit(block: suspend () -> com.textvision.alistclient.network.dto.AlistResponse<Unit>): ApiResult<Unit> = runAlist {
         val response = block()
         if (response.code == 200) ApiResult.Success(Unit) else ApiResult.Failure(response.code, response.message)
+    }
+
+    private suspend fun <T> runAlistWithRefresh(request: suspend () -> ApiResult<T>): ApiResult<T> {
+        val first = runAlist(request)
+        if (first !is ApiResult.Failure || first.code != 401) return first
+        return when (val refreshed = refreshSession()) {
+            is ApiResult.Success -> runAlist(request)
+            is ApiResult.Failure -> refreshed
+            is ApiResult.NetworkError -> refreshed
+        }
+    }
+
+    private suspend fun refreshSession(): ApiResult<SavedSession> = runAlist {
+        val saved = sessionManager.loadSavedSession() ?: return@runAlist ApiResult.Failure(401, "No active session")
+        val response = api.login(
+            "${saved.serverUrl}api/auth/login",
+            SkipAuthRetry.HEADER,
+            LoginRequest(saved.username, saved.password),
+        )
+        if (response.code == 200 && response.data?.token?.isNotBlank() == true) {
+            val refreshed = saved.copy(token = response.data.token)
+            sessionManager.saveSession(refreshed)
+            ApiResult.Success(refreshed)
+        } else {
+            ApiResult.Failure(response.code, response.message)
+        }
     }
 
     private suspend fun <T> runAlist(block: suspend () -> ApiResult<T>): ApiResult<T> = try { block() } catch (t: CancellationException) { throw t } catch (t: Throwable) { ApiResult.NetworkError(t) }

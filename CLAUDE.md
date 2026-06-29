@@ -1,3 +1,8 @@
+
+使用中文与用户对话
+
+Android SDK 目录 :D:\programming\devtools\android\sdk
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
