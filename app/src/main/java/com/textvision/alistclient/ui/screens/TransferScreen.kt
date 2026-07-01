@@ -74,9 +74,9 @@ data class TransferListUiState(
     val summaryText: String
         get() {
             if (transfers.isEmpty()) return "上传和下载任务"
-            val active = transfers.count { it.status in ActiveTransferStatuses }
-            val failed = transfers.count { it.showRetry }
-            val completed = transfers.count { it.status == TransferStatus.Success }
+            val active = visibleTransfers.count { it.status in ActiveTransferStatuses }
+            val failed = visibleTransfers.count { it.showRetry }
+            val completed = visibleTransfers.count { it.status == TransferStatus.Success }
             return listOfNotNull(
                 active.takeIf { it > 0 }?.let { "$it 个进行中" },
                 failed.takeIf { it > 0 }?.let { "$it 个失败" },
@@ -245,13 +245,15 @@ private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () 
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = task.statusText,
-                    color = if (task.showRetry) CloudErrorText else CloudTextSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
+                if (!task.isComplete) {
+                    Text(
+                        text = task.statusText,
+                        color = if (task.showRetry) CloudErrorText else CloudTextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
             }
             Column(horizontalAlignment = Alignment.End) {
                 TransferAction(task, onCancel, onRetry)

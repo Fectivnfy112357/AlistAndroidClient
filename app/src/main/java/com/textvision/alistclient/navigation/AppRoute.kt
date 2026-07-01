@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets
 
 data class PreviewArgs(
     val name: String,
+    val path: String,
     val type: FileType,
     val downloadUrl: String?,
     val size: Long,
@@ -19,9 +20,10 @@ sealed class AppRoute(val route: String) {
     data object Settings : AppRoute("settings")
     data object MoveCopyPicker : AppRoute("copy_move_picker")
     data object Preview : AppRoute("preview/{payload}") {
-        fun create(name: String, type: FileType, downloadUrl: String?, size: Long): String {
+        fun create(name: String, path: String, type: FileType, downloadUrl: String?, size: Long): String {
             val raw = listOf(
                 encode(name),
+                encode(path),
                 type.name,
                 encode(downloadUrl.orEmpty()),
                 size.toString(),
@@ -31,12 +33,13 @@ sealed class AppRoute(val route: String) {
 
         fun decode(payload: String): PreviewArgs {
             val raw = decodeValue(payload)
-            val parts = raw.split("|", limit = 4)
+            val parts = raw.split("|", limit = 5)
             return PreviewArgs(
                 name = decodeValue(parts.getOrElse(0) { "" }),
-                type = runCatching { FileType.valueOf(parts.getOrElse(1) { FileType.Other.name }) }.getOrDefault(FileType.Other),
-                downloadUrl = decodeValue(parts.getOrElse(2) { "" }).takeIf { it.isNotBlank() },
-                size = parts.getOrElse(3) { "0" }.toLongOrNull() ?: 0L,
+                path = decodeValue(parts.getOrElse(1) { "" }),
+                type = runCatching { FileType.valueOf(parts.getOrElse(2) { FileType.Other.name }) }.getOrDefault(FileType.Other),
+                downloadUrl = decodeValue(parts.getOrElse(3) { "" }).takeIf { it.isNotBlank() },
+                size = parts.getOrElse(4) { "0" }.toLongOrNull() ?: 0L,
             )
         }
 

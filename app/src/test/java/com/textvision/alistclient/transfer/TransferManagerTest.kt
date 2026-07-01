@@ -75,6 +75,33 @@ class TransferManagerTest {
         assertEquals(false, SkipAuthRetry.shouldSkip(request))
     }
 
+    @Test fun localizeUploadFailureMapsStorageNotFoundToChinese() {
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
+        val localize = TransferManager::class.java.declaredMethods.first { it.name.startsWith("localizeUploadFailure") }.apply { isAccessible = true }
+
+        val mapped = localize.invoke(manager, 500, "failed get storage: storage not found; please add a storage first") as String
+
+        assertEquals("存储未挂载，请先在 Alist 后台挂载存储", mapped)
+    }
+
+    @Test fun localizeUploadFailureMapsUnauthorizedToLoginPrompt() {
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
+        val localize = TransferManager::class.java.declaredMethods.first { it.name.startsWith("localizeUploadFailure") }.apply { isAccessible = true }
+
+        val mapped = localize.invoke(manager, 401, "token invalid") as String
+
+        assertEquals("登录已失效，请重新登录", mapped)
+    }
+
+    @Test fun localizeDownloadFailureMapsUnknownHostToFriendlyMessage() {
+        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
+        val localize = TransferManager::class.java.declaredMethods.first { it.name.startsWith("localizeDownloadFailure") }.apply { isAccessible = true }
+
+        val mapped = localize.invoke(manager, java.net.UnknownHostException("Unable to resolve host \"x.test\"")) as String
+
+        assertEquals("无法解析服务器地址，请检查网络", mapped)
+    }
+
     @Test
     fun markInterruptedOnStartupMarksActiveTasks() = kotlinx.coroutines.runBlocking {
         val dao = MemoryTransferDao()

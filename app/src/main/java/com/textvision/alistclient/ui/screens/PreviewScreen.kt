@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.screens
 
+import android.content.Intent
 import android.media.MediaPlayer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,15 +23,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import coil3.compose.AsyncImage
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileType
+import com.textvision.alistclient.preview.MimeTypeResolver
 import com.textvision.alistclient.preview.PreviewMode
 import com.textvision.alistclient.preview.PreviewRouter
 import com.textvision.alistclient.preview.PreviewTextRepository
+import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.ui.components.CloudCard
 import com.textvision.alistclient.ui.components.CloudEmptyState
 import com.textvision.alistclient.ui.components.CloudRoundIconButton
@@ -42,20 +46,36 @@ import javax.inject.Inject
 @HiltViewModel
 class PreviewViewModel @Inject constructor(
     val textRepository: PreviewTextRepository,
-) : ViewModel()
+    private val transferManager: TransferManager,
+) : ViewModel() {
+    fun enqueueDownload(path: String, name: String): String =
+        transferManager.enqueueDownload(remotePath = path, fileName = name)
+}
 
 @Composable
 fun PreviewScreen(
     name: String,
+    path: String,
     type: FileType,
     downloadUrl: String?,
     size: Long,
-    onDownload: () -> Unit,
-    onExternalOpen: () -> Unit,
-    textRepository: PreviewTextRepository = hiltViewModel<PreviewViewModel>().textRepository,
+    viewModel: PreviewViewModel = hiltViewModel(),
 ) {
     val mode = remember(name, type, downloadUrl, size) {
-        PreviewRouter.route(FileItem(name, name, false, size, null, name.substringAfterLast('.', ""), type, null, downloadUrl))
+        PreviewRouter.route(FileItem(name, path, false, size, null, name.substringAfterLast('.', ""), type, null, downloadUrl))
+    }
+    val context = LocalContext.current
+    val onDownload: () -> Unit = {
+        viewModel.enqueueDownload(path, name)
+    }
+    val onExternalOpen: () -> Unit = {
+        downloadUrl?.takeIf { it.isNotBlank() }?.let { url ->
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(android.net.Uri.parse(url), MimeTypeResolver.infer(name))
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            runCatching { context.startActivity(intent) }
+        }
     }
     CloudScaffold {
         CloudTopBar(
@@ -72,7 +92,7 @@ fun PreviewScreen(
         CloudCard {
             when (mode) {
                 is PreviewMode.Image -> ImagePreview(mode.url)
-                is PreviewMode.Text -> TextPreview(mode.url, textRepository)
+                is PreviewMode.Text -> TextPreview(mode.url, viewModel.textRepository)
                 is PreviewMode.Audio -> AudioPreview(mode.url)
                 is PreviewMode.TextTooLarge -> PreviewFallback("文件过大", "可以下载或用其他应用打开", onDownload, onExternalOpen)
                 is PreviewMode.External -> PreviewFallback("暂不支持内置预览", "可以下载或用其他应用打开", onDownload, onExternalOpen)

@@ -8,6 +8,7 @@ class AppRouteTest {
     @Test fun previewRouteRoundTripsRemotePreviewMetadata() {
         val route = AppRoute.Preview.create(
             name = "a b.png",
+            path = "/d/a b.png",
             type = FileType.Image,
             downloadUrl = "https://example.test/d/a%20b.png?sign=abc&x=1",
             size = 1234L,
@@ -18,6 +19,7 @@ class AppRouteTest {
         val args = AppRoute.Preview.decode(encoded)
 
         assertEquals("a b.png", args.name)
+        assertEquals("/d/a b.png", args.path)
         assertEquals(FileType.Image, args.type)
         assertEquals("https://example.test/d/a%20b.png?sign=abc&x=1", args.downloadUrl)
         assertEquals(1234L, args.size)

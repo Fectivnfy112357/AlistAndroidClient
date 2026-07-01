@@ -245,7 +245,7 @@ class TransferManager @Inject constructor(
             } catch (t: Throwable) {
                 uri?.let { discardDownloadUri(it) }
                 if (!isCancellation(t)) {
-                    updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "下载失败", generation)
+                    updateStatusUnlessCancelled(id, TransferStatus.Failed, localizeDownloadFailure(t), generation)
                 }
             } finally {
                 activeCalls.remove(id, call)
@@ -296,7 +296,7 @@ class TransferManager @Inject constructor(
                         response.isSuccessful -> {
                             val result = response.body?.string().orEmpty().toAlistUploadResult()
                             if (result != null && !result.isSuccess) {
-                                updateStatusUnlessCancelled(id, TransferStatus.Failed, "上传失败：${result.message ?: "服务器返回失败"}", generation)
+                                updateStatusUnlessCancelled(id, TransferStatus.Failed, localizeUploadFailure(result.code, result.message), generation)
                                 return
                             }
                             progress.flush()
@@ -308,7 +308,7 @@ class TransferManager @Inject constructor(
                 }
             } catch (t: Throwable) {
                 if (!isCancellation(t)) {
-                    updateStatusUnlessCancelled(id, TransferStatus.Failed, t.message ?: "上传失败", generation)
+                    updateStatusUnlessCancelled(id, TransferStatus.Failed, localizeDownloadFailure(t), generation)
                 }
             } finally {
                 activeCalls.remove(id, call)
@@ -383,6 +383,44 @@ class TransferManager @Inject constructor(
         val code = Regex("\"code\"\\s*:\\s*(-?\\d+)").find(this)?.groupValues?.get(1)?.toIntOrNull() ?: return null
         val message = Regex("\"message\"\\s*:\\s*\"([^\"]*)\"").find(this)?.groupValues?.get(1)
         return AlistUploadResult(code, message)
+    }
+
+    /**
+     * Map a raw alist upload error code + message to a user-friendly Chinese
+     * explanation. The server's `message` is intentionally not echoed verbatim
+     * because the source is English and not actionable.
+     */
+    internal fun localizeUploadFailure(code: Int, rawMessage: String?): String {
+        val lower = rawMessage?.lowercase().orEmpty()
+        return when {
+            code == 500 || lower.contains("storage not found") -> "存储未挂载，请先在 Alist 后台挂载存储"
+            code == 401 || lower.contains("unauthorized") || lower.contains("token") -> "登录已失效，请重新登录"
+            code == 403 || lower.contains("permission") -> "没有上传权限"
+            code == 404 || lower.contains("not found") -> "目标路径不存在"
+            code == 409 || lower.contains("already exists") -> "文件已存在，请重命名后重试"
+            code == 50051 || lower.contains("failed get objs") -> "服务器拒绝访问，请检查登录状态"
+            code in 500..599 -> "服务器错误（$code），请稍后重试"
+            code in 400..499 -> "请求被拒绝（$code），请重试"
+            else -> "上传失败，请稍后重试"
+        }
+    }
+
+    /**
+     * Map a download-side throwable to a user-friendly Chinese message. We
+     * avoid surfacing the raw OkHttp/IOException text because it's English
+     * network jargon ("Unable to resolve host ...", "Connect timed out").
+     */
+    internal fun localizeDownloadFailure(t: Throwable): String {
+        val msg = t.message.orEmpty().lowercase()
+        return when {
+            msg.contains("unable to resolve host") || t is java.net.UnknownHostException -> "无法解析服务器地址，请检查网络"
+            t is java.net.SocketTimeoutException -> "连接超时，请重试"
+            msg.contains("connect") && msg.contains("refused") -> "服务器拒绝连接，请确认服务在线"
+            msg.contains("unexpected end of stream") || t is java.io.EOFException -> "下载中断，请重试"
+            msg.contains("failed to connect") -> "无法连接服务器"
+            msg.contains("ssl") || t is javax.net.ssl.SSLException -> "TLS 握手失败，服务器证书可能不受信任"
+            else -> "下载失败，请稍后重试"
+        }
     }
 
     private fun okhttp3.HttpUrl.Builder.addHeaderPath(path: String): okhttp3.HttpUrl.Builder = apply {

@@ -39,4 +39,17 @@ class TransferScreenSourceTest {
         assertTrue(source.contains("将永久删除这条传输记录。"))
         assertTrue(source.contains("Text(\"删除\", color = CloudErrorText)"))
     }
+
+    @Test
+    fun transferRowHidesRedundantStatusTextForCompletedTasks() {
+        // The completion status is rendered as a pill chip on the right edge; the
+        // statusText slot must collapse for completed rows so we don't show "已完成"
+        // alongside the "完成" chip.
+        val completedRow = source.substringAfter("private fun TransferRow").substringBefore("private fun TransferAction")
+        assertTrue(
+            "Completed rows must skip the statusText label so it does not duplicate the 完成 chip.",
+            completedRow.contains("!task.isComplete") || completedRow.contains("task.isComplete.not()") || completedRow.contains("task.status != TransferStatus.Success")
+        )
+        assertTrue(completedRow.contains("task.statusText"))
+    }
 }

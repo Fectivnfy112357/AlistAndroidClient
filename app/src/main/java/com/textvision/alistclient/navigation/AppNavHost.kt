@@ -54,6 +54,7 @@ fun AppNavHost(startAuthenticated: Boolean) {
                             navController.navigate(
                                 AppRoute.Preview.create(
                                     name = item.name,
+                                    path = item.path,
                                     type = item.type,
                                     downloadUrl = item.downloadUrl,
                                     size = item.size,
@@ -83,11 +84,10 @@ fun AppNavHost(startAuthenticated: Boolean) {
                     val args = AppRoute.Preview.decode(payload)
                     PreviewScreen(
                         name = args.name,
+                        path = args.path,
                         type = args.type,
                         downloadUrl = args.downloadUrl,
                         size = args.size,
-                        onDownload = { navController.popBackStack() },
-                        onExternalOpen = { navController.popBackStack() },
                     )
                 }
             }

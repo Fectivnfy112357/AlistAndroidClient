@@ -96,7 +96,25 @@ class TransferScreenTest {
 
         val state = TransferListUiState(transfers, selectedTab = TransferTab.Upload)
 
-        assertEquals("2 个进行中 · 1 个失败 · 1 个完成", state.summaryText)
+        // Summary must reflect only the currently selected tab, not the entire transfer list.
+        assertEquals("1 个进行中", state.summaryText)
+    }
+
+    @Test
+    fun transferListSummarySegmentsBySelectedTab() {
+        val now = 1L
+        val transfers = listOf(
+            TransferEntity("1", "upload-running.bin", "/upload.bin", null, null, 0, 100, TransferType.Upload, TransferStatus.Uploading, null, now, now),
+            TransferEntity("2", "download-running.zip", "/download.zip", null, null, 0, 100, TransferType.Download, TransferStatus.Downloading, null, now, now),
+            TransferEntity("3", "download-failed.pdf", "/bad.pdf", null, null, 0, 100, TransferType.Download, TransferStatus.Failed, "网络错误", now, now),
+            TransferEntity("4", "download-done.jpg", "/done.jpg", null, null, 100, 100, TransferType.Download, TransferStatus.Success, null, now, now),
+        )
+
+        val uploadState = TransferListUiState(transfers, selectedTab = TransferTab.Upload)
+        val downloadState = TransferListUiState(transfers, selectedTab = TransferTab.Download)
+
+        assertEquals("1 个进行中", uploadState.summaryText)
+        assertEquals("1 个进行中 · 1 个失败 · 1 个完成", downloadState.summaryText)
     }
 
     @Test
