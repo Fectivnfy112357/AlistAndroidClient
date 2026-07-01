@@ -88,6 +88,7 @@ fun AppNavHost(startAuthenticated: Boolean) {
                         type = args.type,
                         downloadUrl = args.downloadUrl,
                         size = args.size,
+                        onBack = { navController.popBackStack() },
                     )
                 }
             }

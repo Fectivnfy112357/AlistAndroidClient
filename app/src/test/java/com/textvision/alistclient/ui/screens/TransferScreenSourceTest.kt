@@ -34,10 +34,10 @@ class TransferScreenSourceTest {
     @Test
     fun transferScreenShowsDeleteActionWithConfirmation() {
         assertTrue(source.contains("fun delete(id: String) = manager.delete(id)"))
-        assertTrue(source.contains("AlertDialog"))
+        assertTrue(source.contains("CloudAlertDialog"))
         assertTrue(source.contains("删除后会取消当前传输，并永久删除这条记录。"))
         assertTrue(source.contains("将永久删除这条传输记录。"))
-        assertTrue(source.contains("Text(\"删除\", color = CloudErrorText)"))
+        assertTrue(source.contains("contentColor = CloudErrorText"))
     }
 
     @Test

@@ -2,19 +2,28 @@ package com.textvision.alistclient.ui.screens
 
 import android.content.Intent
 import android.media.MediaPlayer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +31,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,9 +48,13 @@ import com.textvision.alistclient.preview.PreviewTextRepository
 import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.ui.components.CloudCard
 import com.textvision.alistclient.ui.components.CloudEmptyState
+import com.textvision.alistclient.ui.components.CloudPillButton
 import com.textvision.alistclient.ui.components.CloudRoundIconButton
 import com.textvision.alistclient.ui.components.CloudScaffold
 import com.textvision.alistclient.ui.components.CloudTopBar
+import com.textvision.alistclient.ui.theme.CloudErrorText
+import com.textvision.alistclient.ui.theme.CloudPrimary
+import com.textvision.alistclient.ui.theme.CloudTextSecondary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -59,6 +74,7 @@ fun PreviewScreen(
     type: FileType,
     downloadUrl: String?,
     size: Long,
+    onBack: () -> Unit = {},
     viewModel: PreviewViewModel = hiltViewModel(),
 ) {
     val mode = remember(name, type, downloadUrl, size) {
@@ -81,15 +97,21 @@ fun PreviewScreen(
         CloudTopBar(
             title = "文件预览",
             subtitle = name,
+            navigationIcon = {
+                CloudRoundIconButton(
+                    icon = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "返回",
+                    onClick = onBack,
+                )
+                Spacer(Modifier.width(10.dp))
+            },
             action = {
-                Row {
-                    CloudRoundIconButton(Icons.Outlined.Download, "下载", onDownload)
-                    Spacer(Modifier.width(6.dp))
-                    CloudRoundIconButton(Icons.AutoMirrored.Outlined.OpenInNew, "外部打开", onExternalOpen)
-                }
+                CloudRoundIconButton(Icons.Outlined.Download, "下载", onDownload)
+                Spacer(Modifier.width(6.dp))
+                CloudRoundIconButton(Icons.AutoMirrored.Outlined.OpenInNew, "外部打开", onExternalOpen)
             },
         )
-        CloudCard {
+        CloudCard(modifier = Modifier.weight(1f)) {
             when (mode) {
                 is PreviewMode.Image -> ImagePreview(mode.url)
                 is PreviewMode.Text -> TextPreview(mode.url, viewModel.textRepository)
@@ -104,11 +126,17 @@ fun PreviewScreen(
 
 @Composable
 private fun ImagePreview(url: String) {
-    AsyncImage(
-        model = url,
-        contentDescription = null,
-        modifier = Modifier.fillMaxWidth(),
-    )
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        AsyncImage(
+            model = url,
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 @Composable
@@ -119,7 +147,11 @@ private fun TextPreview(url: String, textRepository: PreviewTextRepository) {
     }
     Text(
         text = text,
-        modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState()),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(14.dp)
+            .verticalScroll(rememberScrollState()),
     )
 }
 
@@ -137,12 +169,13 @@ private fun AudioPreview(url: String) {
     }
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
     ) {
         Icon(
-            imageVector = Icons.Default.PlayCircle,
+            imageVector = Icons.Filled.PlayCircle,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
             tint = CloudPrimary,
@@ -158,10 +191,11 @@ private fun AudioPreview(url: String) {
             text = if (isPlaying) "暂停" else "播放",
             leading = {
                 Icon(
-                    if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
                 )
+                Spacer(Modifier.width(6.dp))
             },
             onClick = {
                 runCatching {
@@ -175,14 +209,35 @@ private fun AudioPreview(url: String) {
 
 @Composable
 private fun PreviewFallback(title: String, message: String, onDownload: () -> Unit, onExternalOpen: () -> Unit) {
-    CloudEmptyState(
-        title = title,
-        message = message,
-        action = {
-            Row {
-                TextButton(onClick = onDownload) { Text("下载") }
-                TextButton(onClick = onExternalOpen) { Text("外部打开") }
-            }
-        },
-    )
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        CloudEmptyState(
+            title = title,
+            message = message,
+            action = {
+                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                    CloudPillButton(
+                        text = "下载",
+                        leading = {
+                            Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                        },
+                        onClick = onDownload,
+                    )
+                    CloudPillButton(
+                        text = "外部打开",
+                        containerColor = com.textvision.alistclient.ui.theme.CloudPrimarySoft,
+                        contentColor = CloudPrimary,
+                        leading = {
+                            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                        },
+                        onClick = onExternalOpen,
+                    )
+                }
+            },
+        )
+    }
 }

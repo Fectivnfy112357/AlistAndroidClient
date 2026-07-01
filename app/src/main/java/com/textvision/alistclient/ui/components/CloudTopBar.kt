@@ -19,6 +19,7 @@ fun CloudTopBar(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    navigationIcon: @Composable RowScope.() -> Unit = {},
     action: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
@@ -27,6 +28,7 @@ fun CloudTopBar(
             .padding(top = 4.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        navigationIcon()
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,

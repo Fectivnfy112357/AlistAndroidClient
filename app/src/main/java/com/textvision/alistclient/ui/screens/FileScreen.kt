@@ -23,14 +23,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.UploadFile
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +48,7 @@ import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileUiState
 import com.textvision.alistclient.navigation.AppRoute
 import com.textvision.alistclient.preview.PreviewRouter
+import com.textvision.alistclient.ui.components.CloudAlertDialog
 import com.textvision.alistclient.ui.components.CloudBannerKind
 import com.textvision.alistclient.ui.components.CloudCard
 import com.textvision.alistclient.ui.components.CloudEmptyState
@@ -186,19 +185,16 @@ private fun FileRow(
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(if (item.isDir) "删除文件夹" else "删除文件") },
-            text = { Text("确定删除「${item.name}」吗？此操作不可恢复。") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    onDelete()
-                }) { Text("删除", color = CloudErrorText) }
+        CloudAlertDialog(
+            title = if (item.isDir) "删除文件夹" else "删除文件",
+            message = "确定删除「${item.name}」吗？此操作不可恢复。",
+            confirmText = "删除",
+            destructive = true,
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete()
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("取消") }
-            },
+            onDismiss = { showDeleteDialog = false },
         )
     }
 

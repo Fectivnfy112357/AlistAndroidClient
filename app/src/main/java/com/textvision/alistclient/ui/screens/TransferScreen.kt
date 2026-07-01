@@ -10,13 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,11 +34,13 @@ import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
 import com.textvision.alistclient.transfer.model.TransferType
+import com.textvision.alistclient.ui.components.CloudAlertDialog
 import com.textvision.alistclient.ui.components.CloudCard
 import com.textvision.alistclient.ui.components.CloudEmptyState
 import com.textvision.alistclient.ui.components.CloudScaffold
 import com.textvision.alistclient.ui.components.CloudTopBar
 import com.textvision.alistclient.ui.components.TransferProgress
+import com.textvision.alistclient.ui.theme.CloudErrorContainer
 import com.textvision.alistclient.ui.theme.CloudErrorText
 import com.textvision.alistclient.ui.theme.CloudPrimary
 import com.textvision.alistclient.ui.theme.CloudPrimarySoft
@@ -214,8 +214,16 @@ private fun TransferTabSwitcher(selectedTab: TransferTab, onSelect: (TransferTab
 private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () -> Unit, onDelete: () -> Unit = {}) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     if (showDeleteDialog) {
-        DeleteTransferDialog(
-            task = task,
+        val isActive = task.status in ActiveTransferStatuses
+        CloudAlertDialog(
+            title = "删除传输记录",
+            message = if (isActive) {
+                "删除后会取消当前传输，并永久删除这条记录。"
+            } else {
+                "将永久删除这条传输记录。"
+            },
+            confirmText = "删除",
+            destructive = true,
             onConfirm = {
                 showDeleteDialog = false
                 onDelete()
@@ -234,7 +242,7 @@ private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () 
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -255,11 +263,17 @@ private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () 
                     )
                 }
             }
-            Column(horizontalAlignment = Alignment.End) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 TransferAction(task, onCancel, onRetry)
-                TextButton(onClick = { showDeleteDialog = true }) {
-                    Text("删除", color = CloudErrorText)
-                }
+                TransferChip(
+                    text = "删除",
+                    contentColor = CloudErrorText,
+                    containerColor = CloudErrorContainer,
+                    onClick = { showDeleteDialog = true },
+                )
             }
         }
 
@@ -274,53 +288,48 @@ private fun TransferRow(task: TransferEntity, onCancel: () -> Unit, onRetry: () 
 }
 
 @Composable
-private fun DeleteTransferDialog(task: TransferEntity, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    val isActive = task.status in ActiveTransferStatuses
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("删除传输记录") },
-        text = {
-            Text(
-                if (isActive) {
-                    "删除后会取消当前传输，并永久删除这条记录。"
-                } else {
-                    "将永久删除这条传输记录。"
-                },
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("删除", color = CloudErrorText)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        },
-    )
+private fun TransferChip(
+    text: String,
+    contentColor: Color,
+    containerColor: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .clip(CloudShapes.Pill)
+            .background(containerColor)
+            .cloudClickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, color = contentColor, style = MaterialTheme.typography.labelLarge)
+    }
 }
 
 @Composable
 private fun TransferAction(task: TransferEntity, onCancel: () -> Unit, onRetry: () -> Unit) {
     val label = task.primaryActionLabel
     when {
-        label == "取消" -> TextButton(
+        label == "取消" -> TransferChip(
+            text = label,
+            contentColor = CloudErrorText,
+            containerColor = CloudErrorContainer,
             onClick = onCancel,
-            modifier = Modifier.widthIn(min = 72.dp),
-        ) { Text(label, color = CloudErrorText) }
-        label != null -> TextButton(
+        )
+        label != null -> TransferChip(
+            text = label,
+            contentColor = CloudPrimary,
+            containerColor = CloudPrimarySoft,
             onClick = onRetry,
-            modifier = Modifier.widthIn(min = 72.dp),
-        ) { Text(label, color = CloudPrimary) }
+        )
         task.isComplete -> Box(
             modifier = Modifier
                 .clip(CloudShapes.Pill)
                 .background(CloudPrimarySoft)
-                .padding(horizontal = 10.dp, vertical = 5.dp),
+                .padding(horizontal = 14.dp, vertical = 7.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("完成", color = CloudPrimary)
+            Text("完成", color = CloudPrimary, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
