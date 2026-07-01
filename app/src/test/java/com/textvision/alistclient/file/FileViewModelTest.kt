@@ -28,6 +28,8 @@ class FileViewModelTest {
 
     private inner class FakeRepo : FileRepositoryContract {
         var listCalls = 0
+        var deletedPaths = emptyList<String>()
+        var deleteResult: ApiResult<Unit> = ApiResult.Success(Unit)
         var listResult: ApiResult<List<FileItem>> = ApiResult.Success(
             listOf(item("b.txt"), item("docs", true), item("a.txt"))
         )
@@ -36,6 +38,10 @@ class FileViewModelTest {
             return listResult
         }
         override suspend fun search(path: String, keyword: String) = ApiResult.Success(listOf(item("match.txt")))
+        override suspend fun delete(paths: List<String>): ApiResult<Unit> {
+            deletedPaths = paths
+            return deleteResult
+        }
     }
 
     private inner class PausedRepo : FileRepositoryContract {
@@ -47,6 +53,7 @@ class FileViewModelTest {
             return ApiResult.Success(listOf(item("loaded-${path.trim('/')}.txt")))
         }
         override suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>> = ApiResult.Success(emptyList())
+        override suspend fun delete(paths: List<String>): ApiResult<Unit> = ApiResult.Success(Unit)
         fun release() { releaseSecondLoad.complete(Unit) }
     }
 
@@ -173,5 +180,34 @@ class FileViewModelTest {
         vm.enqueueUpload(uri)
 
         verify(exactly = 1) { manager.enqueueUpload(uri, "/docs") }
+    }
+
+    @Test fun deleteSuccessCallsRepositoryAndRefreshesCurrentDirectory() = runTest {
+        val repo = FakeRepo()
+        val vm = FileViewModel(repo, newManager(), StandardTestDispatcher(testScheduler))
+        vm.load("/")
+        testScheduler.advanceUntilIdle()
+        repo.listResult = ApiResult.Success(listOf(item("remaining.txt")))
+
+        vm.delete(item("a.txt"))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("/a.txt"), repo.deletedPaths)
+        assertEquals(2, repo.listCalls)
+        assertEquals(listOf("remaining.txt"), (vm.uiState.value as FileUiState.Success).items.map { it.name })
+    }
+
+    @Test fun deleteFailureKeepsCurrentListVisible() = runTest {
+        val repo = FakeRepo().apply { deleteResult = ApiResult.Failure(500, "remove failed") }
+        val vm = FileViewModel(repo, newManager(), StandardTestDispatcher(testScheduler))
+        vm.load("/")
+        testScheduler.advanceUntilIdle()
+
+        vm.delete(item("a.txt"))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("/a.txt"), repo.deletedPaths)
+        assertEquals(1, repo.listCalls)
+        assertEquals(listOf("docs", "a.txt", "b.txt"), (vm.uiState.value as FileUiState.Success).items.map { it.name })
     }
 }

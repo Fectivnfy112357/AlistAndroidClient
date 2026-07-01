@@ -48,7 +48,7 @@ class FileRepository @Inject constructor(
     suspend fun mkdir(path: String): ApiResult<Unit> = runUnit { api.mkdir("${baseUrl()}api/fs/mkdir", MkdirRequest(path)) }
     suspend fun rename(path: String, name: String): ApiResult<Unit> = runUnit { api.rename("${baseUrl()}api/fs/rename", RenameRequest(path, name)) }
 
-    suspend fun delete(paths: List<String>): ApiResult<Unit> {
+    override suspend fun delete(paths: List<String>): ApiResult<Unit> {
         if (paths.isEmpty()) return ApiResult.Success(Unit)
         val dir = paths.first().substringBeforeLast('/', missingDelimiterValue = "/").ifBlank { "/" }
         val names = paths.map { it.substringAfterLast('/') }

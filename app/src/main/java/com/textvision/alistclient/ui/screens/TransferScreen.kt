@@ -14,8 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,8 +46,10 @@ import com.textvision.alistclient.ui.theme.CloudPrimary
 import com.textvision.alistclient.ui.theme.CloudPrimarySoft
 import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.CloudSurface
+import com.textvision.alistclient.ui.theme.CloudSurfaceMuted
 import com.textvision.alistclient.ui.theme.CloudTextPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
+import com.textvision.alistclient.ui.theme.cloudClickable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -156,15 +157,7 @@ fun TransferScreenContent(
     val state = TransferListUiState(transfers, selectedTab)
     CloudScaffold(showBottomPadding = true) {
         CloudTopBar(title = "传输", subtitle = state.summaryText)
-        TabRow(selectedTabIndex = TransferTab.entries.indexOf(selectedTab)) {
-            TransferTab.entries.forEach { tab ->
-                Tab(
-                    selected = selectedTab == tab,
-                    onClick = { selectedTab = tab },
-                    text = { Text(tab.title) },
-                )
-            }
-        }
+        TransferTabSwitcher(selectedTab = selectedTab, onSelect = { selectedTab = it })
         Spacer(Modifier.height(10.dp))
         if (state.shouldShowEmptyState) {
             CloudCard {
@@ -180,6 +173,38 @@ fun TransferScreenContent(
                         onDelete = { onDelete(task.id) },
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TransferTabSwitcher(selectedTab: TransferTab, onSelect: (TransferTab) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CloudShapes.Control)
+            .background(CloudSurfaceMuted)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        TransferTab.entries.forEach { tab ->
+            val selected = selectedTab == tab
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(CloudShapes.Control)
+                    .background(if (selected) CloudPrimarySoft else androidx.compose.ui.graphics.Color.Transparent)
+                    .cloudClickable(onClick = { onSelect(tab) })
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = tab.title,
+                    color = if (selected) CloudPrimary else CloudTextSecondary,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
         }
     }

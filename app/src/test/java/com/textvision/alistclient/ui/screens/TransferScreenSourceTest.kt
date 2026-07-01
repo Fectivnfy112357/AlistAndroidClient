@@ -19,11 +19,16 @@ class TransferScreenSourceTest {
     }
 
     @Test
-    fun transferScreenUsesTabsAndVisibleTransfers() {
-        assertTrue(source.contains("ScrollableTabRow") || source.contains("TabRow"))
+    fun transferScreenUsesCustomPillTabSwitcherAndVisibleTransfers() {
+        assertTrue(source.contains("private fun TransferTabSwitcher"))
         assertTrue(source.contains("TransferTab.entries"))
         assertTrue(source.contains("state.visibleTransfers"))
         assertTrue(source.contains("selectedTab"))
+        assertTrue(source.contains("CloudSurfaceMuted"))
+        assertTrue(source.contains("CloudShapes.Control"))
+        assertTrue(source.contains("cloudClickable"))
+        assertFalse(source.contains("TabRow("))
+        assertFalse(source.contains("import androidx.compose.material3.Tab"))
     }
 
     @Test

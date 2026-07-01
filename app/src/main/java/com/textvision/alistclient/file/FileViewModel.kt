@@ -29,6 +29,7 @@ import javax.inject.Inject
 interface FileRepositoryContract {
     suspend fun list(path: String): ApiResult<List<FileItem>>
     suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>>
+    suspend fun delete(paths: List<String>): ApiResult<Unit>
 }
 
 @OptIn(FlowPreview::class)
@@ -126,6 +127,16 @@ class FileViewModel @Inject constructor(
      */
     fun enqueueUpload(uri: Uri) {
         transferManager.enqueueUpload(uri, currentPath)
+    }
+
+    fun delete(item: FileItem) {
+        viewModelScope.launch(dispatcher) {
+            when (repository.delete(listOf(item.path))) {
+                is ApiResult.Success -> load(currentPath)
+                is ApiResult.Failure -> Unit
+                is ApiResult.NetworkError -> Unit
+            }
+        }
     }
 
     private fun observeSearch() {

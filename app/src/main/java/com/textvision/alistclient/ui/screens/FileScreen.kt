@@ -1,6 +1,10 @@
 package com.textvision.alistclient.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,16 +19,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +61,7 @@ import com.textvision.alistclient.ui.components.CloudSearchBar
 import com.textvision.alistclient.ui.components.CloudStatusBanner
 import com.textvision.alistclient.ui.components.CloudTopBar
 import com.textvision.alistclient.ui.components.FileTypeIcon
+import com.textvision.alistclient.ui.theme.CloudErrorText
 import com.textvision.alistclient.ui.theme.CloudPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
 
@@ -142,6 +155,14 @@ fun FileScreen(
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                         context.startActivity(intent)
                                     },
+                                    onCopyDirectLink = item.downloadUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                                        {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("直链", url))
+                                            Toast.makeText(context, "直链已复制", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    onDelete = { viewModel.delete(item) },
                                 )
                             }
                         }
@@ -159,7 +180,28 @@ private fun FileRow(
     onPreview: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
+    onCopyDirectLink: (() -> Unit)?,
+    onDelete: () -> Unit,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(if (item.isDir) "删除文件夹" else "删除文件") },
+            text = { Text("确定删除「${item.name}」吗？此操作不可恢复。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDelete()
+                }) { Text("删除", color = CloudErrorText) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("取消") }
+            },
+        )
+    }
+
     CloudListItem(
         title = item.name,
         subtitle = item.subtitleText(),
@@ -170,11 +212,37 @@ private fun FileRow(
                 Text("›", color = CloudTextSecondary, style = MaterialTheme.typography.titleLarge)
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onShare, modifier = Modifier.testTag("share_button")) {
-                        Icon(Icons.Default.Share, contentDescription = "分享链接", tint = CloudPrimary)
-                    }
                     IconButton(onClick = onDownload, modifier = Modifier.testTag("download_button")) {
                         Icon(Icons.Default.Download, contentDescription = "下载", tint = CloudPrimary)
+                    }
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.testTag("more_button")) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "更多", tint = CloudPrimary)
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("分享链接") },
+                            onClick = {
+                                menuExpanded = false
+                                onShare()
+                            },
+                        )
+                        if (!item.downloadUrl.isNullOrBlank()) {
+                            DropdownMenuItem(
+                                text = { Text("复制直链") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onCopyDirectLink?.invoke()
+                                },
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("删除", color = CloudErrorText) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = CloudErrorText) },
+                            onClick = {
+                                menuExpanded = false
+                                showDeleteDialog = true
+                            },
+                        )
                     }
                 }
             }
