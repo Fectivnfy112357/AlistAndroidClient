@@ -135,14 +135,41 @@ private fun AudioPreview(url: String) {
         }.onFailure { error = "播放失败" }
         onDispose { player.release() }
     }
-    Column(Modifier.padding(12.dp)) {
-        Text(error ?: if (isPlaying) "播放中" else "准备播放")
-        TextButton(onClick = {
-            runCatching {
-                if (isPlaying) player.pause() else player.start()
-                isPlaying = !isPlaying
-            }.onFailure { error = "播放失败" }
-        }) { Text(if (isPlaying) "暂停" else "播放") }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = Icons.Default.PlayCircle,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = CloudPrimary,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = error ?: if (isPlaying) "播放中" else "准备播放",
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (error != null) CloudErrorText else CloudTextSecondary,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        CloudPillButton(
+            text = if (isPlaying) "暂停" else "播放",
+            leading = {
+                Icon(
+                    if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+            },
+            onClick = {
+                runCatching {
+                    if (isPlaying) player.pause() else player.start()
+                    isPlaying = !isPlaying
+                }.onFailure { error = "播放失败" }
+            },
+        )
     }
 }
 
