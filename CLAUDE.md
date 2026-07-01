@@ -7,15 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 本地开发环境（Windows 11）
 
 - **操作系统**: Windows 11 Pro
-- **Shell**: Git Bash（POSIX 语法，路径用正斜杠，`/dev/null` 不是 `NUL`）
-- **JDK**: 已检测到 `java -version` → Java 21 LTS（系统 PATH），`JAVA_HOME` 未设置。AGP 8.7.2 + Kotlin 2.0.21 在 JVM 17 目标下可直接用 system JDK 编译。
 - **Android SDK**: `D:\programming\devtools\android\sdk`（`local.properties` 已指向）
   - Platforms: `android-34`（项目 compileSdk / targetSdk = 34）
   - Build-tools: `34.0.0`
   - cmdline-tools: `latest/`
   - platform-tools、emulator、system-images 已安装
-- **Git 用户**: 贾晓源
-- **备注**: 命令优先用 `./gradlew`（Git Bash 上可直接跑），Windows 原生命令行用 `gradlew.bat`。
 
 ## Project Overview
 
