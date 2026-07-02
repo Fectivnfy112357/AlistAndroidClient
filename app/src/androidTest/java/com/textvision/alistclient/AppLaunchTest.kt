@@ -10,6 +10,7 @@ import androidx.security.crypto.MasterKey
 import androidx.test.core.app.ActivityScenario
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.navigation.AppNavHost
+import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.ui.screens.PreviewScreen
 import com.textvision.alistclient.ui.theme.AlistClientTheme
 import org.junit.Rule
@@ -95,9 +96,11 @@ class AppLaunchTest {
         composeRule.setContent {
             AlistClientTheme {
                 PreviewScreen(
-                    filePath = "missing-preview-file.txt",
-                    onDownload = {},
-                    onExternalOpen = {},
+                    name = "missing-preview-file.txt",
+                    path = "/missing-preview-file.txt",
+                    type = FileType.Other,
+                    downloadUrl = null,
+                    size = 0L,
                 )
             }
         }
