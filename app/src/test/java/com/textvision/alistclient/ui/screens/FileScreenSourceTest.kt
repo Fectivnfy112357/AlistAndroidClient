@@ -34,4 +34,12 @@ class FileScreenSourceTest {
         assertTrue(source.contains("确定删除「"))
         assertFalse(source.contains("IconButton(onClick = onShare, modifier = Modifier.testTag(\"share_button\"))"))
     }
+
+    @Test
+    fun fileScreenLaunchesLoadIfNeededWithProvidedInitialPath() {
+        val source = File("src/main/java/com/textvision/alistclient/ui/screens/FileScreen.kt").readText()
+        assertTrue(source.contains("fun FileScreen("))
+        assertTrue(source.contains("initialPath: String = \"/\""))
+        assertTrue(source.contains("LaunchedEffect(initialPath) { viewModel.loadIfNeeded(initialPath) }"))
+    }
 }
