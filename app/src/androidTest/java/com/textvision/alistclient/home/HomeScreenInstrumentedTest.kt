@@ -7,7 +7,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.textvision.alistclient.MainActivity
 import com.textvision.alistclient.home.dto.HomeData
 import com.textvision.alistclient.network.dto.PublicSettings
 import com.textvision.alistclient.network.dto.StorageInfo
@@ -22,9 +21,9 @@ import org.junit.Test
  * Activity launched via ActivityScenario, which is only available in instrumented
  * test environments.
  *
- * To run: ./gradlew :app:connectedDebugAndroidTest --tests com.textvision.alistclient.home.HomeScreenTest
+ * To run: ./gradlew :app:connectedDebugAndroidTest --tests com.textvision.alistclient.home.HomeScreenInstrumentedTest
  */
-class HomeScreenTest {
+class HomeScreenInstrumentedTest {
 
     @get:Rule
     val compose = createComposeRule()

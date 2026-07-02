@@ -13,9 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.outlined.Cloud
@@ -142,7 +142,6 @@ private fun StorageSkeleton() {
     CloudCard(contentPadding = PaddingValues(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(CloudSurfaceStrong))
-            Spacer(Modifier.height(0.dp))
             Column(Modifier.padding(start = 12.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.fillMaxWidth(0.4f).height(14.dp).clip(RoundedCornerShape(8.dp)).background(CloudSurfaceStrong))
                 Box(Modifier.fillMaxWidth(0.7f).height(10.dp).clip(RoundedCornerShape(8.dp)).background(CloudSurfaceStrong))
@@ -162,7 +161,9 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
 @Composable
 private fun SuccessContent(data: HomeData, onStorageClick: (String) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         HeroCard(data)
@@ -209,7 +210,6 @@ private fun HeroCard(data: HomeData) {
             Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 VersionPill(version)
-                Spacer(Modifier.height(0.dp))
                 Text(" · ", color = Color.White.copy(alpha = 0.8f), fontSize = 12.5.sp)
                 Text("已运行 $uptime", color = Color.White.copy(alpha = 0.92f), fontSize = 12.5.sp)
             }
@@ -267,8 +267,8 @@ private fun StorageListSection(storages: List<StorageInfo>, onStorageClick: (Str
         if (storages.isEmpty()) {
             CloudCard { Text("暂无存储", modifier = Modifier.padding(20.dp), color = CloudTextTertiary) }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(storages, key = { it.mountPath }) { storage ->
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                storages.forEach { storage ->
                     StorageCard(storage, onClick = { onStorageClick(storage.mountPath) })
                 }
             }
@@ -313,7 +313,7 @@ private fun StorageCard(storage: StorageInfo, onClick: () -> Unit) {
                 progress = { pct },
                 modifier = Modifier.weight(1f).height(8.dp).clip(CloudShapes.Pill),
                 color = if (isFailed) CloudTextTertiary else CloudPrimary,
-                trackColor = if (isFailed) CloudSurfaceStrong else CloudSurfaceStrong,
+                trackColor = CloudSurfaceStrong,
             )
             Spacer(Modifier.size(8.dp))
             Text(
