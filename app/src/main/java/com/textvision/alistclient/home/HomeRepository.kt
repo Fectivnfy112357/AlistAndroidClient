@@ -33,12 +33,37 @@ class HomeRepository @Inject constructor(
             ?: return@withContext ApiResult.Failure(401, "No active session")
         val base = saved.serverUrl
 
-        val first = runAdmin(base)
-        if (first is AdminResult.Ok) {
-            ApiResult.Success(first.toData())
+        val adminResult = runAdminWithRefresh(base)
+        if (adminResult is AdminResult.Ok) {
+            ApiResult.Success(adminResult.toData())
         } else {
             fetchPublicFallback(base)
         }
+    }
+
+    /**
+     * Attempts admin calls. On 401, refreshes the session token via login and retries.
+     * On 403 or NetworkError, falls back directly without refresh.
+     */
+    private suspend fun runAdminWithRefresh(base: String): AdminResult {
+        val first = runAdmin(base)
+        if (first is AdminResult.Ok) return first
+
+        // Only attempt refresh on 401, not 403 or network errors
+        if (first is AdminResult.NotAdmin && first.code == 401) {
+            val session = sessionManager.loadSavedSession() ?: return first
+            val username = session.username ?: return first
+            val password = session.password ?: return first
+            when (val refreshed = authRepository.login(base, username, password)) {
+                is ApiResult.Success -> {
+                    val second = runAdmin(base)
+                    if (second is AdminResult.Ok) return second
+                    if (second is AdminResult.NotAdmin) return second
+                }
+                else -> Unit
+            }
+        }
+        return first
     }
 
     private suspend fun fetchPublicFallback(base: String): ApiResult<HomeData> = try {

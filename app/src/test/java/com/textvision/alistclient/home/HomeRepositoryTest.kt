@@ -84,6 +84,7 @@ class HomeRepositoryTest {
     @Test fun admin401FallsBackToPublicAndMarksGuest() = runTest {
         enqueue("""{"code":401,"message":"unauthorized","data":null}""")
         enqueue("""{"code":401,"message":"unauthorized","data":null}""")
+        enqueue("""{"code":401,"message":"unauthorized","data":null}""") // login fails
         enqueue("""{"code":200,"message":"success","data":{"title":"My Alist","version":"v3.25.0"}}""")
 
         val result = repo.loadDashboard() as ApiResult.Success
@@ -92,7 +93,7 @@ class HomeRepositoryTest {
         assertEquals(true, data.isGuest)
         assertEquals("My Alist", data.serverTitle)
         assertEquals("v3.25.0", data.serverVersion)
-        assertEquals(3, server.requestCount)
+        assertEquals(4, server.requestCount)
     }
 
     @Test fun adminNetworkErrorFallsBackToPublic() = runTest {
@@ -115,11 +116,34 @@ class HomeRepositoryTest {
     @Test fun adminAndPublicAllFailReturnsFailure() = runTest {
         enqueue("""{"code":401,"message":"x","data":null}""")
         enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""") // login fails
         enqueue("""{"code":500,"message":"oops","data":null}""")
 
         val result = repo.loadDashboard()
 
         assertTrue(result is ApiResult.Failure)
         assertEquals(500, (result as ApiResult.Failure).code)
+    }
+
+    @Test fun refreshesTokenAndRetriesAdminOn401() = runTest {
+        // First admin call returns 401
+        enqueue("""{"code":401,"message":"unauthorized","data":null}""")
+        enqueue("""{"code":401,"message":"unauthorized","data":null}""")
+        // Login with new token
+        enqueue("""{"code":200,"message":"success","data":{"token":"new_tok"}}""")
+        // Retry admin calls now succeed
+        enqueue("""{"code":200,"message":"success","data":{"version":"v3.26.0","start_time":"2026-07-02T00:00:00Z","used_bytes":200,"total_bytes":400}}""")
+        enqueue("""{"code":200,"message":"success","data":{"content":[{"mount_path":"/local2","driver":"Local","used_bytes":100,"total_bytes":200}],"total":1}}""")
+
+        val result = repo.loadDashboard() as ApiResult.Success
+        val data = result.data as HomeData.Admin
+
+        assertEquals(false, data.isGuest)
+        assertEquals(1, data.storages.size)
+        assertEquals("/local2", data.storages.first().mountPath)
+        // Should have made: 2 admin 401 + 1 login + 2 admin 200 = 5 requests
+        assertEquals(5, server.requestCount)
+        // Token should be refreshed
+        assertEquals("new_tok", tokenProvider.getToken())
     }
 }
