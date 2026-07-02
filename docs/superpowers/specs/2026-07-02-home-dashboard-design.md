@@ -212,7 +212,7 @@ HomeScreen LaunchedEffect(Unit) -> vm.loadIfNeeded()
 
 ### 运行时长计算
 
-`HomeScreen` 持有 `LaunchedEffect(startTime)` 启动一个 60s tick 的 `Flow`，每秒或每分钟（折中：每 30s）重算 `Duration.between(startTime, now)` 并触发 recomposition。组件离开时通过 `cancel` 取消。
+`HomeScreen` 持有 `LaunchedEffect(startTime)` 启动一个 60s tick 的 `Flow`，每次 tick 重算 `Duration.between(startTime, now)` 并触发 recomposition。组件离开时通过 `cancel` 取消。
 
 ## 路由改动
 
@@ -295,11 +295,17 @@ sealed class AppRoute(val route: String) {
 
 | 文件 | 场景 |
 |---|---|
-| `../mocks/home-dashboard-A-admin.html` | 完整版：admin 视角，含 Hero / 总用量 / 3 张存储卡（含 1 个 fail） |
-| `../mocks/home-dashboard-B-guest.html` | 降级版：游客身份，Hero 缺运行时长 + Info Banner + 空存储 |
-| `../mocks/home-dashboard-C-load-error.html` | 加载骨架 + 错误态（左右并排） |
+| `../mocks/home-dashboard-A-admin.html` | **采用方案**：admin 视角，Hero 渐变 + 总用量卡 + 3 张存储卡（含 1 个 fail 状态徽章） |
+| `../mocks/home-dashboard-B-guest.html` | 备选：降级版，Hero 缺运行时长字段 + Info Banner + 空存储提示 |
+| `../mocks/home-dashboard-C-load-error.html` | 备选：加载骨架 + 错误态（左右并排） |
 
 所有颜色/圆角/间距直接复用 `ui/theme/Color.kt` 与 `CloudShapes`。
+
+## 关键设计决策（已确认）
+
+- **总用量卡数值来源**：直接取 `admin/info` 的 `usedBytes` / `totalBytes`（所有存储的服务器端合计），不本地累加存储卡数据。
+- **存储卡点击行为**：跳转到 `FileScreen(initialPath = mountPath)`，v1 不做存储详情页。
+- **运行时长刷新频率**：每 60s tick（spec 原写 30s，更新为 60s 以减少 recomposition 频率）。
 
 ## 风险与未决
 
