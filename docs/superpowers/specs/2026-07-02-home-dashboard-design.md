@@ -289,6 +289,18 @@ sealed class AppRoute(val route: String) {
 | `AppRoute.Files.create()` | `"files?path=%2F"` |
 | 默认 path 参数 | 当路由不含 path 时，`AppNavHost` 给 `initialPath` 传 `/` |
 
+## 视觉样式参考
+
+实施前请先打开以下 HTML mock 校对设计：
+
+| 文件 | 场景 |
+|---|---|
+| `../mocks/home-dashboard-A-admin.html` | 完整版：admin 视角，含 Hero / 总用量 / 3 张存储卡（含 1 个 fail） |
+| `../mocks/home-dashboard-B-guest.html` | 降级版：游客身份，Hero 缺运行时长 + Info Banner + 空存储 |
+| `../mocks/home-dashboard-C-load-error.html` | 加载骨架 + 错误态（左右并排） |
+
+所有颜色/圆角/间距直接复用 `ui/theme/Color.kt` 与 `CloudShapes`。
+
 ## 风险与未决
 
 1. **字段名不确定**：Alist `/api/admin/storage/list` 实际 JSON 字段名需要在实现时通过 MockWebServer 或真实服务器抓包核对；DTO 中已注明 `usedBytes`/`totalBytes` 是占位。
