@@ -8,7 +8,6 @@ import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.home.dto.HomeData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
