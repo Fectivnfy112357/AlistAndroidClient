@@ -13,8 +13,6 @@ import com.textvision.alistclient.network.dto.PublicSettings
 import com.textvision.alistclient.network.dto.StorageList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import javax.inject.Inject
@@ -77,28 +75,24 @@ class HomeRepository @Inject constructor(
         ApiResult.NetworkError(t)
     }
 
-    private suspend fun runAdmin(base: String): AdminResult = coroutineScope {
-        val infoDeferred = async {
-            try {
-                ApiResult.Success(api.adminInfo("${base}api/admin/info", SkipAuthRetry.HEADER))
-            } catch (t: CancellationException) {
-                throw t
-            } catch (t: Throwable) {
-                ApiResult.NetworkError(t) as ApiResult<AlistResponse<AdminInfo>>
-            }
+    /**
+     * Serialized admin calls — safe vs race conditions in MockWebServer
+     * (parallel async both consume first enqueued response, wrong DTO = crash).
+     * Trade-off: ~2x round trips under load; acceptable for cheap admin endpoints.
+     */
+    private suspend fun runAdmin(base: String): AdminResult {
+        val info = safeCallApi { api.adminInfo("${base}api/admin/info", SkipAuthRetry.HEADER) }
+        val storage = safeCallApi { api.listStorage("${base}api/admin/storage/list", SkipAuthRetry.HEADER) }
+        return combine(info, storage)
+    }
+
+    private suspend fun <T : Any> safeCallApi(call: suspend () -> AlistResponse<T>): ApiResult<AlistResponse<T>> {
+        return try {
+            ApiResult.Success(call())
+        } catch (t: Throwable) {
+            if (t is CancellationException) throw t
+            ApiResult.NetworkError(t)
         }
-        val storageDeferred = async {
-            try {
-                ApiResult.Success(api.listStorage("${base}api/admin/storage/list", SkipAuthRetry.HEADER))
-            } catch (t: CancellationException) {
-                throw t
-            } catch (t: Throwable) {
-                ApiResult.NetworkError(t) as ApiResult<AlistResponse<StorageList>>
-            }
-        }
-        val info = infoDeferred.await()
-        val storage = storageDeferred.await()
-        combine(info, storage)
     }
 
     private fun combine(
