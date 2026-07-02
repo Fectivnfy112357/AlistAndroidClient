@@ -13,6 +13,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - cmdline-tools: `latest/`
   - platform-tools、emulator、system-images 已安装
 
+### 模拟器启动（test_avd）
+
+```bash
+# 默认启动（可能黑屏，窗口 GPU 渲染故障）
+emulator -avd test_avd -no-snapshot
+
+# 推荐：软件渲染，避免宿主 GPU 兼容问题导致模拟器窗口黑屏
+emulator -avd test_avd -no-snapshot -gpu swiftshader_indirect
+```
+
+**黑屏诊断**：如果应用确认在前台（`adb shell dumpsys activity activities | grep ResumedActivity`）且 logcat 无 FATAL，但模拟器窗口全黑——是模拟器宿主 GPU 渲染失败，**不是应用 bug**。用 `-gpu swiftshader_indirect` 重启即可。
+
+**截图路径**：Git Bash 下 `/sdcard` 会被转换成本地路径，必须加 `MSYS_NO_PATHCONV=1` 前缀：
+```bash
+MSYS_NO_PATHCONV=1 adb shell screencap -p //sdcard/scr.png
+MSYS_NO_PATHCONV=1 adb pull //sdcard/scr.png ./scr.png
+```
+
 ## Project Overview
 
 Native Android client (MVP) for [Alist v3](https://github.com/AlistGo/alist) — a multi-storage file management server. Single-module Kotlin app targeting Android 8.0+ (minSdk 26, targetSdk 34), built with Jetpack Compose and Material3.
