@@ -55,6 +55,9 @@ class FileRepositoryTest {
         override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
         override suspend fun copy(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("copy is not used by this test")
         override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("move is not used by this test")
+        override suspend fun adminInfo(url: String, skipAuthRetry: String, request: com.textvision.alistclient.network.dto.AdminInfoRequest): AlistResponse<com.textvision.alistclient.network.dto.AdminInfo> = throw UnsupportedOperationException("adminInfo is not used by this test")
+        override suspend fun listStorage(url: String, skipAuthRetry: String, request: com.textvision.alistclient.network.dto.StorageListRequest): AlistResponse<com.textvision.alistclient.network.dto.StorageList> = throw UnsupportedOperationException("listStorage is not used by this test")
+        override suspend fun getPublicSettings(url: String, skipAuthRetry: String): AlistResponse<com.textvision.alistclient.network.dto.PublicSettings> = throw UnsupportedOperationException("getPublicSettings is not used by this test")
     }
 
     @Test fun listRefreshesExpiredTokenAndRetriesOnce() = runTest {

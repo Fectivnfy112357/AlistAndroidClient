@@ -1,6 +1,7 @@
 package com.textvision.alistclient.network.api
 
 import com.textvision.alistclient.network.SkipAuthRetry
+import com.textvision.alistclient.network.dto.AdminInfo
 import com.textvision.alistclient.network.dto.AlistFsList
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
@@ -9,9 +10,12 @@ import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.FsSearchRequest
 import com.textvision.alistclient.network.dto.LoginRequest
 import com.textvision.alistclient.network.dto.MkdirRequest
+import com.textvision.alistclient.network.dto.PublicSettings
 import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
+import com.textvision.alistclient.network.dto.StorageList
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Url
@@ -40,4 +44,13 @@ interface AlistApi {
 
     @POST
     suspend fun move(@Url url: String, @Body request: CopyMovePathRequest): AlistResponse<Unit>
+
+    @POST
+    suspend fun adminInfo(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String, @Body request: com.textvision.alistclient.network.dto.AdminInfoRequest = com.textvision.alistclient.network.dto.AdminInfoRequest()): AlistResponse<AdminInfo>
+
+    @POST
+    suspend fun listStorage(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String, @Body request: com.textvision.alistclient.network.dto.StorageListRequest = com.textvision.alistclient.network.dto.StorageListRequest()): AlistResponse<StorageList>
+
+    @GET
+    suspend fun getPublicSettings(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String = SkipAuthRetry.HEADER): AlistResponse<PublicSettings>
 }
