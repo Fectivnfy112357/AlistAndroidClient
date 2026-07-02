@@ -16,11 +16,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.textvision.alistclient.ui.components.CloudBottomBar
 import com.textvision.alistclient.ui.screens.FileScreen
+import com.textvision.alistclient.home.HomeScreen
 import com.textvision.alistclient.ui.screens.LoginScreen
 import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
 import com.textvision.alistclient.ui.screens.PreviewScreen
 import com.textvision.alistclient.ui.screens.SettingsScreen
 import com.textvision.alistclient.ui.screens.TransferScreen
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun AppNavHost(startAuthenticated: Boolean) {
@@ -28,7 +31,7 @@ fun AppNavHost(startAuthenticated: Boolean) {
     val startDestination = if (startAuthenticated) AppRoute.Files.route else AppRoute.Login.route
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    val showBottomBar = currentRoute in setOf(AppRoute.Files.route, AppRoute.Transfers.route, AppRoute.Settings.route)
+    val showBottomBar = currentRoute in setOf(AppRoute.Home.route, AppRoute.Files.route, AppRoute.Transfers.route, AppRoute.Settings.route)
 
     MaterialTheme {
         Box(Modifier.fillMaxSize()) {
@@ -48,8 +51,20 @@ fun AppNavHost(startAuthenticated: Boolean) {
                         }
                     })
                 }
-                composable(AppRoute.Files.route) {
+                composable(AppRoute.Home.route) {
+                    HomeScreen(
+                        onStorageClick = { mountPath: String ->
+                            navController.navigate(AppRoute.Files.create(mountPath))
+                        },
+                    )
+                }
+                composable(
+                    route = AppRoute.Files.route,
+                    arguments = listOf(navArgument("path") { type = NavType.StringType; defaultValue = "/" }),
+                ) { entry ->
+                    val path = URLDecoder.decode(entry.arguments?.getString("path") ?: "/", StandardCharsets.UTF_8.name())
                     FileScreen(
+                        initialPath = path,
                         onPreview = { item ->
                             navController.navigate(
                                 AppRoute.Preview.create(
@@ -60,7 +75,7 @@ fun AppNavHost(startAuthenticated: Boolean) {
                                     size = item.size,
                                 )
                             )
-                        }
+                        },
                     )
                 }
                 composable(AppRoute.Transfers.route) { TransferScreen() }

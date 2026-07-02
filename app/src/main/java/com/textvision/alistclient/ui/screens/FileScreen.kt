@@ -67,13 +67,14 @@ import com.textvision.alistclient.ui.theme.CloudTextSecondary
 @Composable
 fun FileScreen(
     viewModel: FileViewModel = hiltViewModel(),
+    initialPath: String = "/",
     onPreview: (FileItem) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    LaunchedEffect(Unit) { viewModel.loadIfNeeded("/") }
+    LaunchedEffect(initialPath) { viewModel.loadIfNeeded(initialPath) }
     BackHandler(enabled = viewModel.canNavigateUp) {
         viewModel.navigateUp()
     }

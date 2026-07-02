@@ -14,8 +14,11 @@ data class PreviewArgs(
 )
 
 sealed class AppRoute(val route: String) {
+    data object Home : AppRoute("home")
     data object Login : AppRoute("login")
-    data object Files : AppRoute("files")
+    data object Files : AppRoute("files?path={path}") {
+        fun create(path: String = "/"): String = "files?path=${URLEncoder.encode(path, StandardCharsets.UTF_8.name())}"
+    }
     data object Transfers : AppRoute("transfers")
     data object Settings : AppRoute("settings")
     data object MoveCopyPicker : AppRoute("copy_move_picker")

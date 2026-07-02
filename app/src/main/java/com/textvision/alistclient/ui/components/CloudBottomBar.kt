@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SyncAlt
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,6 +51,12 @@ fun CloudBottomBar(
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        CloudBottomBarItem(
+            selected = currentRoute == AppRoute.Home.route,
+            icon = Icons.Outlined.Cloud,
+            label = "首页",
+            onClick = { onNavigate(AppRoute.Home.route) },
+        )
         CloudBottomBarItem(
             selected = currentRoute == AppRoute.Files.route,
             icon = Icons.Default.Folder,
