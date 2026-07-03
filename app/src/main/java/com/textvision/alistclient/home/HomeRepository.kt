@@ -50,11 +50,23 @@ class HomeRepository @Inject constructor(
         }
         val publicSection = (publicResult as PublicResult.Ok).toSection()
 
-        // Admin sections: independent failures are tolerated.
-        val storage = runAdmin(base) { api.listStorage("${base}api/admin/storage/list") }.toStorageSection()
-        val serverStats = fetchServerStats(base)
-        val session = runAdmin(base) { api.listSessions("${base}api/admin/session/list") }.toSessionSection()
-        val task = fetchTaskBuckets(base)
+        // Admin sections: independent failures are tolerated; fetch in parallel.
+        val (storage, serverStats, session, task) = coroutineScope {
+            val storageDeferred = async {
+                runAdmin(base) { api.listStorage("${base}api/admin/storage/list") }.toStorageSection()
+            }
+            val serverStatsDeferred = async { fetchServerStats(base) }
+            val sessionDeferred = async {
+                runAdmin(base) { api.listSessions("${base}api/admin/session/list") }.toSessionSection()
+            }
+            val taskDeferred = async { fetchTaskBuckets(base) }
+            Quadruple(
+                storageDeferred.await(),
+                serverStatsDeferred.await(),
+                sessionDeferred.await(),
+                taskDeferred.await(),
+            )
+        }
 
         ApiResult.Success(
             HomeData(
@@ -274,3 +286,5 @@ class HomeRepository @Inject constructor(
         AdminResult.Network -> SectionResult.Failed(SectionFailure.Network)
     }
 }
+
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
