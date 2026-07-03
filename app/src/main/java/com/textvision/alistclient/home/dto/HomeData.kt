@@ -1,35 +1,24 @@
 package com.textvision.alistclient.home.dto
 
-import com.textvision.alistclient.network.dto.PublicSettings
 import com.textvision.alistclient.network.dto.StorageInfo
 
-/**
- * All values `HomeScreen` needs, regardless of which combination of
- * endpoints succeeded. `isGuest` is true when at least one admin call
- * returned 401/403 and we fell back to public/settings.
- */
-sealed interface HomeData {
-    val serverTitle: String
-    val serverVersion: String?
+data class HomeData(
+    val publicSection: SectionResult<PublicData>,
+    val storageSection: SectionResult<StorageData>,
+    val serverStatsSection: SectionResult<ServerStatsData>,
+    val sessionSection: SectionResult<SessionData>,
+    val taskSection: SectionResult<TaskData>,
+) {
+    /** Storage-only helper for legacy UI. Empty when storageSection is Failed. */
+    val storages: List<StorageInfo>
+        get() = (storageSection as? SectionResult.Ok)?.data?.storages ?: emptyList()
+
     val isGuest: Boolean
-
-    data class Admin(
-        override val serverTitle: String,
-        override val serverVersion: String?,
-        val storages: List<StorageInfo>,
-        override val isGuest: Boolean = false,
-    ) : HomeData
-
-    data class Guest(
-        override val serverTitle: String,
-        override val serverVersion: String?,
-        val publicSettings: PublicSettings,
-    ) : HomeData {
-        override val isGuest: Boolean = true
-    }
+        get() = storageSection is SectionResult.Failed
 }
 
-sealed interface HomeFailure {
-    /** public/settings also failed; show Error UiState with retry */
-    data class Unreachable(val message: String) : HomeFailure
+data class StorageData(val storages: List<StorageInfo>) {
+    val total: Int get() = storages.size
+    val working: Int get() = storages.count { it.status == "work" }
+    val abnormal: Int get() = total - working
 }
