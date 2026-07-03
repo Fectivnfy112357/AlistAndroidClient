@@ -12,7 +12,11 @@ import com.textvision.alistclient.network.dto.MkdirRequest
 import com.textvision.alistclient.network.dto.PublicSettings
 import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
+import com.textvision.alistclient.network.dto.RoleList
+import com.textvision.alistclient.network.dto.SessionInfo
 import com.textvision.alistclient.network.dto.StorageList
+import com.textvision.alistclient.network.dto.TaskInfo
+import com.textvision.alistclient.network.dto.UserList
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -47,6 +51,19 @@ interface AlistApi {
 
     @GET
     suspend fun listStorage(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<StorageList>
+
+    @GET
+    suspend fun listUsers(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<UserList>
+
+    @GET
+    suspend fun listRoles(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<RoleList>
+
+    @GET
+    suspend fun listSessions(@Url url: String): AlistResponse<List<SessionInfo>>
+
+    @POST
+    suspend fun taskUndone(@Url url: String): AlistResponse<List<TaskInfo>>
+
     @GET
     suspend fun getPublicSettings(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String = SkipAuthRetry.HEADER): AlistResponse<PublicSettings>
 }
