@@ -7,19 +7,6 @@ import org.junit.Test
 class AdminDtosTest {
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 
-    @Test fun adminInfoMapsFlatKeys() {
-        val raw = """
-            {"version":"v3.25.0","build_date":"2025-09-01","start_time":"2026-07-01T00:00:00Z",
-             "used_bytes":1234,"total_bytes":5678}
-        """.trimIndent()
-        val info = json.decodeFromString<AdminInfo>(raw)
-        assertEquals("v3.25.0", info.version)
-        assertEquals("2025-09-01", info.buildDate)
-        assertEquals("2026-07-01T00:00:00Z", info.startTime)
-        assertEquals(1234L, info.usedBytes)
-        assertEquals(5678L, info.totalBytes)
-    }
-
     @Test fun storageInfoMapsSnakeCaseKeys() {
         val raw = """
             {"id":1,"mount_path":"/local","driver":"Local","status":"work",

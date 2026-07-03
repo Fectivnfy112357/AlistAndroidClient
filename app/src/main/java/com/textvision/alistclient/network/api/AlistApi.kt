@@ -1,7 +1,6 @@
 package com.textvision.alistclient.network.api
 
 import com.textvision.alistclient.network.SkipAuthRetry
-import com.textvision.alistclient.network.dto.AdminInfo
 import com.textvision.alistclient.network.dto.AlistFsList
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
@@ -45,9 +44,6 @@ interface AlistApi {
 
     @POST
     suspend fun move(@Url url: String, @Body request: CopyMovePathRequest): AlistResponse<Unit>
-
-    @POST
-    suspend fun adminInfo(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String, @Body request: com.textvision.alistclient.network.dto.AdminInfoRequest = com.textvision.alistclient.network.dto.AdminInfoRequest()): AlistResponse<AdminInfo>
 
     @GET
     suspend fun listStorage(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<StorageList>
