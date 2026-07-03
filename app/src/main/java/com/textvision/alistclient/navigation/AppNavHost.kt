@@ -46,7 +46,7 @@ fun AppNavHost(startAuthenticated: Boolean) {
             ) {
                 composable(AppRoute.Login.route) {
                     LoginScreen(onLoginSuccess = {
-                        navController.navigate(AppRoute.Files.route) {
+                        navController.navigate(AppRoute.Files.create()) {
                             popUpTo(AppRoute.Login.route) { inclusive = true }
                         }
                     })

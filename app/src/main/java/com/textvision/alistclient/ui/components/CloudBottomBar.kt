@@ -61,7 +61,7 @@ fun CloudBottomBar(
             selected = currentRoute == AppRoute.Files.route,
             icon = Icons.Default.Folder,
             label = "文件",
-            onClick = { onNavigate(AppRoute.Files.route) },
+            onClick = { onNavigate(AppRoute.Files.create()) },
         )
         CloudBottomBarItem(
             selected = currentRoute == AppRoute.Transfers.route,

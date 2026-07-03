@@ -18,6 +18,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Query
 import retrofit2.http.Url
 
 interface AlistApi {
@@ -48,9 +49,8 @@ interface AlistApi {
     @POST
     suspend fun adminInfo(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String, @Body request: com.textvision.alistclient.network.dto.AdminInfoRequest = com.textvision.alistclient.network.dto.AdminInfoRequest()): AlistResponse<AdminInfo>
 
-    @POST
-    suspend fun listStorage(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String, @Body request: com.textvision.alistclient.network.dto.StorageListRequest = com.textvision.alistclient.network.dto.StorageListRequest()): AlistResponse<StorageList>
-
+    @GET
+    suspend fun listStorage(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<StorageList>
     @GET
     suspend fun getPublicSettings(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String = SkipAuthRetry.HEADER): AlistResponse<PublicSettings>
 }

@@ -7,14 +7,12 @@ import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.home.dto.HomeData
 import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.network.api.AlistApi
-import com.textvision.alistclient.network.dto.AdminInfo
 import com.textvision.alistclient.network.dto.AlistResponse
 import com.textvision.alistclient.network.dto.PublicSettings
 import com.textvision.alistclient.network.dto.StorageList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -76,14 +74,14 @@ class HomeRepository @Inject constructor(
     }
 
     /**
-     * Serialized admin calls — safe vs race conditions in MockWebServer
-     * (parallel async both consume first enqueued response, wrong DTO = crash).
-     * Trade-off: ~2x round trips under load; acceptable for cheap admin endpoints.
+     * Alist v3 admin endpoint surface used here: only `GET /api/admin/storage/list`.
+     * (Earlier specs also called `POST /api/admin/info`, but that route does
+     * not exist on v3.x — POSTing it returns the SPA HTML shell, which fails
+     * to deserialize as `AlistResponse`.)
      */
     private suspend fun runAdmin(base: String): AdminResult {
-        val info = safeCallApi { api.adminInfo("${base}api/admin/info", SkipAuthRetry.HEADER) }
-        val storage = safeCallApi { api.listStorage("${base}api/admin/storage/list", SkipAuthRetry.HEADER) }
-        return combine(info, storage)
+        val storage = safeCallApi { api.listStorage("${base}api/admin/storage/list") }
+        return combine(storage)
     }
 
     private suspend fun <T : Any> safeCallApi(call: suspend () -> AlistResponse<T>): ApiResult<AlistResponse<T>> {
@@ -95,29 +93,21 @@ class HomeRepository @Inject constructor(
         }
     }
 
-    private fun combine(
-        info: ApiResult<AlistResponse<AdminInfo>>,
-        storage: ApiResult<AlistResponse<StorageList>>
-    ): AdminResult {
-        if (info is ApiResult.NetworkError && storage is ApiResult.NetworkError) {
-            return AdminResult.Network(info.cause)
+    private fun combine(storage: ApiResult<AlistResponse<StorageList>>): AdminResult {
+        if (storage is ApiResult.NetworkError) {
+            return AdminResult.Network(storage.cause)
         }
-        if (info is ApiResult.Success && storage is ApiResult.Success) {
-            val infoResp = info.data
+        if (storage is ApiResult.Success) {
             val storageResp = storage.data
-            if (infoResp.code == 200 && storageResp.code == 200 && infoResp.data != null && storageResp.data != null) {
-                return AdminResult.Ok(infoResp.data, storageResp.data)
+            if (storageResp.code == 200 && storageResp.data != null) {
+                return AdminResult.Ok(storageResp.data)
             }
-            if (infoResp.code in setOf(401, 403) || storageResp.code in setOf(401, 403)) {
-                val code = if (infoResp.code in setOf(401, 403)) infoResp.code else storageResp.code
-                return AdminResult.NotAdmin(code, "Forbidden")
+            if (storageResp.code in setOf(401, 403)) {
+                return AdminResult.NotAdmin(storageResp.code, "Forbidden")
             }
         }
-        val firstFailure = listOf(info, storage)
-            .filterIsInstance<ApiResult.Success<*>>()
-            .map { (it.data as AlistResponse<*>).code }
-            .firstOrNull { it != 200 } ?: 500
-        return AdminResult.NotAdmin(firstFailure, "Unexpected response")
+        val code = (storage as? ApiResult.Success)?.data?.code ?: 500
+        return AdminResult.NotAdmin(code, "Unexpected response")
     }
 
     private fun publicToGuest(settings: PublicSettings) = HomeData.Guest(
@@ -127,19 +117,25 @@ class HomeRepository @Inject constructor(
     )
 
     private sealed interface AdminResult {
-        data class Ok(val info: AdminInfo, val storage: StorageList) : AdminResult
+        data class Ok(val storage: StorageList) : AdminResult
         data class NotAdmin(val code: Int, val message: String) : AdminResult
         data class Network(val cause: Throwable) : AdminResult
 
         fun toData(): HomeData.Admin = when (this) {
-            is Ok -> HomeData.Admin(
-                serverTitle = "Alist", // admin/info does not return site title
-                serverVersion = info.version,
-                startTime = info.startTime?.let { runCatching { Instant.parse(it) }.getOrNull() },
-                usedBytes = info.usedBytes,
-                totalBytes = info.totalBytes,
-                storages = storage.content,
-            )
+            is Ok -> {
+                // /api/admin/info does not exist on Alist v3; approximate system
+                // usage by summing across the storage list.
+                val usedBytes = storage.content.sumOf { it.usedBytes }
+                val totalBytes = storage.content.sumOf { it.totalBytes }
+                HomeData.Admin(
+                    serverTitle = "Alist", // admin/storage/list does not return site title
+                    serverVersion = null, // not exposed by /api/admin/storage/list
+                    startTime = null, // not exposed by /api/admin/storage/list
+                    usedBytes = usedBytes,
+                    totalBytes = totalBytes,
+                    storages = storage.content,
+                )
+            }
             else -> error("Cannot convert non-Ok AdminResult to Admin data")
         }
     }

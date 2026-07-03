@@ -24,4 +24,16 @@ class AppRouteTest {
         assertEquals("https://example.test/d/a%20b.png?sign=abc&x=1", args.downloadUrl)
         assertEquals(1234L, args.size)
     }
+
+    // Regression: passing AppRoute.Files.route to navigate() injects the literal
+    // string "{path}" as the query value (Compose Navigation doesn't strip the
+    // placeholder from a literal route string), so callers must use
+    // AppRoute.Files.create() which URL-encodes the actual path.
+    @Test fun filesRouteIsNavArgTemplateAndCreateIsEncoded() {
+        assertEquals("files?path={path}", AppRoute.Files.route)
+        assertEquals("files?path=%2F", AppRoute.Files.create())
+        assert(!AppRoute.Files.create().contains("{path}")) {
+            "Files.create() must not leak the nav-arg placeholder as a literal"
+        }
+    }
 }
