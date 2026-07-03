@@ -6,11 +6,11 @@ import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.data.secure.CredentialStore
 import com.textvision.alistclient.home.dto.HomeData
+import com.textvision.alistclient.home.dto.SectionResult
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.AuthTokenProvider
 import com.textvision.alistclient.network.api.AlistApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -18,13 +18,13 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeRepositoryTest {
     private lateinit var server: MockWebServer
     private lateinit var api: AlistApi
@@ -41,7 +41,6 @@ class HomeRepositoryTest {
         override fun clearAll() { map.clear() }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Before fun setUp() {
         server = MockWebServer().apply { start() }
         store = MemoryStore().apply {
@@ -67,77 +66,78 @@ class HomeRepositoryTest {
     private fun enqueue(body: String, code: Int = 200) =
         server.enqueue(MockResponse().setResponseCode(code).setBody(body))
 
-    @Test fun adminSuccessReturnsAdminData() = runTest {
-        enqueue("""{"code":200,"message":"success","data":{"content":[{"mount_path":"/local","driver":"Local","status":"work"}],"total":1}}""")
+    private fun publicOk() = """{"code":200,"message":"success","data":{"title":"My Alist","version":"v3.61.0"}}"""
+    private fun storageOk() = """{"code":200,"message":"success","data":{"content":[{"mount_path":"/local","driver":"Local","status":"work"}],"total":1}}"""
+    private fun userOk() = """{"code":200,"message":"success","data":{"content":[{"id":1,"username":"admin","disabled":false}],"total":1}}"""
+    private fun roleOk() = """{"code":200,"message":"success","data":{"content":[{"id":2,"name":"admin"}],"total":1}}"""
+    private fun sessionOk() = """{"code":200,"message":"success","data":[{"session_id":"s1","user_id":1,"last_active":1,"status":0,"ua":"u","ip":"1.1.1.1"}]}"""
+    private fun taskOk() = """{"code":200,"message":"success","data":[]}"""
 
-        val result = repo.loadDashboard() as ApiResult.Success
+    @Test fun allAdminOkReturnsAllSections() = runTest {
+        enqueue(publicOk()); enqueue(storageOk()); enqueue(userOk()); enqueue(roleOk()); enqueue(sessionOk())
+        for (i in 1..7) enqueue(taskOk())
 
-        val data = result.data as HomeData.Admin
-        assertEquals(false, data.isGuest)
-        assertEquals(1, data.storages.size)
-        assertEquals("/local", data.storages.first().mountPath)
-        assertEquals("work", data.storages.first().status)
-        // public endpoint should NOT have been hit
-        assertEquals(1, server.requestCount)
+        val r = repo.loadDashboard() as ApiResult.Success
+        val d = r.data
+        assertTrue(d.publicSection is SectionResult.Ok)
+        assertTrue(d.storageSection is SectionResult.Ok)
+        assertTrue(d.serverStatsSection is SectionResult.Ok)
+        assertTrue(d.sessionSection is SectionResult.Ok)
+        assertTrue(d.taskSection is SectionResult.Ok)
     }
 
-    @Test fun admin401FallsBackToPublicAndMarksGuest() = runTest {
-        enqueue("""{"code":401,"message":"unauthorized","data":null}""")
-        enqueue("""{"code":401,"message":"unauthorized","data":null}""") // login fails
-        enqueue("""{"code":200,"message":"success","data":{"title":"My Alist","version":"v3.25.0"}}""")
-
-        val result = repo.loadDashboard() as ApiResult.Success
-        val data = result.data as HomeData.Guest
-
-        assertEquals(true, data.isGuest)
-        assertEquals("My Alist", data.serverTitle)
-        assertEquals("v3.25.0", data.serverVersion)
-        assertEquals(3, server.requestCount)
-    }
-
-    @Test fun adminNetworkErrorFallsBackToPublic() = runTest {
-        server.shutdown() // public will be called on a fresh server below
-        // emulate the public fallback path: open a new server for public
-        val publicServer = MockWebServer().apply { start() }
-        try {
-            // point the stored URL at the new server
-            store.map[SessionManager.KEY_SERVER_URL] = publicServer.url("/").toString()
-            publicServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START)) // admin fails with network error
-            publicServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"code":200,"message":"success","data":{"title":"Public","version":"v3"}}"""))
-
-            val result = repo.loadDashboard() as ApiResult.Success
-            assertTrue(result.data is HomeData.Guest)
-        } finally { publicServer.shutdown() }
-    }
-
-    @Test fun adminAndPublicAllFailReturnsFailure() = runTest {
+    @Test fun admin401LeavesSectionsFailedAndPublicOk() = runTest {
+        // public ok
+        enqueue(publicOk())
+        // storage 401 → refresh attempt → still 401
         enqueue("""{"code":401,"message":"x","data":null}""")
         enqueue("""{"code":401,"message":"x","data":null}""") // login fails
-        enqueue("""{"code":500,"message":"oops","data":null}""")
+        // user, role, session, task 401→login→401
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        enqueue("""{"code":401,"message":"x","data":null}""")
+        // 7 task 401→login→401 (14 mocks)
+        repeat(7) {
+            enqueue("""{"code":401,"message":"x","data":null}""")
+            enqueue("""{"code":401,"message":"x","data":null}""")
+        }
 
-        val result = repo.loadDashboard()
-
-        assertTrue(result is ApiResult.Failure)
-        assertEquals(500, (result as ApiResult.Failure).code)
+        val r = repo.loadDashboard() as ApiResult.Success
+        val d = r.data
+        assertTrue(d.publicSection is SectionResult.Ok)
+        assertTrue(d.storageSection is SectionResult.Failed)
+        assertTrue(d.serverStatsSection is SectionResult.Failed)
+        assertTrue(d.sessionSection is SectionResult.Failed)
+        assertTrue(d.taskSection is SectionResult.Failed)
     }
 
-    @Test fun refreshesTokenAndRetriesAdminOn401() = runTest {
-        // First admin call returns 401
-        enqueue("""{"code":401,"message":"unauthorized","data":null}""")
-        // Login with new token
-        enqueue("""{"code":200,"message":"success","data":{"token":"new_tok"}}""")
-        // Retry admin call now succeeds
-        enqueue("""{"code":200,"message":"success","data":{"content":[{"mount_path":"/local2","driver":"Local","used_bytes":100,"total_bytes":200}],"total":1}}""")
+    @Test fun publicFailureReturnsApiResultFailure() = runTest {
+        enqueue("""{"code":500,"message":"oops","data":null}""")
+        val r = repo.loadDashboard()
+        assertTrue(r is ApiResult.Failure)
+        assertEquals(500, (r as ApiResult.Failure).code)
+    }
 
-        val result = repo.loadDashboard() as ApiResult.Success
-        val data = result.data as HomeData.Admin
+    @Test fun retrySectionRefetchesOnlyThatSection() = runTest {
+        // First load: public ok, storage ok, user ok, role ok, session ok, 7×task ok
+        enqueue(publicOk()); enqueue(storageOk()); enqueue(userOk()); enqueue(roleOk()); enqueue(sessionOk())
+        repeat(7) { enqueue(taskOk()) }
+        val r1 = repo.loadDashboard() as ApiResult.Success
+        val countAfterFirst = server.requestCount
 
-        assertEquals(false, data.isGuest)
-        assertEquals(1, data.storages.size)
-        assertEquals("/local2", data.storages.first().mountPath)
-        // Should have made: 1 admin 401 + 1 login + 1 admin 200 = 3 requests
-        assertEquals(3, server.requestCount)
-        // Token should be refreshed
-        assertEquals("new_tok", tokenProvider.getToken())
+        // retry storage
+        enqueue("""{"code":200,"message":"success","data":{"content":[{"mount_path":"/new","driver":"Local","status":"work"}],"total":1}}""")
+        val r2 = repo.retrySection(r1.data, SectionKey.Storage)
+        val storage = r2.storageSection as SectionResult.Ok
+        assertEquals("/new", storage.data.storages.first().mountPath)
+        assertEquals(countAfterFirst + 1, server.requestCount)
+        // public unchanged
+        assertEquals((r1.data.publicSection as SectionResult.Ok).data.siteTitle,
+            (r2.publicSection as SectionResult.Ok).data.siteTitle)
     }
 }

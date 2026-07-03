@@ -5,4 +5,5 @@ import com.textvision.alistclient.home.dto.HomeData
 
 interface HomeRepositoryContract {
     suspend fun loadDashboard(): ApiResult<HomeData>
+    suspend fun retrySection(data: HomeData, key: SectionKey): HomeData
 }
