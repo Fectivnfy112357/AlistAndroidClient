@@ -19,9 +19,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.outlined.Cloud
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,26 +75,37 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.loadIfNeeded() }
     HomeScreenContent(
         state = state,
+        isRefreshing = isRefreshing,
         onStorageClick = onStorageClick,
         onRetrySection = { viewModel.retrySection(it) },
+        onRefresh = { viewModel.refresh() },
     )
 }
 
 @Composable
 internal fun HomeScreenContent(
     state: HomeUiState,
+    isRefreshing: Boolean = false,
     onStorageClick: (String) -> Unit,
     onRetrySection: (SectionKey) -> Unit,
+    onRefresh: () -> Unit = {},
 ) {
     CloudScaffold(showBottomPadding = true) {
         CloudTopBar(title = "首页", subtitle = " ")
         when (state) {
             is HomeUiState.Loading -> LoadingSkeleton()
             is HomeUiState.Error -> ErrorState(message = state.message, onRetry = { onRetrySection(SectionKey.Public) })
-            is HomeUiState.Success -> SuccessContent(data = state.data, onStorageClick = onStorageClick, onRetrySection = onRetrySection)
+            is HomeUiState.Success -> SuccessContent(
+                data = state.data,
+                isRefreshing = isRefreshing,
+                onStorageClick = onStorageClick,
+                onRetrySection = onRetrySection,
+                onRefresh = onRefresh,
+            )
         }
     }
 }
@@ -131,23 +144,39 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun SuccessContent(data: HomeData, onStorageClick: (String) -> Unit, onRetrySection: (SectionKey) -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        HeroCard(data.publicSection)
-        KpiRow(
-            serverStats = data.serverStatsSection,
-            session = data.sessionSection,
-            onRetryServerStats = { onRetrySection(SectionKey.ServerStats) },
-            onRetrySession = { onRetrySection(SectionKey.Session) },
-        )
-        TaskCard(
-            task = data.taskSection,
-            onRetry = { onRetrySection(SectionKey.Task) },
-        )
-        StorageSection(storages = data.storages, onStorageClick = onStorageClick)
+private fun SuccessContent(
+    data: HomeData,
+    isRefreshing: Boolean,
+    onStorageClick: (String) -> Unit,
+    onRetrySection: (SectionKey) -> Unit,
+    onRefresh: () -> Unit,
+) {
+    PullToRefreshBoxWrapper(isRefreshing = isRefreshing, onRefresh = onRefresh) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            HeroCard(data.publicSection)
+            KpiRow(
+                serverStats = data.serverStatsSection,
+                session = data.sessionSection,
+                onRetryServerStats = { onRetrySection(SectionKey.ServerStats) },
+                onRetrySession = { onRetrySection(SectionKey.Session) },
+            )
+            TaskCard(
+                task = data.taskSection,
+                onRetry = { onRetrySection(SectionKey.Task) },
+            )
+            StorageSection(storageSection = data.storageSection, onStorageClick = onStorageClick, onRetry = { onRetrySection(SectionKey.Storage) })
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PullToRefreshBoxWrapper(isRefreshing: Boolean, onRefresh: () -> Unit, content: @Composable () -> Unit) {
+    PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh) {
+        content()
     }
 }
 
@@ -288,7 +317,18 @@ private fun SectionFailedHint(failure: SectionFailure, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun StorageSection(storages: List<StorageInfo>, onStorageClick: (String) -> Unit) {
+private fun StorageSection(storageSection: SectionResult<StorageData>, onStorageClick: (String) -> Unit, onRetry: () -> Unit) {
+    when (storageSection) {
+        is SectionResult.Ok -> StorageSectionOk(storages = storageSection.data.storages, onStorageClick = onStorageClick)
+        is SectionResult.Failed -> CloudCard(modifier = Modifier.testTag("home_storage_failed"), contentPadding = PaddingValues(14.dp)) {
+            SectionFailedHint(failure = storageSection.cause, onRetry = onRetry)
+        }
+        SectionResult.Loading -> CloudCard { Text("—", modifier = Modifier.padding(20.dp), color = CloudTextTertiary) }
+    }
+}
+
+@Composable
+private fun StorageSectionOk(storages: List<StorageInfo>, onStorageClick: (String) -> Unit) {
     Column {
         StorageSummaryStrip(storages = storages)
         if (storages.isEmpty()) {
