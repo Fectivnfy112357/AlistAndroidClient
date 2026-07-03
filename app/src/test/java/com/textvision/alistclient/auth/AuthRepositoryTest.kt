@@ -19,6 +19,10 @@ import com.textvision.alistclient.network.dto.CopyMovePathRequest
 import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.LoginRequest
 import com.textvision.alistclient.network.dto.RemoveRequest
+import com.textvision.alistclient.network.dto.RoleList
+import com.textvision.alistclient.network.dto.SessionInfo
+import com.textvision.alistclient.network.dto.TaskInfo
+import com.textvision.alistclient.network.dto.UserList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -45,6 +49,10 @@ class AuthRepositoryTest {
         override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("move is not used by this test")
         override suspend fun listStorage(url: String, page: Int, perPage: Int): AlistResponse<com.textvision.alistclient.network.dto.StorageList> = throw UnsupportedOperationException("listStorage is not used by this test")
         override suspend fun getPublicSettings(url: String, skipAuthRetry: String): AlistResponse<com.textvision.alistclient.network.dto.PublicSettings> = throw UnsupportedOperationException("getPublicSettings is not used by this test")
+        override suspend fun listUsers(url: String, page: Int, perPage: Int): AlistResponse<UserList> = throw UnsupportedOperationException("listUsers is not used by this test")
+        override suspend fun listRoles(url: String, page: Int, perPage: Int): AlistResponse<RoleList> = throw UnsupportedOperationException("listRoles is not used by this test")
+        override suspend fun listSessions(url: String): AlistResponse<List<SessionInfo>> = throw UnsupportedOperationException("listSessions is not used by this test")
+        override suspend fun taskUndone(url: String): AlistResponse<List<TaskInfo>> = throw UnsupportedOperationException("taskUndone is not used by this test")
     }
 
     private class CancellingApi : AlistApi {
@@ -60,6 +68,10 @@ class AuthRepositoryTest {
         override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("move is not used by this test")
         override suspend fun listStorage(url: String, page: Int, perPage: Int): AlistResponse<com.textvision.alistclient.network.dto.StorageList> = throw UnsupportedOperationException("listStorage is not used by this test")
         override suspend fun getPublicSettings(url: String, skipAuthRetry: String): AlistResponse<com.textvision.alistclient.network.dto.PublicSettings> = throw UnsupportedOperationException("getPublicSettings is not used by this test")
+        override suspend fun listUsers(url: String, page: Int, perPage: Int): AlistResponse<UserList> = throw UnsupportedOperationException("listUsers is not used by this test")
+        override suspend fun listRoles(url: String, page: Int, perPage: Int): AlistResponse<RoleList> = throw UnsupportedOperationException("listRoles is not used by this test")
+        override suspend fun listSessions(url: String): AlistResponse<List<SessionInfo>> = throw UnsupportedOperationException("listSessions is not used by this test")
+        override suspend fun taskUndone(url: String): AlistResponse<List<TaskInfo>> = throw UnsupportedOperationException("taskUndone is not used by this test")
     }
 
     @Test fun loginRethrowsCancellationException() = runTest {
