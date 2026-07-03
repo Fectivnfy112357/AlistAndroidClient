@@ -201,7 +201,7 @@ private fun KpiRow(
             value = (serverStats as? SectionResult.Ok)?.data?.roleCount?.toString(),
             failed = serverStats is SectionResult.Failed,
             onRetry = onRetryServerStats,
-            retryTag = "home_serverstats_retry",
+            retryTag = "home_serverstats_role_retry",
         )
         KpiTile(
             modifier = Modifier.weight(1f).testTag("home_kpi_session"),
