@@ -44,6 +44,14 @@ class HomeViewModel @Inject constructor(
         load()
     }
 
+    fun retrySection(key: SectionKey) {
+        val current = _uiState.value as? HomeUiState.Success ?: return
+        viewModelScope.launch(dispatcher) {
+            val updated = repository.retrySection(current.data, key)
+            _uiState.value = HomeUiState.Success(updated)
+        }
+    }
+
     private fun load() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch(dispatcher) {

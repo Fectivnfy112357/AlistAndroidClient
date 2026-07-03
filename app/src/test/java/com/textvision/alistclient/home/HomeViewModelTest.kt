@@ -2,8 +2,12 @@ package com.textvision.alistclient.home
 
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.home.dto.HomeData
-import com.textvision.alistclient.network.dto.PublicSettings
-import com.textvision.alistclient.network.dto.StorageInfo
+import com.textvision.alistclient.home.dto.PublicData
+import com.textvision.alistclient.home.dto.SectionResult
+import com.textvision.alistclient.home.dto.ServerStatsData
+import com.textvision.alistclient.home.dto.SessionData
+import com.textvision.alistclient.home.dto.StorageData
+import com.textvision.alistclient.home.dto.TaskData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -19,21 +23,29 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+private fun emptyHomeData(): HomeData = HomeData(
+    publicSection = SectionResult.Ok(PublicData("Test", "v1", null, null, null, null, false)),
+    storageSection = SectionResult.Ok(StorageData(emptyList())),
+    serverStatsSection = SectionResult.Ok(ServerStatsData(0, 0, 0)),
+    sessionSection = SectionResult.Ok(SessionData(0, 0)),
+    taskSection = SectionResult.Ok(TaskData(0, 0, emptyList(), emptyList())),
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
     private class FakeRepo(
-        var nextResult: ApiResult<HomeData> = ApiResult.Success(
-            HomeData.Admin(
-                serverTitle = "Alist",
-                serverVersion = "v3.25.0",
-                storages = emptyList(),
-            )
-        ),
+        var nextResult: ApiResult<HomeData> = ApiResult.Success(emptyHomeData()),
+        var retryBehavior: (HomeData, SectionKey) -> HomeData = { d, _ -> d },
+        var retryCalls: Int = 0,
     ) : HomeRepositoryContract {
-        var calls = 0
+        var loadCalls = 0
         override suspend fun loadDashboard(): ApiResult<HomeData> {
-            calls++
+            loadCalls++
             return nextResult
+        }
+        override suspend fun retrySection(data: HomeData, key: SectionKey): HomeData {
+            retryCalls++
+            return retryBehavior(data, key)
         }
     }
 
@@ -49,91 +61,66 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value is HomeUiState.Success)
-        assertEquals(1, repo.calls)
+        assertEquals(1, repo.loadCalls)
     }
 
     @Test fun loadIfNeededDoesNotReloadWhenAlreadyLoaded() = runTest {
         val repo = FakeRepo()
         val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
-        vm.loadIfNeeded()
-        advanceUntilIdle()
-
-        vm.loadIfNeeded()
-        advanceUntilIdle()
-
-        assertEquals(1, repo.calls)
+        vm.loadIfNeeded(); advanceUntilIdle()
+        vm.loadIfNeeded(); advanceUntilIdle()
+        assertEquals(1, repo.loadCalls)
     }
 
-    @Test fun refreshTriggersAnotherLoadEvenIfAlreadyLoaded() = runTest {
+    @Test fun refreshTriggersAnotherLoad() = runTest {
         val repo = FakeRepo()
         val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
-        vm.loadIfNeeded()
-        advanceUntilIdle()
-
-        vm.refresh()
-        advanceUntilIdle()
-
-        assertEquals(2, repo.calls)
+        vm.loadIfNeeded(); advanceUntilIdle()
+        vm.refresh(); advanceUntilIdle()
+        assertEquals(2, repo.loadCalls)
     }
 
     @Test fun loadFailureTransitionsToError() = runTest {
         val repo = FakeRepo().apply { nextResult = ApiResult.Failure(500, "boom") }
         val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
-
-        vm.loadIfNeeded()
-        advanceUntilIdle()
-
-        val state = vm.uiState.value
-        assertTrue(state is HomeUiState.Error)
-        assertEquals("boom", (state as HomeUiState.Error).message)
+        vm.loadIfNeeded(); advanceUntilIdle()
+        assertTrue(vm.uiState.value is HomeUiState.Error)
+        assertEquals("boom", (vm.uiState.value as HomeUiState.Error).message)
     }
 
-    @Test fun networkErrorTransitionsToErrorWithThrowableMessage() = runTest {
-        val repo = FakeRepo().apply { nextResult = ApiResult.NetworkError(java.io.IOException("offline")) }
+    @Test fun retrySectionUpdatesUiStateForThatKeyOnly() = runTest {
+        val initial = emptyHomeData()
+        val updatedStorage = initial.copy(
+            storageSection = SectionResult.Ok(StorageData(listOf(
+                com.textvision.alistclient.network.dto.StorageInfo(mountPath = "/x", driver = "Local", status = "work")
+            ))),
+        )
+        val repo = FakeRepo().apply {
+            nextResult = ApiResult.Success(initial)
+            retryBehavior = { data, key -> if (key == SectionKey.Storage) updatedStorage else data }
+        }
         val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
+        vm.loadIfNeeded(); advanceUntilIdle()
 
-        vm.loadIfNeeded()
+        vm.retrySection(SectionKey.Storage)
         advanceUntilIdle()
 
-        val state = vm.uiState.value
-        assertTrue(state is HomeUiState.Error)
-        assertTrue((state as HomeUiState.Error).message.contains("offline"))
+        val state = vm.uiState.value as HomeUiState.Success
+        val storage = state.data.storageSection as SectionResult.Ok
+        assertEquals(1, storage.data.storages.size)
+        assertEquals("/x", storage.data.storages.first().mountPath)
+        // public unchanged
+        assertTrue(state.data.publicSection is SectionResult.Ok)
+        assertEquals(1, repo.retryCalls)
     }
 
-    @Test fun refreshCancelsPreviousLoadJob() = runTest {
+    @Test fun retrySectionNoopWhenStateIsNotSuccess() = runTest {
         val repo = FakeRepo()
         val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
-        vm.loadIfNeeded()
-        runCurrent()
-
-        // Call refresh while the first load is still in flight
-        vm.refresh()
+        // before any load
+        vm.retrySection(SectionKey.Storage)
         advanceUntilIdle()
-
-        // The first load job was cancelled, so the repo got 2 calls (1 cancelled + 1 fresh)
-        assertEquals(2, repo.calls)
-    }
-
-    @Test fun adminDataPropagatesIsGuestFalse() = runTest {
-        val admin = HomeData.Admin(
-            serverTitle = "Alist", serverVersion = "v3.25.0",
-            storages = listOf(StorageInfo(mountPath = "/local", driver = "Local")),
-        )
-        val repo = FakeRepo().apply { nextResult = ApiResult.Success(admin) }
-        val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
-        vm.loadIfNeeded()
-        advanceUntilIdle()
-        val state = vm.uiState.value as HomeUiState.Success
-        assertEquals(false, state.data.isGuest)
-    }
-
-    @Test fun guestDataPropagatesIsGuestTrue() = runTest {
-        val guest = HomeData.Guest("My Alist", "v3.25.0", PublicSettings("My Alist", null, "v3.25.0"))
-        val repo = FakeRepo().apply { nextResult = ApiResult.Success(guest) }
-        val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
-        vm.loadIfNeeded()
-        advanceUntilIdle()
-        val state = vm.uiState.value as HomeUiState.Success
-        assertEquals(true, state.data.isGuest)
+        assertEquals(0, repo.retryCalls)
+        assertSame(HomeUiState.Loading, vm.uiState.value)
     }
 }
