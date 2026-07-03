@@ -20,16 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,10 +60,6 @@ import com.textvision.alistclient.ui.theme.CloudTextSecondary
 import com.textvision.alistclient.ui.theme.CloudTextTertiary
 import com.textvision.alistclient.ui.theme.CloudWarningContainer
 import com.textvision.alistclient.ui.theme.CloudWarningText
-import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 @Composable
 fun HomeScreen(
@@ -171,7 +163,7 @@ private fun SuccessContent(data: HomeData, onStorageClick: (String) -> Unit) {
             CloudStatusBanner(text = "当前为游客身份，存储详情不可用", kind = CloudBannerKind.Info)
         }
         if (data is HomeData.Admin) {
-            UsageCard(usedBytes = data.usedBytes, totalBytes = data.totalBytes)
+            StorageSummaryCard(storages = data.storages)
             StorageListSection(storages = data.storages, onStorageClick = onStorageClick)
         }
     }
@@ -181,8 +173,6 @@ private fun SuccessContent(data: HomeData, onStorageClick: (String) -> Unit) {
 private fun HeroCard(data: HomeData) {
     val title = data.serverTitle
     val version = data.serverVersion
-    val startTime = (data as? HomeData.Admin)?.startTime
-    val uptime by rememberUptime(startTime)
 
     Box(
         modifier = Modifier
@@ -208,11 +198,7 @@ private fun HeroCard(data: HomeData) {
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(14.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                VersionPill(version)
-                Text(" · ", color = Color.White.copy(alpha = 0.8f), fontSize = 12.5.sp)
-                Text("已运行 $uptime", color = Color.White.copy(alpha = 0.92f), fontSize = 12.5.sp)
-            }
+            VersionPill(version)
         }
     }
 }
@@ -231,26 +217,25 @@ private fun VersionPill(version: String?) {
 }
 
 @Composable
-private fun UsageCard(usedBytes: Long, totalBytes: Long) {
-    val pct = if (totalBytes > 0) (usedBytes.toFloat() / totalBytes).coerceIn(0f, 1f) else 0f
+private fun StorageSummaryCard(storages: List<StorageInfo>) {
+    val total = storages.size
+    val working = storages.count { it.status == "work" }
+    val abnormal = total - working
     CloudCard(contentPadding = PaddingValues(18.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("总用量", color = CloudTextSecondary, fontSize = 14.sp)
-            Text("${(pct * 100).toInt()}%", color = CloudTextTertiary, fontSize = 11.sp)
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(formatBytes(usedBytes), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = CloudTextPrimary)
-            Text(" / ", color = CloudTextTertiary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
-            Text(formatBytes(totalBytes), fontSize = 13.sp, color = CloudTextSecondary)
+            Text("存储概览", color = CloudTextSecondary, fontSize = 14.sp)
+            Text("共 $total 个", color = CloudTextTertiary, fontSize = 11.sp)
         }
         Spacer(Modifier.height(14.dp))
-        LinearProgressIndicator(
-            progress = { pct },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CloudShapes.Pill),
-            color = CloudPrimary,
-            trackColor = CloudSurfaceStrong,
-        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("$working", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = CloudSuccessText)
+            Text(" 正常", color = CloudTextSecondary, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp))
+            if (abnormal > 0) {
+                Text(" · ", color = CloudTextTertiary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
+                Text("$abnormal", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = CloudErrorText)
+                Text(" 异常", color = CloudTextSecondary, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp))
+            }
+        }
     }
 }
 
@@ -278,8 +263,7 @@ private fun StorageListSection(storages: List<StorageInfo>, onStorageClick: (Str
 
 @Composable
 private fun StorageCard(storage: StorageInfo, onClick: () -> Unit) {
-    val isFailed = storage.status == "fail"
-    val pct = if (storage.totalBytes > 0) (storage.usedBytes.toFloat() / storage.totalBytes).coerceIn(0f, 1f) else 0f
+    val isFailed = storage.status != "work"
     CloudCard(
         modifier = Modifier
             .testTag("storage_card_${storage.mountPath}")
@@ -307,19 +291,14 @@ private fun StorageCard(storage: StorageInfo, onClick: () -> Unit) {
             }
             StatusBadge(storage.status)
         }
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LinearProgressIndicator(
-                progress = { pct },
-                modifier = Modifier.weight(1f).height(8.dp).clip(CloudShapes.Pill),
-                color = if (isFailed) CloudTextTertiary else CloudPrimary,
-                trackColor = CloudSurfaceStrong,
-            )
-            Spacer(Modifier.size(8.dp))
+        if (isFailed && !storage.status.isNullOrBlank()) {
+            Spacer(Modifier.height(10.dp))
             Text(
-                text = if (storage.totalBytes > 0) "${formatBytes(storage.usedBytes)}/${formatBytes(storage.totalBytes)}" else "—",
-                fontSize = 12.sp,
-                color = CloudTextSecondary,
+                text = storage.status,
+                fontSize = 11.5.sp,
+                color = CloudErrorText,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -327,10 +306,13 @@ private fun StorageCard(storage: StorageInfo, onClick: () -> Unit) {
 
 @Composable
 private fun StatusBadge(status: String?) {
-    val (container, content, text) = when (status) {
-        "fail" -> Triple(CloudErrorContainer, CloudErrorText, "异常")
-        "work" -> Triple(CloudSuccessContainer, CloudSuccessText, "正常")
-        else -> Triple(CloudWarningContainer, CloudWarningText, "未知")
+    // Alist marks a healthy storage with status == "work"; any other value
+    // (including a raw driver error string) means the storage is abnormal.
+    val isWork = status == "work"
+    val (container, content, text) = when {
+        status.isNullOrBlank() -> Triple(CloudWarningContainer, CloudWarningText, "未知")
+        isWork -> Triple(CloudSuccessContainer, CloudSuccessText, "正常")
+        else -> Triple(CloudErrorContainer, CloudErrorText, "异常")
     }
     Box(
         modifier = Modifier
@@ -347,39 +329,4 @@ private fun driverLabel(storage: StorageInfo): String = when (storage.driver.low
     "aliyundrive" -> "阿里云盘 · Aliyundrive"
     "quark" -> "夸克网盘 · Quark"
     else -> storage.driver
-}
-
-private fun formatBytes(bytes: Long): String {
-    if (bytes <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    var v = bytes.toDouble()
-    var i = 0
-    while (v >= 1024 && i < units.lastIndex) { v /= 1024; i++ }
-    return if (v >= 100 || i == 0) "${v.toInt()} ${units[i]}" else String.format("%.1f %s", v, units[i])
-}
-
-@Composable
-private fun rememberUptime(startTime: Instant?): androidx.compose.runtime.State<String> {
-    var now by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(startTime) {
-        if (startTime == null) return@LaunchedEffect
-        while (true) {
-            kotlinx.coroutines.delay(60_000)
-            now = System.currentTimeMillis()
-        }
-    }
-    val text = if (startTime == null) "—" else formatUptime(now - startTime.toEpochMilliseconds())
-    return remember(text) { mutableStateOf(text) }
-}
-
-private fun formatUptime(deltaMs: Long): String {
-    if (deltaMs <= 0) return "—"
-    val d = deltaMs.days
-    val h = (deltaMs - d.inWholeMilliseconds).hours
-    val m = (deltaMs - d.inWholeMilliseconds - h.inWholeMilliseconds).minutes
-    return when {
-        d.inWholeDays > 0 -> "${d.inWholeDays} 天 ${h.inWholeHours} 小时"
-        h.inWholeHours > 0 -> "${h.inWholeHours} 小时 ${m.inWholeMinutes} 分"
-        else -> "${m.inWholeMinutes} 分"
-    }
 }

@@ -2,7 +2,6 @@ package com.textvision.alistclient.home.dto
 
 import com.textvision.alistclient.network.dto.PublicSettings
 import com.textvision.alistclient.network.dto.StorageInfo
-import kotlinx.datetime.Instant
 
 /**
  * All values `HomeScreen` needs, regardless of which combination of
@@ -17,9 +16,6 @@ sealed interface HomeData {
     data class Admin(
         override val serverTitle: String,
         override val serverVersion: String?,
-        val startTime: Instant?,
-        val usedBytes: Long,
-        val totalBytes: Long,
         val storages: List<StorageInfo>,
         override val isGuest: Boolean = false,
     ) : HomeData

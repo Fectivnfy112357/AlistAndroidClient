@@ -26,9 +26,6 @@ class HomeViewModelTest {
             HomeData.Admin(
                 serverTitle = "Alist",
                 serverVersion = "v3.25.0",
-                startTime = null,
-                usedBytes = 0,
-                totalBytes = 0,
                 storages = emptyList(),
             )
         ),
@@ -119,8 +116,8 @@ class HomeViewModelTest {
 
     @Test fun adminDataPropagatesIsGuestFalse() = runTest {
         val admin = HomeData.Admin(
-            serverTitle = "Alist", serverVersion = "v3.25.0", startTime = null,
-            usedBytes = 10, totalBytes = 20, storages = listOf(StorageInfo(mountPath = "/local", driver = "Local")),
+            serverTitle = "Alist", serverVersion = "v3.25.0",
+            storages = listOf(StorageInfo(mountPath = "/local", driver = "Local")),
         )
         val repo = FakeRepo().apply { nextResult = ApiResult.Success(admin) }
         val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))

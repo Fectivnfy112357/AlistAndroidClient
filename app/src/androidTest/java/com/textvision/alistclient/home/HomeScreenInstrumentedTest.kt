@@ -40,10 +40,7 @@ class HomeScreenInstrumentedTest {
         val data = HomeData.Admin(
             serverTitle = "My Alist",
             serverVersion = "v3.25.0",
-            startTime = null,
-            usedBytes = 100,
-            totalBytes = 200,
-            storages = listOf(StorageInfo(mountPath = "/local", driver = "Local", usedBytes = 50, totalBytes = 100)),
+            storages = listOf(StorageInfo(mountPath = "/local", driver = "Local", status = "work")),
         )
         compose.setContent { MaterialTheme { HomeScreenContent(state = HomeUiState.Success(data), onStorageClick = {}) } }
         compose.onNodeWithText("My Alist").assertIsDisplayed()
@@ -69,8 +66,7 @@ class HomeScreenInstrumentedTest {
     @Test
     fun clickingStorageCardInvokesCallback() {
         val data = HomeData.Admin(
-            serverTitle = "My Alist", serverVersion = "v3", startTime = null,
-            usedBytes = 0, totalBytes = 0,
+            serverTitle = "My Alist", serverVersion = "v3",
             storages = listOf(StorageInfo(mountPath = "/local", driver = "Local")),
         )
         var captured: String? = null

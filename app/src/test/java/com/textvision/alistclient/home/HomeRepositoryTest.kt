@@ -68,7 +68,7 @@ class HomeRepositoryTest {
         server.enqueue(MockResponse().setResponseCode(code).setBody(body))
 
     @Test fun adminSuccessReturnsAdminData() = runTest {
-        enqueue("""{"code":200,"message":"success","data":{"content":[{"mount_path":"/local","driver":"Local","used_bytes":50,"total_bytes":100}],"total":1}}""")
+        enqueue("""{"code":200,"message":"success","data":{"content":[{"mount_path":"/local","driver":"Local","status":"work"}],"total":1}}""")
 
         val result = repo.loadDashboard() as ApiResult.Success
 
@@ -76,9 +76,7 @@ class HomeRepositoryTest {
         assertEquals(false, data.isGuest)
         assertEquals(1, data.storages.size)
         assertEquals("/local", data.storages.first().mountPath)
-        // usage is summed across the storage list (no /api/admin/info on v3)
-        assertEquals(50L, data.usedBytes)
-        assertEquals(100L, data.totalBytes)
+        assertEquals("work", data.storages.first().status)
         // public endpoint should NOT have been hit
         assertEquals(1, server.requestCount)
     }

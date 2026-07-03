@@ -123,16 +123,12 @@ class HomeRepository @Inject constructor(
 
         fun toData(): HomeData.Admin = when (this) {
             is Ok -> {
-                // /api/admin/info does not exist on Alist v3; approximate system
-                // usage by summing across the storage list.
-                val usedBytes = storage.content.sumOf { it.usedBytes }
-                val totalBytes = storage.content.sumOf { it.totalBytes }
+                // Alist v3 exposes neither system uptime nor per-storage
+                // capacity via /api/admin/storage/list, so the dashboard
+                // summarizes by storage count/health instead.
                 HomeData.Admin(
                     serverTitle = "Alist", // admin/storage/list does not return site title
                     serverVersion = null, // not exposed by /api/admin/storage/list
-                    startTime = null, // not exposed by /api/admin/storage/list
-                    usedBytes = usedBytes,
-                    totalBytes = totalBytes,
                     storages = storage.content,
                 )
             }
