@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,6 +60,7 @@ import com.textvision.alistclient.ui.theme.CloudPrimarySoft
 import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.CloudSuccessContainer
 import com.textvision.alistclient.ui.theme.CloudSuccessText
+import com.textvision.alistclient.ui.theme.CloudSurfaceStrong
 import com.textvision.alistclient.ui.theme.CloudTextPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
 import com.textvision.alistclient.ui.theme.CloudTextTertiary
@@ -118,7 +118,7 @@ private fun SkeletonBlock(widthFraction: Float = 1f, height: androidx.compose.ui
             .fillMaxWidth(widthFraction)
             .height(height)
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(CloudSurfaceStrong)
     )
 }
 
@@ -147,7 +147,7 @@ private fun SuccessContent(data: HomeData, onStorageClick: (String) -> Unit, onR
             task = data.taskSection,
             onRetry = { onRetrySection(SectionKey.Task) },
         )
-        StorageSection(storages = data.storages, onStorageClick = onStorageClick, onRetry = { onRetrySection(SectionKey.Storage) })
+        StorageSection(storages = data.storages, onStorageClick = onStorageClick)
     }
 }
 
@@ -288,9 +288,9 @@ private fun SectionFailedHint(failure: SectionFailure, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun StorageSection(storages: List<StorageInfo>, onStorageClick: (String) -> Unit, onRetry: () -> Unit) {
+private fun StorageSection(storages: List<StorageInfo>, onStorageClick: (String) -> Unit) {
     Column {
-        StorageSummaryStrip(storages = storages, onRetry = onRetry)
+        StorageSummaryStrip(storages = storages)
         if (storages.isEmpty()) {
             CloudCard { Text("暂无存储", modifier = Modifier.padding(20.dp), color = CloudTextTertiary) }
         } else {
@@ -302,7 +302,7 @@ private fun StorageSection(storages: List<StorageInfo>, onStorageClick: (String)
 }
 
 @Composable
-private fun StorageSummaryStrip(storages: List<StorageInfo>, onRetry: () -> Unit) {
+private fun StorageSummaryStrip(storages: List<StorageInfo>) {
     val total = storages.size
     val working = storages.count { it.status == "work" }
     val abnormal = total - working
