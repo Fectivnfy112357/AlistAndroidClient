@@ -74,4 +74,35 @@ class AdminDtosTest {
         val resp = json.decodeFromString<AlistResponse<List<SessionInfo>>>(raw)
         assertTrue(resp.data!!.isNotEmpty())
     }
+
+    @Test fun driverInfoMapsSnakeCaseKeys() {
+        val raw = """
+            {"name":"Local","label":"本地存储","config_items":[
+              {"name":"root_folder_path","label":"根目录","type":"string","default":"/","required":true},
+              {"name":"enable_index","label":"生成索引","type":"bool","default":false}
+            ]}
+        """.trimIndent()
+        val d = json.decodeFromString<DriverInfo>(raw)
+        assertEquals("Local", d.name)
+        assertEquals("本地存储", d.label)
+        assertEquals(2, d.configItems?.size)
+        assertEquals("root_folder_path", d.configItems!![0].name)
+        assertEquals("string", d.configItems[0].type)
+        assertEquals(true, d.configItems[0].required)
+        assertEquals("bool", d.configItems[1].type)
+        assertEquals(kotlinx.serialization.json.JsonPrimitive(false), d.configItems[1].default)
+    }
+
+    @Test fun settingItemParsesGroupAndFormItems() {
+        val raw = """
+            {"key":"site_title","value":"My Alist","type":"string","group":"site","help":"站点标题",
+             "form_items":[{"name":"site_title","label":"站点标题","type":"string","required":true}]}
+        """.trimIndent()
+        val s = json.decodeFromString<SettingItem>(raw)
+        assertEquals("site_title", s.key)
+        assertEquals("My Alist", s.value)
+        assertEquals("site", s.group)
+        assertEquals(1, s.formItems?.size)
+        assertEquals("string", s.formItems!![0].type)
+    }
 }

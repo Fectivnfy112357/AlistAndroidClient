@@ -5,6 +5,7 @@ import com.textvision.alistclient.network.dto.AlistFsList
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
 import com.textvision.alistclient.network.dto.CopyMovePathRequest
+import com.textvision.alistclient.network.dto.DriverList
 import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.FsSearchRequest
 import com.textvision.alistclient.network.dto.LoginRequest
@@ -14,7 +15,10 @@ import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
 import com.textvision.alistclient.network.dto.RoleList
 import com.textvision.alistclient.network.dto.SessionInfo
+import com.textvision.alistclient.network.dto.SettingSaveRequest
+import com.textvision.alistclient.network.dto.SettingsList
 import com.textvision.alistclient.network.dto.StorageList
+import com.textvision.alistclient.network.dto.StoragePatch
 import com.textvision.alistclient.network.dto.TaskInfo
 import com.textvision.alistclient.network.dto.UserList
 import retrofit2.http.Body
@@ -66,4 +70,16 @@ interface AlistApi {
 
     @GET
     suspend fun getPublicSettings(@Url url: String, @Header(SkipAuthRetry.HEADER) skipAuthRetry: String = SkipAuthRetry.HEADER): AlistResponse<PublicSettings>
+
+    @POST
+    suspend fun updateStorage(@Url url: String, @Body body: StoragePatch): AlistResponse<Unit>
+
+    @GET
+    suspend fun listDrivers(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<DriverList>
+
+    @GET
+    suspend fun listSettings(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<SettingsList>
+
+    @POST
+    suspend fun saveSettings(@Url url: String, @Body body: SettingSaveRequest): AlistResponse<Unit>
 }

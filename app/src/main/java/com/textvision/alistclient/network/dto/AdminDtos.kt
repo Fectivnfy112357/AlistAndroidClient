@@ -86,3 +86,70 @@ data class TaskInfo(
     @SerialName("total_bytes") val totalBytes: Long = 0,
     val error: String? = null,
 )
+
+@Serializable
+data class StoragePatch(
+    val id: Long,
+    @SerialName("mount_path") val mountPath: String,
+    val driver: String,
+    val order: Int = 0,
+    val remark: String? = null,
+    val enabled: Boolean = true,
+    @SerialName("addition") val addition: String = "{}",
+    @SerialName("cache_expiration") val cacheExpiration: Int = 0,
+    @SerialName("web_proxy") val webProxy: Boolean = false,
+    @SerialName("down_proxy_url") val downProxyUrl: String? = null,
+)
+
+@Serializable
+data class DriverInfo(
+    val name: String,
+    val label: String? = null,
+    @SerialName("config_items") val configItems: List<ConfigItem>? = null,
+    @SerialName("additional") val additional: String? = null,
+)
+
+@Serializable
+data class ConfigItem(
+    val name: String,
+    val label: String? = null,
+    val type: String? = null,
+    val default: kotlinx.serialization.json.JsonElement? = null,
+    val options: kotlinx.serialization.json.JsonElement? = null,
+    val required: Boolean = false,
+    val help: String? = null,
+)
+
+@Serializable
+data class DriverList(
+    val content: List<DriverInfo> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class SettingItem(
+    val key: String,
+    val value: String? = null,
+    val type: String? = null,
+    val group: String? = null,
+    val help: String? = null,
+    @SerialName("form_items") val formItems: List<ConfigItem>? = null,
+    val options: kotlinx.serialization.json.JsonElement? = null,
+)
+
+@Serializable
+data class SettingsList(
+    val content: List<SettingItem> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class SettingSaveItem(
+    val key: String,
+    val value: String,
+)
+
+@Serializable
+data class SettingSaveRequest(
+    val items: List<SettingSaveItem>,
+)

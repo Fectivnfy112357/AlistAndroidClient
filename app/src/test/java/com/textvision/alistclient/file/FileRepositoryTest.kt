@@ -65,6 +65,10 @@ class FileRepositoryTest {
         override suspend fun listRoles(url: String, page: Int, perPage: Int): AlistResponse<RoleList> = throw UnsupportedOperationException("listRoles is not used by this test")
         override suspend fun listSessions(url: String): AlistResponse<List<SessionInfo>> = throw UnsupportedOperationException("listSessions is not used by this test")
         override suspend fun taskUndone(url: String): AlistResponse<List<TaskInfo>> = throw UnsupportedOperationException("taskUndone is not used by this test")
+        override suspend fun updateStorage(url: String, body: com.textvision.alistclient.network.dto.StoragePatch): AlistResponse<Unit> = throw UnsupportedOperationException("updateStorage is not used by this test")
+        override suspend fun listDrivers(url: String, page: Int, perPage: Int): AlistResponse<com.textvision.alistclient.network.dto.DriverList> = throw UnsupportedOperationException("listDrivers is not used by this test")
+        override suspend fun listSettings(url: String, page: Int, perPage: Int): AlistResponse<com.textvision.alistclient.network.dto.SettingsList> = throw UnsupportedOperationException("listSettings is not used by this test")
+        override suspend fun saveSettings(url: String, body: com.textvision.alistclient.network.dto.SettingSaveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("saveSettings is not used by this test")
     }
 
     @Test fun listRefreshesExpiredTokenAndRetriesOnce() = runTest {
