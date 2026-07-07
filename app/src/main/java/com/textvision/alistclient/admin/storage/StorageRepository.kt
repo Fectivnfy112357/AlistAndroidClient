@@ -5,7 +5,6 @@ import com.textvision.alistclient.admin.AdminResult
 import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.DriverInfo
-import com.textvision.alistclient.network.dto.DriverList
 import com.textvision.alistclient.network.dto.StorageList
 import com.textvision.alistclient.network.dto.StoragePatch
 import kotlinx.coroutines.CoroutineDispatcher
@@ -29,7 +28,7 @@ class StorageRepository @Inject constructor(
 
     override suspend fun listDrivers(base: String): AdminResult<List<DriverInfo>> =
         when (val r = adminRepository.runAdmin(base) { api.listDrivers("${base}api/admin/driver/list") }) {
-            is AdminResult.Ok -> AdminResult.Ok((r.data as DriverList).content.values.toList())
+            is AdminResult.Ok -> AdminResult.Ok(r.data?.values?.toList().orEmpty())
             else -> @Suppress("UNCHECKED_CAST") (r as AdminResult<Nothing>)
         }
 }

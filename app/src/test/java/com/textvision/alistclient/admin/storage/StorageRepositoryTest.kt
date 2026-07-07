@@ -9,7 +9,6 @@ import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.AuthTokenProvider
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.DriverInfo
-import com.textvision.alistclient.network.dto.DriverList
 import com.textvision.alistclient.network.dto.StorageList
 import com.textvision.alistclient.network.dto.StoragePatch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -98,7 +97,7 @@ class StorageRepositoryTest {
 
     @Test fun listDriversReturnsDriverInfo() = runTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody(
-            """{"code":200,"message":"success","data":{"content":{"Local":{"name":"Local","label":"本地存储","common":[],"additional":[]}},"total":1}}"""
+            """{"code":200,"message":"success","data":{"Local":{"name":"Local","label":"本地存储","common":[],"additional":[]}}}"""
         ))
         val r = repo.listDrivers(server.url("/").toString())
         assertTrue(r is com.textvision.alistclient.admin.AdminResult.Ok)

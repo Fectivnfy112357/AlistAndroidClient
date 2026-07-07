@@ -5,7 +5,7 @@ import com.textvision.alistclient.network.dto.AlistFsList
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
 import com.textvision.alistclient.network.dto.CopyMovePathRequest
-import com.textvision.alistclient.network.dto.DriverList
+import com.textvision.alistclient.network.dto.DriverInfo
 import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.FsSearchRequest
 import com.textvision.alistclient.network.dto.LoginRequest
@@ -75,7 +75,7 @@ interface AlistApi {
     suspend fun updateStorage(@Url url: String, @Body body: StoragePatch): AlistResponse<Unit>
 
     @GET
-    suspend fun listDrivers(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<DriverList>
+    suspend fun listDrivers(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<Map<String, DriverInfo>>
 
     @GET
     suspend fun listSettings(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<List<SettingItem>>

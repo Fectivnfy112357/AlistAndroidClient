@@ -158,12 +158,6 @@ data class ConfigItem(
     fun defaultAsNumber(): Double? = defaultAsString()?.toDoubleOrNull()
 }
 
-@Serializable
-data class DriverList(
-    // Real v3 returns map keyed by driver name.
-    val content: Map<String, DriverInfo> = emptyMap(),
-    val total: Int = 0,
-)
 
 @Serializable
 data class SettingItem(
