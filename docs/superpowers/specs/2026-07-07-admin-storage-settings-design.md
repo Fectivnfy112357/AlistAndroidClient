@@ -12,7 +12,7 @@
 
 设计原则：
 - **复用优先**：Admin API 调用统一走 `AdminRepository`（从 `HomeRepository` 抽出 `runAdmin` + `refreshAndRetry` 模式），不再各 ViewModel 重复实现鉴权刷新。
-- **动态渲染**：driver 与 settings 都按 Alist v3 后端返回的 `form_items` 动态生成表单，6 个基础字段类型 + 1 个降级（无 form_items 的项不展示）。
+- **动态渲染**：driver 与 settings 都按 Alist v3 后端返回的 `form_items` 动态生成表单，7 个基础字段类型 + 1 个降级（无 form_items 的项不展示）。
 - **可逆风险**：编辑走二级页时显式"取消"按钮；行内启/停走 Switch 立即提交 + 失败回滚。
 
 ## 范围
@@ -20,7 +20,13 @@
 ### In scope
 - 设置页"存储"区：列表 + 行内启/停 Switch
 - 二级页 `StorageEditScreen`：单个存储的编辑（启/停 + driver 全部字段）
-- 设置页"站点设置"区：4 个常用项（站点标题/Logo/登录页背景/登录页公告）行内编辑保存
+- 设置页"站点设置"区：4 个常用项（通过 setting key 过滤）直接编辑保存。**4 个常用项的 setting key**（v3 后端）：
+  - `site_title` — 站点标题
+  - `logo` — Logo URL
+  - `login_background` — 登录页背景图
+  - `announcement` — 登录页公告
+  
+  实施时若 v3 实际 key 名称不同（例如 `site_title` vs `title`），按**实际后端响应**调整过滤逻辑（以最终 listSettings 返回的 key 列表为准）。
 - 二级页 `AdminSiteSettingsScreen`：所有带 `form_items` 的设置项（按 group 分组）
 - 抽 `AdminRepository` 共享 admin API 模式
 - 动态表单渲染器 `DynamicFormField`（driver/settings 共用）
@@ -44,10 +50,10 @@ SettingsScreen（垂直堆叠）
 │   ├─ 行：mount_path / driver / Switch(启停) / 点击进入 StorageEditScreen
 │   └─ …
 ├─ 卡片 5：站点设置（新增）
-│   ├─ 行：站点标题（直接编辑保存）
-│   ├─ 行：Logo URL
-│   ├─ 行：登录页背景图
-│   ├─ 行：登录页公告
+│   ├─ 行：站点标题（点击行 → 编辑对话框/底部表单 → 保存）
+│   ├─ 行：Logo URL（点击行 → 编辑）
+│   ├─ 行：登录页背景图（点击行 → 编辑）
+│   ├─ 行：登录页公告（点击行 → 编辑）
 │   └─ 行：完整设置 → AdminSiteSettingsScreen
 └─ 现有底部 Info 横幅移除（"不在 MVP 范围"已不再准确）
 ```
@@ -79,7 +85,7 @@ interface StorageRepository {
 }
 ```
 
-`StoragePatch` 为 partial — 至少含 `enabled: Boolean?`、`addition: String?`、其他字段按 form 提交时携带。
+`StoragePatch` 包含所有可写字段（id 必填；其余按 driver 的 form_items 携带）。提交策略：**全量提交** — 拉取原对象后合并改动，整体作为 body 提交给 `/api/admin/storage/update`。这样避免后端按字段增减带来的语义歧义。
 
 ### SettingsRepository（新建）
 
@@ -90,7 +96,7 @@ interface SettingsRepository {
 }
 ```
 
-Alist v3 `/api/admin/setting/list` 返回结构（待实施时复核）：
+Alist v3 `/api/admin/setting/list` 返回结构（**实施时需对照 v3 源码确认**——v3 不同小版本可能是 `List` 或 `Map`，本设计优先按 **List<SettingItem>** 实现，Map 情况由 Adapter 转换为 List 后处理）：
 ```
 { code, data: [{ key, value, type, group, form_items?, options? }, ...] }
 ```
@@ -158,8 +164,9 @@ sealed class FormItem {
 
 ### SettingsScreen 改造
 - 移除底部"多账号、管理员…不在 MVP 范围内"横幅
-- 注入 `StorageRepository`（列表/启停）+ `SettingsRepository`（常用项）
+- 注入 `StorageRepository`（列表/启停）+ `SettingsRepository`（常用项）+ `SessionManager`（拿 baseURL）
 - 新增卡片 4（存储） + 卡片 5（站点设置）
+- 常用 4 项的编辑交互：点击行 → 弹出 `AlertDialog`（标题=label，副输入框，底部"取消/保存"），保存后关闭对话框并刷新显示值
 
 ## ViewModel
 
@@ -183,7 +190,7 @@ sealed class FormItem {
 - `AdminRepositoryTest`：401 自动 refresh + 二次重试成功 / 第二次也失败则返回 `Unauthorized`
 - `StorageRepositoryTest`：mock `AlistApi.updateStorage`，验证 patch 构造
 - `SettingsRepositoryTest`：mock `listSettings` 解析 group 聚合
-- `DynamicFormFieldTest`（Compose UI Test）：6 种类型各一个用例 + 未知类型降级
+- `DynamicFormFieldTest`（Compose UI Test）：7 种类型各一个用例 + 未知类型降级
 - `SettingsViewModelTest`（改）：加载存储列表 / 启停成功 + 失败回滚 / 4 个常用项保存
 - `StorageEditViewModelTest`：加载表单 / 保存
 - `AdminSiteSettingsViewModelTest`：加载 / 保存
@@ -197,12 +204,12 @@ sealed class FormItem {
 
 ## 风险与待确认
 
-1. **`/api/admin/storage/update` body 形态**：是 partial 增量还是全量覆盖？默认按 **全量提交**（先 list → 改一个字段 → 整对象提交），更安全。如果后端要求 partial，按 partial 改。
+1. **`/api/admin/storage/update` body 形态**：默认按 **全量提交**（先 list 拿原对象 → 合并改动字段 → 整对象 POST）。这样不依赖后端是否做 partial 合并。如实测发现 v3 要求仅传变更字段，再回退到 patch。
 2. **`/api/admin/setting/list` 返回结构**：v3 实际返回可能 `data` 是 `Map<String, SettingItem>` 而非 `List<SettingItem>`，需实施时对照 v3 源码确认。
-3. **`form_items` 字段类型枚举**：v3 实际可能有 8+ 种（如 `datetime`/`color`/`image`），不在 6 类型内的降级为 Text。
+3. **`form_items` 字段类型枚举**：v3 实际可能有 8+ 种（如 `datetime`/`color`/`image`），不在 7 类型内的降级为 Text。
 4. **driver 多语言 label**：`form_items` 内可能有 `help`/`label_i18n` 字段，本期直接用 `label` 字符串，不做 i18n。
 5. **保存并发**：常用项的 4 行内编辑如果在快速点击保存按钮时可能重复提交 — UI 层加 `isSubmitting` 守卫。
-6. **测试覆盖**：动态表单的 6 种类型枚举 + 未知降级是新增测试面；目标覆盖率与现有模块持平。
+6. **测试覆盖**：动态表单的 7 种类型枚举 + 未知降级是新增测试面；目标覆盖率与现有模块持平。
 
 ## 实施计划
 
