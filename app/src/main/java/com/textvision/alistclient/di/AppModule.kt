@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.textvision.alistclient.admin.settings.SettingsRepository
+import com.textvision.alistclient.admin.settings.SettingsRepositoryContract
 import com.textvision.alistclient.admin.storage.StorageRepository
 import com.textvision.alistclient.admin.storage.StorageRepositoryContract
 import com.textvision.alistclient.auth.AuthRepository
@@ -68,6 +70,10 @@ abstract class CredentialModule {
     @Binds
     @Singleton
     abstract fun bindStorageRepository(impl: StorageRepository): StorageRepositoryContract
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(impl: SettingsRepository): SettingsRepositoryContract
 }
 
 @Module
