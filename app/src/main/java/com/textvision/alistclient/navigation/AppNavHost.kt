@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.textvision.alistclient.admin.storage.StorageEditScreen
 import com.textvision.alistclient.ui.components.CloudBottomBar
 import com.textvision.alistclient.ui.screens.FileScreen
 import com.textvision.alistclient.home.HomeScreen
@@ -85,7 +86,23 @@ fun AppNavHost(startAuthenticated: Boolean) {
                             navController.navigate(AppRoute.Login.route) {
                                 popUpTo(0) { inclusive = true }
                             }
-                        }
+                        },
+                        onStorageClick = { id ->
+                            navController.navigate(AppRoute.StorageEdit.create(id))
+                        },
+                        onAdvancedSettings = {
+                            navController.navigate(AppRoute.AdminSiteSettings.route)
+                        },
+                    )
+                }
+                composable(
+                    route = AppRoute.StorageEdit.route,
+                    arguments = listOf(navArgument("id") { type = NavType.LongType }),
+                ) { entry ->
+                    val id = entry.arguments?.getLong("id") ?: 0L
+                    StorageEditScreen(
+                        storageId = id,
+                        onBack = { navController.popBackStack() },
                     )
                 }
                 composable(AppRoute.MoveCopyPicker.route) {
