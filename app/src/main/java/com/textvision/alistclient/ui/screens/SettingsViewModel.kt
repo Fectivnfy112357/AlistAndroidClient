@@ -1,23 +1,116 @@
 package com.textvision.alistclient.ui.screens
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.textvision.alistclient.admin.AdminResult
+import com.textvision.alistclient.admin.settings.SettingsRepositoryContract
+import com.textvision.alistclient.admin.storage.StorageRepositoryContract
 import com.textvision.alistclient.auth.AuthRepository
+import com.textvision.alistclient.auth.SessionManager
+import com.textvision.alistclient.network.dto.SettingItem
+import com.textvision.alistclient.network.dto.StorageInfo
+import com.textvision.alistclient.network.dto.StoragePatch
 import com.textvision.alistclient.preview.PreviewFileStore
 import com.textvision.alistclient.transfer.TransferManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class SettingsUiState(
+    val storages: List<StorageInfo> = emptyList(),
+    val quickSettings: List<SettingItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+)
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val transferManager: TransferManager,
     private val previewFileStore: PreviewFileStore,
+    private val storageRepository: StorageRepositoryContract,
+    private val settingsRepository: SettingsRepositoryContract,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
     private val _loggedOut = MutableStateFlow(false)
     val loggedOut: StateFlow<Boolean> = _loggedOut.asStateFlow()
+
+    private val _uiState = MutableStateFlow(SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    fun loadAdminData() {
+        val base = sessionManager.loadSavedSession()?.serverUrl ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val storageResult = storageRepository.list(base)
+            val settingsResult = settingsRepository.list(base)
+            val storages = (storageResult as? AdminResult.Ok)?.data?.content.orEmpty()
+            val allItems = (settingsResult as? AdminResult.Ok)?.data.orEmpty().flatMap { it.items }
+            val quick = allItems.filter { it.key in QUICK_KEYS }
+            _uiState.update {
+                it.copy(
+                    storages = storages,
+                    quickSettings = quick,
+                    isLoading = false,
+                    errorMessage = failureMessage(storageResult, settingsResult),
+                )
+            }
+        }
+    }
+
+    fun toggleStorage(id: Long, enabled: Boolean) {
+        val base = sessionManager.loadSavedSession()?.serverUrl ?: return
+        val current = _uiState.value.storages.firstOrNull { it.id == id } ?: return
+        val previous = current
+        _uiState.update { state ->
+            state.copy(storages = state.storages.map { if (it.id == id) it.copy(status = if (enabled) "work" else "disabled") else it })
+        }
+        viewModelScope.launch {
+            val patch = StoragePatch(
+                id = id,
+                mountPath = current.mountPath,
+                driver = current.driver,
+                enabled = enabled,
+                addition = current.addition ?: "{}",
+            )
+            when (val r = storageRepository.update(base, patch)) {
+                is AdminResult.Ok -> Unit
+                else -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            storages = state.storages.map { if (it.id == id) previous else it },
+                            errorMessage = failureMessage(r),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun saveQuickSetting(key: String, value: String) {
+        val base = sessionManager.loadSavedSession()?.serverUrl ?: return
+        viewModelScope.launch {
+            when (val r = settingsRepository.save(base, listOf(key to value))) {
+                is AdminResult.Ok -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            quickSettings = state.quickSettings.map { if (it.key == key) it.copy(value = value) else it },
+                            errorMessage = null,
+                        )
+                    }
+                }
+                else -> _uiState.update { it.copy(errorMessage = failureMessage(r)) }
+            }
+        }
+    }
+
+    fun consumeError() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
 
     fun logout() {
         transferManager.clearAllTasks()
@@ -27,4 +120,12 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearPreviewFiles(): Int = previewFileStore.clearPreviewFiles()
+
+    companion object {
+        val QUICK_KEYS = setOf("site_title", "logo", "login_background", "announcement")
+
+        private fun failureMessage(vararg results: AdminResult<*>): String? = results
+            .firstOrNull { it !is AdminResult.Ok && it !is AdminResult.Unauthorized }
+            ?.let { "加载失败：${it.javaClass.simpleName}" }
+    }
 }

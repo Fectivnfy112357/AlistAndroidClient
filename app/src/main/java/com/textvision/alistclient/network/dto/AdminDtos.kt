@@ -17,6 +17,7 @@ data class StorageInfo(
     @SerialName("status") val status: String? = null,
     @SerialName("used_bytes") val usedBytes: Long = 0,
     @SerialName("total_bytes") val totalBytes: Long = 0,
+    @SerialName("addition") val addition: String? = null,
 )
 
 /**
