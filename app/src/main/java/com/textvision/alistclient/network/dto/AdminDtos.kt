@@ -140,7 +140,8 @@ data class ConfigItem(
     val label: String? = null,
     val type: String? = null,
     val default: kotlinx.serialization.json.JsonElement? = null,
-    val options: kotlinx.serialization.json.JsonElement? = null,
+    /** v3 sends `options` as comma-separated string (e.g. "all,pagination,load_more"). */
+    val options: String? = null,
     val required: Boolean = false,
     val help: String? = null,
 ) {
@@ -169,16 +170,13 @@ data class SettingItem(
     val key: String,
     val value: String? = null,
     val type: String? = null,
-    val group: String? = null,
+    /** v3 sends `group` as integer (e.g. 1 = site, 2 = aria2, ...). */
+    val group: Int? = null,
     val help: String? = null,
+    /** Not returned by `/api/admin/setting/list` — schema lives in `/api/admin/driver/list`. Kept nullable for forward compat. */
     @SerialName("form_items") val formItems: List<ConfigItem>? = null,
-    val options: kotlinx.serialization.json.JsonElement? = null,
-)
-
-@Serializable
-data class SettingsList(
-    val content: List<SettingItem> = emptyList(),
-    val total: Int = 0,
+    /** v3 sends `options` as comma-separated string (e.g. "all,pagination,load_more,auto_load_more"). */
+    val options: String? = null,
 )
 
 @Serializable

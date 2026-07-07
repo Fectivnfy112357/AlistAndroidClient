@@ -97,16 +97,32 @@ class AdminDtosTest {
         assertEquals(kotlinx.serialization.json.JsonPrimitive(false), d.additional[1].default)
     }
 
-    @Test fun settingItemParsesGroupAndFormItems() {
+    @Test fun settingItemParsesGroupAndOptions() {
         val raw = """
-            {"key":"site_title","value":"My Alist","type":"string","group":"site","help":"站点标题",
-             "form_items":[{"name":"site_title","label":"站点标题","type":"string","required":true}]}
+            {"key":"site_title","value":"My Alist","type":"string","group":1,"help":"站点标题",
+             "options":"all,pagination,load_more,auto_load_more"}
         """.trimIndent()
         val s = json.decodeFromString<SettingItem>(raw)
         assertEquals("site_title", s.key)
         assertEquals("My Alist", s.value)
-        assertEquals("site", s.group)
-        assertEquals(1, s.formItems?.size)
-        assertEquals("string", s.formItems!![0].type)
+        assertEquals(1, s.group)
+        assertEquals("站点标题", s.help)
+        assertEquals("all,pagination,load_more,auto_load_more", s.options)
+        assertEquals(null, s.formItems)
+    }
+
+    @Test fun settingItemParsesWithEmptyOptions() {
+        val raw = """{"key":"logo","value":"/x.svg","type":"string","group":1,"options":""}"""
+        val s = json.decodeFromString<SettingItem>(raw)
+        assertEquals("", s.options)
+        assertEquals(1, s.group)
+        assertEquals(null, s.formItems)
+    }
+
+    @Test fun configItemOptionsIsString() {
+        val raw = """{"name":"scan_delay","type":"string","default":"30","options":"30,60,120"}"""
+        val c = json.decodeFromString<ConfigItem>(raw)
+        assertEquals("30,60,120", c.options)
+        assertEquals("30", c.defaultAsString())
     }
 }

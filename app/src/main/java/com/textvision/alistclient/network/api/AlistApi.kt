@@ -15,8 +15,8 @@ import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
 import com.textvision.alistclient.network.dto.RoleList
 import com.textvision.alistclient.network.dto.SessionInfo
+import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.network.dto.SettingSaveRequest
-import com.textvision.alistclient.network.dto.SettingsList
 import com.textvision.alistclient.network.dto.StorageList
 import com.textvision.alistclient.network.dto.StoragePatch
 import com.textvision.alistclient.network.dto.TaskInfo
@@ -78,7 +78,7 @@ interface AlistApi {
     suspend fun listDrivers(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<DriverList>
 
     @GET
-    suspend fun listSettings(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<SettingsList>
+    suspend fun listSettings(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<List<SettingItem>>
 
     @POST
     suspend fun saveSettings(@Url url: String, @Body body: SettingSaveRequest): AlistResponse<Unit>

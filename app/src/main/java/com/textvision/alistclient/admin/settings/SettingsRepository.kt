@@ -4,9 +4,9 @@ import com.textvision.alistclient.admin.AdminRepository
 import com.textvision.alistclient.admin.AdminResult
 import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.network.api.AlistApi
+import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.network.dto.SettingSaveItem
 import com.textvision.alistclient.network.dto.SettingSaveRequest
-import com.textvision.alistclient.network.dto.SettingsList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -21,10 +21,12 @@ class SettingsRepository @Inject constructor(
     override suspend fun list(base: String): AdminResult<List<SettingGroup>> = withContext(dispatcher) {
         when (val r = adminRepository.runAdmin(base) { api.listSettings("${base}api/admin/setting/list") }) {
             is AdminResult.Ok -> {
-                val list = r.data as SettingsList
-                val filtered = list.content.filter { !it.formItems.isNullOrEmpty() }
-                val groups = filtered
-                    .groupBy { it.group ?: "_default" }
+                // Real v3 returns a flat array of items (no content/total wrapper).
+                // v3 does NOT return form_items here — schema is only in /api/admin/driver/list.
+                // Group by integer `group` field; fall back to "_default" if missing.
+                val items: List<SettingItem> = r.data ?: emptyList()
+                val groups = items
+                    .groupBy { it.group?.toString() ?: "_default" }
                     .map { (k, v) -> SettingGroup(key = k, items = v) }
                     .sortedBy { it.key }
                 AdminResult.Ok(groups)

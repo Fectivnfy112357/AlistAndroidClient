@@ -40,7 +40,7 @@ class AdminSiteSettingsViewModelTest {
         )
         coEvery { settings.list(any()) } returns AdminResult.Ok(listOf(
             SettingGroup("site", listOf(SettingItem(
-                key = "site_title", value = "My Alist", group = "site",
+                key = "site_title", value = "My Alist", group = 1,
                 formItems = listOf(ConfigItem(name = "site_title", label = "标题", type = "string"))
             )))
         ))
@@ -62,7 +62,7 @@ class AdminSiteSettingsViewModelTest {
         )
         coEvery { settings.list(any()) } returns AdminResult.Ok(listOf(
             SettingGroup("site", listOf(SettingItem(
-                key = "site_title", value = "old", group = "site",
+                key = "site_title", value = "old", group = 1,
                 formItems = listOf(ConfigItem(name = "site_title", label = "标题", type = "string"))
             )))
         ))

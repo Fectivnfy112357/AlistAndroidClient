@@ -1,9 +1,6 @@
 package com.textvision.alistclient.admin.form
 
 import com.textvision.alistclient.network.dto.ConfigItem
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 sealed class FormItem {
     abstract val name: String
@@ -72,19 +69,10 @@ sealed class FormItem {
             }
         }
 
-        private fun parseOptions(raw: kotlinx.serialization.json.JsonElement?): List<Pair<String, String>> {
-            if (raw == null) return emptyList()
-            return try {
-                val arr = (raw as? JsonArray) ?: return emptyList()
-                arr.map { element ->
-                    val obj = element as? JsonObject
-                    val value = obj?.get("value")?.jsonPrimitive?.content ?: element.jsonPrimitive.content
-                    val label = obj?.get("label")?.jsonPrimitive?.content ?: value
-                    value to label
-                }
-            } catch (t: Throwable) {
-                emptyList()
-            }
+        private fun parseOptions(raw: String?): List<Pair<String, String>> {
+            if (raw.isNullOrBlank()) return emptyList()
+            return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                .map { it to it }
         }
     }
 }

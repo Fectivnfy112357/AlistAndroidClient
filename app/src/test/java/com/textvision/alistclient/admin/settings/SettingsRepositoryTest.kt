@@ -65,24 +65,40 @@ class SettingsRepositoryTest {
 
     @After fun tearDown() { server.shutdown() }
 
-    @Test fun listGroupsByKeyAndFiltersEmptyFormItems() = runTest {
+    @Test fun listGroupsByKeyAndIncludesAllItems() = runTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody("""
-            {"code":200,"message":"success","data":{
-              "content":[
-                {"key":"site_title","value":"My Alist","group":"site",
-                 "form_items":[{"name":"site_title","label":"站点标题","type":"string","required":true}]},
-                {"key":"raw_token","value":"xyz","group":"aria2","form_items":null}
-              ],
-              "total":2
-            }}
+            {"code":200,"message":"success","data":[
+              {"key":"site_title","value":"My Alist","group":1,"type":"string","options":""},
+              {"key":"logo","value":"/logo.svg","group":1,"type":"string","options":"all,pagination,load_more,auto_load_more"},
+              {"key":"raw_token","value":"xyz","group":2,"type":"string","options":""}
+            ]}
+        """.trimIndent()))
+        val r = repo.list(server.url("/").toString())
+        assertTrue(r is AdminResult.Ok)
+        val groups = (r as AdminResult.Ok).data!!
+        // Two groups: "1" (site) and "2" (aria2)
+        assertEquals(2, groups.size)
+        val siteGroup = groups.first { it.key == "1" }
+        assertEquals(2, siteGroup.items.size)
+        assertEquals("site_title", siteGroup.items[0].key)
+        assertEquals("logo", siteGroup.items[1].key)
+        val aria2Group = groups.first { it.key == "2" }
+        assertEquals(1, aria2Group.items.size)
+        assertEquals("raw_token", aria2Group.items[0].key)
+    }
+
+    @Test fun listGroupsItemsWithoutGroupAsDefault() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("""
+            {"code":200,"message":"success","data":[
+              {"key":"orphan","value":"v","type":"string","options":""}
+            ]}
         """.trimIndent()))
         val r = repo.list(server.url("/").toString())
         assertTrue(r is AdminResult.Ok)
         val groups = (r as AdminResult.Ok).data!!
         assertEquals(1, groups.size)
-        assertEquals("site", groups[0].key)
-        assertEquals(1, groups[0].items.size)
-        assertEquals("site_title", groups[0].items[0].key)
+        assertEquals("_default", groups[0].key)
+        assertEquals("orphan", groups[0].items[0].key)
     }
 
     @Test fun savePostsPatchesAsItems() = runTest {
