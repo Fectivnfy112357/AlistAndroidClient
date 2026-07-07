@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.textvision.alistclient.admin.settings.AdminSiteSettingsScreen
 import com.textvision.alistclient.admin.storage.StorageEditScreen
 import com.textvision.alistclient.ui.components.CloudBottomBar
 import com.textvision.alistclient.ui.screens.FileScreen
@@ -93,6 +94,11 @@ fun AppNavHost(startAuthenticated: Boolean) {
                         onAdvancedSettings = {
                             navController.navigate(AppRoute.AdminSiteSettings.route)
                         },
+                    )
+                }
+                composable(AppRoute.AdminSiteSettings.route) {
+                    AdminSiteSettingsScreen(
+                        onBack = { navController.popBackStack() },
                     )
                 }
                 composable(
