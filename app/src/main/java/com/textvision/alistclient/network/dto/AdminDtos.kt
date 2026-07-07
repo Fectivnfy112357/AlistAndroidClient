@@ -2,6 +2,7 @@ package com.textvision.alistclient.network.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.contentOrNull
 
 @Serializable
 data class StorageList(
@@ -95,19 +96,27 @@ data class StoragePatch(
     val driver: String,
     val order: Int = 0,
     val remark: String? = null,
-    val enabled: Boolean = true,
-    @SerialName("addition") val addition: String = "{}",
+    @SerialName("disabled") val disabled: Boolean = false,
     @SerialName("cache_expiration") val cacheExpiration: Int = 0,
     @SerialName("web_proxy") val webProxy: Boolean = false,
+    @SerialName("webdav_policy") val webdavPolicy: String? = null,
     @SerialName("down_proxy_url") val downProxyUrl: String? = null,
+    @SerialName("down_proxy_sign") val downProxySign: Boolean = false,
+    @SerialName("proxy_range") val proxyRange: Boolean = false,
+    @SerialName("order_by") val orderBy: String? = null,
+    @SerialName("order_direction") val orderDirection: String? = null,
+    @SerialName("extract_folder") val extractFolder: String? = null,
+    @SerialName("disable_index") val disableIndex: Boolean = false,
+    @SerialName("enable_sign") val enableSign: Boolean = false,
+    @SerialName("addition") val addition: String = "{}",
 )
 
 @Serializable
 data class DriverInfo(
     val name: String,
     val label: String? = null,
-    @SerialName("config_items") val configItems: List<ConfigItem>? = null,
-    @SerialName("additional") val additional: String? = null,
+    @SerialName("common") val common: List<ConfigItem>? = null,
+    @SerialName("additional") val additional: List<ConfigItem>? = null,
 )
 
 @Serializable
@@ -119,11 +128,24 @@ data class ConfigItem(
     val options: kotlinx.serialization.json.JsonElement? = null,
     val required: Boolean = false,
     val help: String? = null,
-)
+) {
+    /** v3 returns defaults as strings ("30", "true", "name", or empty). */
+    fun defaultAsString(): String? =
+        (default as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull?.takeIf { it.isNotEmpty() }
+
+    fun defaultAsBool(): Boolean? = when (defaultAsString()) {
+        "true" -> true
+        "false" -> false
+        else -> null
+    }
+
+    fun defaultAsNumber(): Double? = defaultAsString()?.toDoubleOrNull()
+}
 
 @Serializable
 data class DriverList(
-    val content: List<DriverInfo> = emptyList(),
+    // Real v3 returns map keyed by driver name.
+    val content: Map<String, DriverInfo> = emptyMap(),
     val total: Int = 0,
 )
 

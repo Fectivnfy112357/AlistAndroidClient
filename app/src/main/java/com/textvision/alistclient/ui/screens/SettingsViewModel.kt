@@ -74,7 +74,7 @@ class SettingsViewModel @Inject constructor(
                 id = id,
                 mountPath = current.mountPath,
                 driver = current.driver,
-                enabled = enabled,
+                disabled = !enabled,
                 addition = current.addition ?: "{}",
             )
             when (val r = storageRepository.update(base, patch)) {

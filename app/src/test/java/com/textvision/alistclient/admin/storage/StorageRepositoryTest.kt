@@ -89,16 +89,16 @@ class StorageRepositoryTest {
                 return MockResponse().setResponseCode(200).setBody("""{"code":200,"message":"success","data":null}""")
             }
         }
-        val patch = StoragePatch(id = 1, mountPath = "/local", driver = "Local", enabled = false)
+        val patch = StoragePatch(id = 1, mountPath = "/local", driver = "Local", disabled = true)
         val r = repo.update(server.url("/").toString(), patch)
         assertTrue(r is com.textvision.alistclient.admin.AdminResult.Ok)
         assertTrue("path: $capturedPath", capturedPath!!.contains("/api/admin/storage/update"))
-        assertTrue("body: $capturedBody", capturedBody!!.contains("\"enabled\":false"))
+        assertTrue("body: $capturedBody", capturedBody!!.contains("\"disabled\":true"))
     }
 
     @Test fun listDriversReturnsDriverInfo() = runTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody(
-            """{"code":200,"message":"success","data":{"content":[{"name":"Local","label":"本地存储","config_items":[]}],"total":1}}"""
+            """{"code":200,"message":"success","data":{"content":{"Local":{"name":"Local","label":"本地存储","common":[],"additional":[]}},"total":1}}"""
         ))
         val r = repo.listDrivers(server.url("/").toString())
         assertTrue(r is com.textvision.alistclient.admin.AdminResult.Ok)

@@ -46,7 +46,7 @@ class StorageEditViewModelTest {
             StorageList(content = listOf(StorageInfo(id = 1, mountPath = "/local", driver = "Local", status = "work", addition = "{\"root_folder_path\":\"/data\"}")))
         )
         coEvery { storage.listDrivers(any()) } returns AdminResult.Ok(
-            listOf(DriverInfo(name = "Local", label = "本地存储", configItems = emptyList()))
+            listOf(DriverInfo(name = "Local", label = "本地存储", common = emptyList(), additional = emptyList()))
         )
         val vm = StorageEditViewModel(auth, transfer, preview, storage, session)
         vm.load(1)

@@ -77,7 +77,9 @@ class AdminDtosTest {
 
     @Test fun driverInfoMapsSnakeCaseKeys() {
         val raw = """
-            {"name":"Local","label":"本地存储","config_items":[
+            {"name":"Local","label":"本地存储","common":[
+              {"name":"mount_path","label":"挂载路径","type":"string","default":"/","required":true}
+            ],"additional":[
               {"name":"root_folder_path","label":"根目录","type":"string","default":"/","required":true},
               {"name":"enable_index","label":"生成索引","type":"bool","default":false}
             ]}
@@ -85,12 +87,14 @@ class AdminDtosTest {
         val d = json.decodeFromString<DriverInfo>(raw)
         assertEquals("Local", d.name)
         assertEquals("本地存储", d.label)
-        assertEquals(2, d.configItems?.size)
-        assertEquals("root_folder_path", d.configItems!![0].name)
-        assertEquals("string", d.configItems[0].type)
-        assertEquals(true, d.configItems[0].required)
-        assertEquals("bool", d.configItems[1].type)
-        assertEquals(kotlinx.serialization.json.JsonPrimitive(false), d.configItems[1].default)
+        assertEquals(1, d.common?.size)
+        assertEquals("mount_path", d.common!![0].name)
+        assertEquals(2, d.additional?.size)
+        assertEquals("root_folder_path", d.additional!![0].name)
+        assertEquals("string", d.additional[0].type)
+        assertEquals(true, d.additional[0].required)
+        assertEquals("bool", d.additional[1].type)
+        assertEquals(kotlinx.serialization.json.JsonPrimitive(false), d.additional[1].default)
     }
 
     @Test fun settingItemParsesGroupAndFormItems() {

@@ -78,7 +78,7 @@ class SettingsViewModelTest {
             var s = awaitItem()
             val initialEnabled = s.storages[0].status == "work"
             viewModel.toggleStorage(id = 1, enabled = !initialEnabled)
-            coVerify { storage.update(any(), match { it.id == 1L && it.enabled == !initialEnabled }) }
+            coVerify { storage.update(any(), match { it.id == 1L && it.disabled == initialEnabled }) }
             s = awaitItem()
             val expectedStatus = if (!initialEnabled) "work" else "disabled"
             assertEquals(expectedStatus, s.storages[0].status)
