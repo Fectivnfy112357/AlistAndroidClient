@@ -128,7 +128,7 @@ data class StoragePatch(
 
 @Serializable
 data class DriverInfo(
-    val name: String,
+    val name: String? = null,
     val label: String? = null,
     @SerialName("common") val common: List<ConfigItem>? = null,
     @SerialName("additional") val additional: List<ConfigItem>? = null,

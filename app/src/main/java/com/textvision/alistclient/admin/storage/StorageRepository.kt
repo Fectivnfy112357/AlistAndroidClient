@@ -26,9 +26,9 @@ class StorageRepository @Inject constructor(
             adminRepository.runAdmin(base) { api.updateStorage("${base}api/admin/storage/update", patch) }
         }
 
-    override suspend fun listDrivers(base: String): AdminResult<List<DriverInfo>> =
+    override suspend fun listDrivers(base: String): AdminResult<Map<String, DriverInfo>> =
         when (val r = adminRepository.runAdmin(base) { api.listDrivers("${base}api/admin/driver/list") }) {
-            is AdminResult.Ok -> AdminResult.Ok(r.data?.values?.toList().orEmpty())
+            is AdminResult.Ok -> AdminResult.Ok(r.data.orEmpty())
             else -> @Suppress("UNCHECKED_CAST") (r as AdminResult<Nothing>)
         }
 }

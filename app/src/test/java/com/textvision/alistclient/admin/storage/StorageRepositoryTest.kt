@@ -23,6 +23,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -103,6 +104,6 @@ class StorageRepositoryTest {
         assertTrue(r is com.textvision.alistclient.admin.AdminResult.Ok)
         val drivers = (r as com.textvision.alistclient.admin.AdminResult.Ok).data!!
         assertEquals(1, drivers.size)
-        assertEquals("Local", drivers[0].name)
+        assertNotNull(drivers["Local"])
     }
 }

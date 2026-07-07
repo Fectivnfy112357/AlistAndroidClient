@@ -8,5 +8,5 @@ import com.textvision.alistclient.network.dto.StoragePatch
 interface StorageRepositoryContract {
     suspend fun list(base: String): AdminResult<StorageList>
     suspend fun update(base: String, patch: StoragePatch): AdminResult<Unit>
-    suspend fun listDrivers(base: String): AdminResult<List<DriverInfo>>
+    suspend fun listDrivers(base: String): AdminResult<Map<String, DriverInfo>>
 }

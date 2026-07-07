@@ -56,8 +56,8 @@ class StorageEditViewModel @Inject constructor(
                 return@launch
             }
             val driversR = storageRepository.listDrivers(base)
-            val driversList = (driversR as? AdminResult.Ok)?.data.orEmpty()
-            val driver = driversList.firstOrNull { it.name == s.driver }
+            val driversMap = (driversR as? AdminResult.Ok)?.data.orEmpty()
+            val driver = driversMap[s.driver]
             val common = driver?.common ?: emptyList()
             val additional = driver?.additional ?: emptyList()
             val formItems = (common + additional).map { FormItem.fromConfigItem(it) }
