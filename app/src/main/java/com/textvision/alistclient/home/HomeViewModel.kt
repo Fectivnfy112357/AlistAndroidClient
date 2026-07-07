@@ -29,6 +29,9 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
 
     private var loadJob: Job? = null
@@ -41,7 +44,7 @@ class HomeViewModel @Inject constructor(
 
     fun refresh() {
         hasLoadedInitial = false
-        load()
+        load(isRefresh = true)
     }
 
     fun retrySection(key: SectionKey) {
@@ -52,10 +55,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun load() {
+    private fun load(isRefresh: Boolean = false) {
         loadJob?.cancel()
+        if (isRefresh) _isRefreshing.value = true
         loadJob = viewModelScope.launch(dispatcher) {
-            _uiState.value = HomeUiState.Loading
+            if (!isRefresh) _uiState.value = HomeUiState.Loading
             when (val result = repository.loadDashboard()) {
                 is ApiResult.Success -> {
                     hasLoadedInitial = true
@@ -64,6 +68,7 @@ class HomeViewModel @Inject constructor(
                 is ApiResult.Failure -> _uiState.value = HomeUiState.Error(result.message)
                 is ApiResult.NetworkError -> _uiState.value = HomeUiState.Error(result.cause.message ?: "网络错误")
             }
+            if (isRefresh) _isRefreshing.value = false
         }
     }
 }

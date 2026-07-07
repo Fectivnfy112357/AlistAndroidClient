@@ -37,10 +37,12 @@ class HomeViewModelTest {
         var nextResult: ApiResult<HomeData> = ApiResult.Success(emptyHomeData()),
         var retryBehavior: (HomeData, SectionKey) -> HomeData = { d, _ -> d },
         var retryCalls: Int = 0,
+        var loadDelayMs: Long = 0,
     ) : HomeRepositoryContract {
         var loadCalls = 0
         override suspend fun loadDashboard(): ApiResult<HomeData> {
             loadCalls++
+            if (loadDelayMs > 0) kotlinx.coroutines.delay(loadDelayMs)
             return nextResult
         }
         override suspend fun retrySection(data: HomeData, key: SectionKey): HomeData {
@@ -78,6 +80,18 @@ class HomeViewModelTest {
         vm.loadIfNeeded(); advanceUntilIdle()
         vm.refresh(); advanceUntilIdle()
         assertEquals(2, repo.loadCalls)
+    }
+
+    @Test fun refreshFlipsIsRefreshingTrueThenFalse() = runTest {
+        val repo = FakeRepo(loadDelayMs = 1000L)
+        val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
+        vm.loadIfNeeded(); advanceUntilIdle()
+        assertEquals(false, vm.isRefreshing.value)
+        vm.refresh()
+        // Refresh is now in flight; load uses a 1s delay so isRefreshing stays true.
+        assertEquals(true, vm.isRefreshing.value)
+        advanceUntilIdle()
+        assertEquals(false, vm.isRefreshing.value)
     }
 
     @Test fun loadFailureTransitionsToError() = runTest {
