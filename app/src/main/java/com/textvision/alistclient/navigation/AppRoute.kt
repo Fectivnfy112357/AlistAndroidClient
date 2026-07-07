@@ -22,6 +22,10 @@ sealed class AppRoute(val route: String) {
     data object Transfers : AppRoute("transfers")
     data object Settings : AppRoute("settings")
     data object MoveCopyPicker : AppRoute("copy_move_picker")
+    data object StorageEdit : AppRoute("admin/storage_edit/{id}") {
+        fun create(id: Long): String = "admin/storage_edit/$id"
+    }
+    data object AdminSiteSettings : AppRoute("admin/site_settings")
     data object Preview : AppRoute("preview/{payload}") {
         fun create(name: String, path: String, type: FileType, downloadUrl: String?, size: Long): String {
             val raw = listOf(
