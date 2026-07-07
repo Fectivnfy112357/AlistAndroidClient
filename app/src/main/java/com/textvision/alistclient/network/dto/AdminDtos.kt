@@ -19,6 +19,21 @@ data class StorageInfo(
     @SerialName("used_bytes") val usedBytes: Long = 0,
     @SerialName("total_bytes") val totalBytes: Long = 0,
     @SerialName("addition") val addition: String? = null,
+    // Common fields needed for full-patch update
+    @SerialName("order") val order: Int = 0,
+    @SerialName("remark") val remark: String? = null,
+    @SerialName("disabled") val disabled: Boolean = false,
+    @SerialName("cache_expiration") val cacheExpiration: Int = 0,
+    @SerialName("web_proxy") val webProxy: Boolean = false,
+    @SerialName("webdav_policy") val webdavPolicy: String? = null,
+    @SerialName("down_proxy_url") val downProxyUrl: String? = null,
+    @SerialName("down_proxy_sign") val downProxySign: Boolean = false,
+    @SerialName("proxy_range") val proxyRange: Boolean = false,
+    @SerialName("order_by") val orderBy: String? = null,
+    @SerialName("order_direction") val orderDirection: String? = null,
+    @SerialName("extract_folder") val extractFolder: String? = null,
+    @SerialName("disable_index") val disableIndex: Boolean = false,
+    @SerialName("enable_sign") val enableSign: Boolean = false,
 )
 
 /**

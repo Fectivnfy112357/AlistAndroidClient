@@ -103,6 +103,19 @@ class StorageEditViewModel @Inject constructor(
                 mountPath = state.storage.mountPath,
                 driver = state.storage.driver,
                 disabled = !state.enabled,
+                order = state.storage.order,
+                remark = state.storage.remark,
+                cacheExpiration = state.storage.cacheExpiration,
+                webProxy = state.storage.webProxy,
+                webdavPolicy = state.storage.webdavPolicy,
+                downProxyUrl = state.storage.downProxyUrl,
+                downProxySign = state.storage.downProxySign,
+                proxyRange = state.storage.proxyRange,
+                orderBy = state.storage.orderBy,
+                orderDirection = state.storage.orderDirection,
+                extractFolder = state.storage.extractFolder,
+                disableIndex = state.storage.disableIndex,
+                enableSign = state.storage.enableSign,
                 addition = addition,
             )
             when (val r = storageRepository.update(base, patch)) {
@@ -134,22 +147,10 @@ class StorageEditViewModel @Inject constructor(
         return obj.toString()
     }
 
-    /**
-     * Flat storage fields that the v3 API stores on the storage object directly
-     * (not inside the addition JSON). These are read-only here for the edit screen —
-     * mount_path / order / remark / disabled / cache_expiration / web_proxy /
-     * webdav_policy / down_proxy_url / down_proxy_sign / order_by / order_direction /
-     * extract_folder / disable_index / enable_sign. Only fields we have data for
-     * from [StorageInfo] are populated; the rest will arrive via a future richer
-     * storage DTO and are omitted from the patch.
-     */
     private fun flatStorageFields(s: StorageInfo): Map<String, Any?> {
         val m = mutableMapOf<String, Any?>()
-        s.status?.let { if (it == "disabled") m["disabled"] = true }
-        // The current StorageInfo DTO only carries a subset of flat fields — we keep
-        // keys that we can actually populate. Common field names that the user may
-        // edit should be added here as the StorageInfo model grows.
         m["mount_path"] = s.mountPath
+        if (s.status == "disabled") m["disabled"] = true
         return m
     }
 }
