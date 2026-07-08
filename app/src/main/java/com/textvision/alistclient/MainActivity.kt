@@ -6,13 +6,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.rememberNavController
 import com.textvision.alistclient.auth.AuthRepository
+import com.textvision.alistclient.auth.SessionGate
 import com.textvision.alistclient.navigation.AppNavHost
+import com.textvision.alistclient.navigation.LoginDest
 import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.transfer.TransferNotificationController
 import com.textvision.alistclient.ui.theme.AlistClientTheme
@@ -31,6 +35,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var notificationController: TransferNotificationController
     @Inject lateinit var authRepository: AuthRepository
     @Inject lateinit var themeRepository: ThemeRepository
+    @Inject lateinit var sessionGate: SessionGate
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -48,7 +53,17 @@ class MainActivity : ComponentActivity() {
             }
             CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
                 AlistClientTheme(darkTheme = darkTheme) {
-                    AppNavHost(startAuthenticated = authRepository.loadSavedSession() != null, snackbarHostState = snackbarHostState)
+                    val navController = rememberNavController()
+                    LaunchedEffect(navController) {
+                        sessionGate.navEvent.collect {
+                            navController.navigate(LoginDest) { popUpTo(0) { inclusive = true } }
+                        }
+                    }
+                    AppNavHost(
+                        startAuthenticated = authRepository.loadSavedSession() != null,
+                        navController = navController,
+                        snackbarHostState = snackbarHostState,
+                    )
                 }
             }
         }
