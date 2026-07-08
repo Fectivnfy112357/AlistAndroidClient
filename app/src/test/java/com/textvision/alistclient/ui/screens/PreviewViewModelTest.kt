@@ -1,6 +1,7 @@
 package com.textvision.alistclient.ui.screens
 
 import com.textvision.alistclient.transfer.TransferManager
+import com.textvision.alistclient.ui.feature.preview.PreviewViewModel
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Test

@@ -11,7 +11,7 @@ import androidx.test.core.app.ActivityScenario
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.navigation.AppNavHost
 import com.textvision.alistclient.file.model.FileType
-import com.textvision.alistclient.ui.screens.PreviewScreen
+import com.textvision.alistclient.ui.feature.preview.PreviewScreen
 import com.textvision.alistclient.ui.theme.AlistClientTheme
 import org.junit.Rule
 import org.junit.Test
