@@ -61,6 +61,8 @@ import com.textvision.alistclient.ui.components.CloudStatusBanner
 import com.textvision.alistclient.ui.components.CloudTopBar
 import com.textvision.alistclient.ui.components.bottomBarInset
 import com.textvision.alistclient.ui.components.FileTypeIcon
+import com.textvision.alistclient.ui.components.fileCategoryFromMime
+import com.textvision.alistclient.ui.components.toFileCategory
 import com.textvision.alistclient.ui.theme.CloudErrorText
 import com.textvision.alistclient.ui.theme.CloudPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
@@ -204,7 +206,7 @@ private fun FileRow(
         title = item.name,
         subtitle = item.subtitleText(),
         onClick = if (item.isDir) onOpenDir else onPreview,
-        leading = { FileTypeIcon(item.type) },
+        leading = { FileTypeIcon(item.type.toFileCategory()) },
         trailing = {
             if (item.isDir) {
                 Text("›", color = CloudTextSecondary, style = MaterialTheme.typography.titleLarge)
