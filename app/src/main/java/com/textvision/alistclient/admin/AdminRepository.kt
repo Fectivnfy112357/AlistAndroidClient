@@ -1,6 +1,8 @@
 package com.textvision.alistclient.admin
 
 import com.textvision.alistclient.auth.AuthRepository
+import com.textvision.alistclient.auth.SessionEvent
+import com.textvision.alistclient.auth.SessionEventBus
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.di.IoDispatcher
@@ -18,6 +20,7 @@ class AdminRepository @Inject constructor(
     private val api: AlistApi,
     private val sessionManager: SessionManager,
     private val authRepository: AuthRepository,
+    private val sessionEventBus: SessionEventBus,
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) {
     suspend fun <T : Any> runAdmin(
@@ -28,7 +31,13 @@ class AdminRepository @Inject constructor(
         if (first is AdminResult.Ok) return@withContext first
         if (first is AdminResult.Unauthorized) {
             val refreshed = refreshAndRetry(base)
-            if (refreshed) return@withContext safeCall(call)
+            if (refreshed) {
+                val retried = safeCall(call)
+                if (retried is AdminResult.Unauthorized) sessionEventBus.emit(SessionEvent.Unauthorized)
+                return@withContext retried
+            } else {
+                sessionEventBus.emit(SessionEvent.Unauthorized)
+            }
         }
         first
     }

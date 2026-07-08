@@ -54,7 +54,7 @@ class HomeRepositoryTest {
         }
         tokenProvider = AuthTokenProvider()
         session = SessionManager(store, tokenProvider)
-        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build()
+        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build()
         api = retrofit2.Retrofit.Builder()
             .baseUrl(server.url("/"))
             .client(client)
@@ -62,7 +62,7 @@ class HomeRepositoryTest {
             .build()
             .create(AlistApi::class.java)
         val authRepo = AuthRepository(api, session)
-        val adminRepo = AdminRepository(api, session, authRepo, UnconfinedTestDispatcher())
+        val adminRepo = AdminRepository(api, session, authRepo, com.textvision.alistclient.auth.SessionEventBus(), UnconfinedTestDispatcher())
         repo = HomeRepository(api, session, authRepo, adminRepo, UnconfinedTestDispatcher())
     }
 

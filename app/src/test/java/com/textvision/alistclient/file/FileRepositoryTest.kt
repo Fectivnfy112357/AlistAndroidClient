@@ -2,6 +2,8 @@ package com.textvision.alistclient.file
 
 import com.textvision.alistclient.admin.AdminRepository
 import com.textvision.alistclient.auth.AuthRepository
+import com.textvision.alistclient.auth.SessionEvent
+import com.textvision.alistclient.auth.SessionEventBus
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.data.secure.CredentialStore
@@ -26,6 +28,7 @@ import com.textvision.alistclient.network.dto.TaskInfo
 import com.textvision.alistclient.network.dto.UserList
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -88,7 +91,8 @@ class FileRepositoryTest {
         val tokenProvider = AuthTokenProvider()
         val adminRepo: AdminRepository = mockk(relaxed = true)
         coEvery { adminRepo.runAdmin<StorageList>(any(), any()) } returns com.textvision.alistclient.admin.AdminResult.Ok(null)
-        val repository = FileRepository(api, SessionManager(store, tokenProvider), adminRepo)
+        val bus = mockk<SessionEventBus>(relaxed = true)
+        val repository = FileRepository(api, SessionManager(store, tokenProvider), adminRepo, bus)
 
         val result = repository.list("/")
 
@@ -101,6 +105,7 @@ class FileRepositoryTest {
         assertEquals(LoginRequest("admin", "pass"), api.loginRequests.single().third)
         assertEquals("new-token", store.map[SessionManager.KEY_TOKEN])
         assertEquals("new-token", tokenProvider.getToken())
+        verify(exactly = 0) { bus.emit(any()) }
     }
 
     private class ThreeItemApi : AlistApi {
@@ -145,10 +150,68 @@ class FileRepositoryTest {
                 com.textvision.alistclient.network.dto.StorageInfo(id = 3, mountPath = "/我的照片", driver = "Local", disabled = false),
             ))
         )
-        val repository = FileRepository(api, SessionManager(store, AuthTokenProvider()), adminRepo)
+        val repository = FileRepository(api, SessionManager(store, AuthTokenProvider()), adminRepo, mockk(relaxed = true))
         val result = repository.list("/")
         assertTrue(result is ApiResult.Success<*>)
         val names = (result as ApiResult.Success).data.map { it.name }
         assertEquals(listOf("我的文件", "我的照片"), names)
+    }
+
+    private class AlwaysUnauthorizedApi(private val loginCode: Int) : AlistApi {
+        override suspend fun list(url: String, request: FsListRequest): AlistResponse<AlistFsList> =
+            AlistResponse(401, "token expired", null)
+        override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> =
+            if (loginCode == 200) AlistResponse(200, "success", AlistLoginData("new-token"))
+            else AlistResponse(loginCode, "unauthorized", null)
+        override suspend fun search(url: String, request: FsSearchRequest): AlistResponse<AlistFsList> = throw UnsupportedOperationException()
+        override suspend fun mkdir(url: String, request: MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun rename(url: String, request: RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun copy(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun listStorage(url: String, page: Int, perPage: Int): AlistResponse<StorageList> = throw UnsupportedOperationException()
+        override suspend fun getPublicSettings(url: String, skipAuthRetry: String): AlistResponse<com.textvision.alistclient.network.dto.PublicSettings> = throw UnsupportedOperationException()
+        override suspend fun listUsers(url: String, page: Int, perPage: Int): AlistResponse<UserList> = throw UnsupportedOperationException()
+        override suspend fun listRoles(url: String, page: Int, perPage: Int): AlistResponse<RoleList> = throw UnsupportedOperationException()
+        override suspend fun listSessions(url: String): AlistResponse<List<SessionInfo>> = throw UnsupportedOperationException()
+        override suspend fun taskUndone(url: String): AlistResponse<List<TaskInfo>> = throw UnsupportedOperationException()
+        override suspend fun updateStorage(url: String, body: com.textvision.alistclient.network.dto.StoragePatch): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun listDrivers(url: String, page: Int, perPage: Int): AlistResponse<Map<String, com.textvision.alistclient.network.dto.DriverInfo>> = throw UnsupportedOperationException()
+        override suspend fun listSettings(url: String, page: Int, perPage: Int): AlistResponse<List<com.textvision.alistclient.network.dto.SettingItem>> = throw UnsupportedOperationException()
+        override suspend fun saveSettings(url: String, body: com.textvision.alistclient.network.dto.SettingSaveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+    }
+
+    private fun memoryStoreWithSession() = MemoryStore().apply {
+        map[SessionManager.KEY_SERVER_URL] = "http://server/"
+        map[SessionManager.KEY_USERNAME] = "admin"
+        map[SessionManager.KEY_PASSWORD] = "pass"
+        map[SessionManager.KEY_TOKEN] = "old-token"
+    }
+
+    @Test fun emitsUnauthorizedOnceWhenRetryStill401AfterRefresh() = runTest {
+        val api = AlwaysUnauthorizedApi(loginCode = 200)
+        val adminRepo: AdminRepository = mockk(relaxed = true)
+        coEvery { adminRepo.runAdmin<StorageList>(any(), any()) } returns com.textvision.alistclient.admin.AdminResult.Ok(null)
+        val bus = mockk<SessionEventBus>(relaxed = true)
+        val repository = FileRepository(api, SessionManager(memoryStoreWithSession(), AuthTokenProvider()), adminRepo, bus)
+
+        val result = repository.list("/")
+
+        assertTrue(result is ApiResult.Failure)
+        assertEquals(401, (result as ApiResult.Failure).code)
+        verify(exactly = 1) { bus.emit(SessionEvent.Unauthorized) }
+    }
+
+    @Test fun emitsUnauthorizedOnceWhenRefreshItselfFails() = runTest {
+        val api = AlwaysUnauthorizedApi(loginCode = 401)
+        val adminRepo: AdminRepository = mockk(relaxed = true)
+        coEvery { adminRepo.runAdmin<StorageList>(any(), any()) } returns com.textvision.alistclient.admin.AdminResult.Ok(null)
+        val bus = mockk<SessionEventBus>(relaxed = true)
+        val repository = FileRepository(api, SessionManager(memoryStoreWithSession(), AuthTokenProvider()), adminRepo, bus)
+
+        val result = repository.list("/")
+
+        assertTrue(result is ApiResult.Failure)
+        verify(exactly = 1) { bus.emit(SessionEvent.Unauthorized) }
     }
 }

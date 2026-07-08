@@ -52,14 +52,14 @@ class SettingsRepositoryTest {
         }
         tokenProvider = AuthTokenProvider()
         session = SessionManager(store, tokenProvider)
-        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build()
+        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build()
         api = retrofit2.Retrofit.Builder()
             .baseUrl(server.url("/"))
             .client(client)
             .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(AlistApi::class.java)
-        val adminRepo = AdminRepository(api, session, AuthRepository(api, session), UnconfinedTestDispatcher())
+        val adminRepo = AdminRepository(api, session, AuthRepository(api, session), com.textvision.alistclient.auth.SessionEventBus(), UnconfinedTestDispatcher())
         repo = SettingsRepository(api, adminRepo, UnconfinedTestDispatcher())
     }
 

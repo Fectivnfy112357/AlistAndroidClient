@@ -56,7 +56,10 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     LaunchedEffect(navController) {
                         sessionGate.navEvent.collect {
-                            navController.navigate(LoginDest) { popUpTo(0) { inclusive = true } }
+                            navController.navigate(LoginDest) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     }
                     AppNavHost(

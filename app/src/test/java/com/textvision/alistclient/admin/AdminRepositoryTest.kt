@@ -57,14 +57,14 @@ class AdminRepositoryTest {
         }
         tokenProvider = AuthTokenProvider()
         session = SessionManager(store, tokenProvider)
-        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build()
+        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build()
         api = retrofit2.Retrofit.Builder()
             .baseUrl(server.url("/"))
             .client(client)
             .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(AlistApi::class.java)
-        repo = AdminRepository(api, session, AuthRepository(api, session), UnconfinedTestDispatcher())
+        repo = AdminRepository(api, session, AuthRepository(api, session), com.textvision.alistclient.auth.SessionEventBus(), UnconfinedTestDispatcher())
     }
 
     @After fun tearDown() { server.shutdown() }
@@ -91,12 +91,36 @@ class AdminRepositoryTest {
         }
         val probeApi = retrofit2.Retrofit.Builder()
             .baseUrl(server.url("/"))
-            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build())
+            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build())
             .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(ProbeApi::class.java)
         val r = repo.runAdmin(server.url("/").toString()) { probeApi.probe("api/admin/probe") }
         assertTrue("expected Ok after refresh, got $r", r is AdminResult.Ok)
         assertEquals(2, probeCount)
+    }
+
+    @Test fun emitsUnauthorizedWhenStillUnauthorizedAfterRefresh() = runTest {
+        val bus = io.mockk.mockk<com.textvision.alistclient.auth.SessionEventBus>(relaxed = true)
+        val emittingRepo = AdminRepository(api, session, AuthRepository(api, session), bus, UnconfinedTestDispatcher())
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                if (request.path?.contains("/api/auth/login") == true) {
+                    return MockResponse().setResponseCode(200).setBody(
+                        """{"code":200,"message":"success","data":{"token":"new_tok"}}"""
+                    )
+                }
+                return MockResponse().setResponseCode(401).setBody("""{"code":401,"message":"x","data":null}""")
+            }
+        }
+        val probeApi = retrofit2.Retrofit.Builder()
+            .baseUrl(server.url("/"))
+            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build())
+            .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(ProbeApi::class.java)
+        val r = emittingRepo.runAdmin(server.url("/").toString()) { probeApi.probe("api/admin/probe") }
+        assertTrue(r is AdminResult.Unauthorized)
+        io.mockk.verify(exactly = 1) { bus.emit(com.textvision.alistclient.auth.SessionEvent.Unauthorized) }
     }
 }

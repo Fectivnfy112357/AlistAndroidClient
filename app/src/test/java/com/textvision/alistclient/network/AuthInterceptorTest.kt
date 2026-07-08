@@ -1,18 +1,11 @@
 package com.textvision.alistclient.network
 
-import com.textvision.alistclient.auth.SessionEvent
-import com.textvision.alistclient.auth.SessionEventBus
-import io.mockk.mockk
-import io.mockk.verify
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -22,7 +15,7 @@ class AuthInterceptorTest {
     @Test
     fun skipAuthRetryHeaderIsRemovedBeforeProceedButPreservedAsInternalMarker() {
         val tokenProvider = AuthTokenProvider()
-        val interceptor = AuthInterceptor(tokenProvider, SessionEventBus())
+        val interceptor = AuthInterceptor(tokenProvider)
         val initialRequest = Request.Builder()
             .url("https://example.test/upload")
             .header(SkipAuthRetry.HEADER, "true")
@@ -39,7 +32,7 @@ class AuthInterceptorTest {
     @Test
     fun skipAuthRetryHeaderSkipsRetryAndAuthorization() {
         val tokenProvider = AuthTokenProvider().apply { setToken("old-token") }
-        val interceptor = AuthInterceptor(tokenProvider, SessionEventBus())
+        val interceptor = AuthInterceptor(tokenProvider)
         val initialRequest = Request.Builder()
             .url("https://example.test/api/auth/login")
             .header(SkipAuthRetry.HEADER, "true")
@@ -57,7 +50,7 @@ class AuthInterceptorTest {
     @Test
     fun tokenIsAddedWhenSkipAuthRetryHeaderIsAbsent() {
         val tokenProvider = AuthTokenProvider().apply { setToken("old-token") }
-        val interceptor = AuthInterceptor(tokenProvider, SessionEventBus())
+        val interceptor = AuthInterceptor(tokenProvider)
         val initialRequest = Request.Builder()
             .url("https://example.test/api/fs/list")
             .build()
@@ -67,71 +60,6 @@ class AuthInterceptorTest {
 
         val proceededRequest = requireNotNull(chain.proceededRequest)
         assertEquals("old-token", proceededRequest.header("Authorization"))
-    }
-
-    @Test
-    fun unauthorizedResponseEmitsUnauthorizedSessionEvent() {
-        val bus = mockk<SessionEventBus>(relaxed = true)
-        val server = MockWebServer().apply {
-            enqueue(MockResponse().setResponseCode(401))
-            start()
-        }
-        try {
-            val client = OkHttpClient.Builder()
-                .addInterceptor(AuthInterceptor(AuthTokenProvider().apply { setToken("tok") }, bus))
-                .build()
-
-            client.newCall(Request.Builder().url(server.url("/api/fs/list")).build()).execute().close()
-
-            verify(exactly = 1) { bus.emit(SessionEvent.Unauthorized) }
-        } finally {
-            server.shutdown()
-        }
-    }
-
-    @Test
-    fun unauthorizedResponseWithSkipAuthDoesNotEmit() {
-        val bus = mockk<SessionEventBus>(relaxed = true)
-        val server = MockWebServer().apply {
-            enqueue(MockResponse().setResponseCode(401))
-            start()
-        }
-        try {
-            val client = OkHttpClient.Builder()
-                .addInterceptor(AuthInterceptor(AuthTokenProvider(), bus))
-                .build()
-
-            client.newCall(
-                Request.Builder()
-                    .url(server.url("/api/auth/login"))
-                    .header(SkipAuthRetry.HEADER, "true")
-                    .build(),
-            ).execute().close()
-
-            verify(exactly = 0) { bus.emit(any()) }
-        } finally {
-            server.shutdown()
-        }
-    }
-
-    @Test
-    fun successResponseDoesNotEmit() {
-        val bus = mockk<SessionEventBus>(relaxed = true)
-        val server = MockWebServer().apply {
-            enqueue(MockResponse().setResponseCode(200).setBody("{}"))
-            start()
-        }
-        try {
-            val client = OkHttpClient.Builder()
-                .addInterceptor(AuthInterceptor(AuthTokenProvider().apply { setToken("tok") }, bus))
-                .build()
-
-            client.newCall(Request.Builder().url(server.url("/api/fs/list")).build()).execute().close()
-
-            verify(exactly = 0) { bus.emit(any()) }
-        } finally {
-            server.shutdown()
-        }
     }
 
     private class CapturingChain(

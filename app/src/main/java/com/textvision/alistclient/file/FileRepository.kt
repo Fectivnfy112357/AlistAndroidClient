@@ -2,6 +2,8 @@ package com.textvision.alistclient.file
 
 import com.textvision.alistclient.admin.AdminRepository
 import com.textvision.alistclient.admin.AdminResult
+import com.textvision.alistclient.auth.SessionEvent
+import com.textvision.alistclient.auth.SessionEventBus
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.auth.model.SavedSession
 import com.textvision.alistclient.common.result.ApiResult
@@ -25,6 +27,7 @@ class FileRepository @Inject constructor(
     private val api: AlistApi,
     private val sessionManager: SessionManager,
     private val adminRepository: AdminRepository,
+    private val sessionEventBus: SessionEventBus,
 ) : FileRepositoryContract, FileOperationRepositoryContract {
     private fun baseUrl(): String =
         sessionManager.loadSavedSession()?.serverUrl ?: error("No active session — cannot resolve server URL")
@@ -86,8 +89,17 @@ class FileRepository @Inject constructor(
         val first = runAlist(request)
         if (first !is ApiResult.Failure || first.code != 401) return first
         return when (val refreshed = refreshSession()) {
-            is ApiResult.Success -> runAlist(request)
-            is ApiResult.Failure -> refreshed
+            is ApiResult.Success -> {
+                val retried = runAlist(request)
+                if (retried is ApiResult.Failure && retried.code == 401) {
+                    sessionEventBus.emit(SessionEvent.Unauthorized)
+                }
+                retried
+            }
+            is ApiResult.Failure -> {
+                sessionEventBus.emit(SessionEvent.Unauthorized)
+                refreshed
+            }
             is ApiResult.NetworkError -> refreshed
         }
     }

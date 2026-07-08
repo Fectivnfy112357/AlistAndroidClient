@@ -131,7 +131,7 @@ class AuthRepositoryTest {
             selectedServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"code":200,"message":"success","data":{"token":"new-token"}}"""))
             val api = Retrofit.Builder()
                 .baseUrl(defaultServer.url("/"))
-                .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build())
+                .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build())
                 .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
                 .build()
                 .create(AlistApi::class.java)
