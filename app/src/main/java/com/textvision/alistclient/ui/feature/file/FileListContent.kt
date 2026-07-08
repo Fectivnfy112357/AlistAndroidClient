@@ -5,10 +5,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.file.model.FileItem
@@ -24,6 +32,8 @@ fun FileListContent(
     onIntent: (FileIntent) -> Unit,
     onPreview: (FileItem) -> Unit,
     onFolderNavigate: (path: String) -> Unit,
+    onShare: (FileItem) -> Unit = {},
+    onCopyLink: (FileItem) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier,
 ) {
@@ -68,10 +78,55 @@ fun FileListContent(
                             )
                         }
                     }
+                } else if (!file.isDir) {
+                    {
+                        FileRowMenu(
+                            file = file,
+                            onIntent = onIntent,
+                            onShare = onShare,
+                            onCopyLink = onCopyLink,
+                        )
+                    }
                 } else {
                     {}
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun FileRowMenu(
+    file: FileItem,
+    onIntent: (FileIntent) -> Unit,
+    onShare: (FileItem) -> Unit,
+    onCopyLink: (FileItem) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { expanded = true }) {
+        Icon(Icons.Filled.MoreVert, contentDescription = "更多操作")
+    }
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenuItem(
+            text = { Text("下载") },
+            onClick = {
+                expanded = false
+                onIntent(FileIntent.DownloadOne(file.path))
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("分享") },
+            onClick = {
+                expanded = false
+                onShare(file)
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("复制直链") },
+            onClick = {
+                expanded = false
+                onCopyLink(file)
+            },
+        )
     }
 }

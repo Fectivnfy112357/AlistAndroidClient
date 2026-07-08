@@ -41,6 +41,8 @@ class FileViewModel @Inject constructor(
         when (intent) {
             is FileIntent.Load -> load(intent.path)
             is FileIntent.Search -> _state.update { it.copy(query = intent.query) }
+            is FileIntent.Upload -> transferManager.enqueueUpload(intent.uri, _state.value.path)
+            is FileIntent.DownloadOne -> downloadOne(intent.path)
             is FileIntent.MultiSelectToggle -> toggleSelect(intent.path)
             FileIntent.MultiSelectClear -> _state.update {
                 it.copy(selection = emptySet(), isMultiSelectMode = false)
@@ -100,6 +102,13 @@ class FileViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun downloadOne(path: String) {
+        val file = _state.value.files.firstOrNull { it.path == path }
+        if (file?.isDir == true) return
+        val name = file?.name ?: path.substringAfterLast('/')
+        transferManager.enqueueDownload(path, name)
     }
 
     private fun downloadSelected(paths: List<String>) {

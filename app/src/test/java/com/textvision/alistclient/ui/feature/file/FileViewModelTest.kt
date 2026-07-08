@@ -167,6 +167,34 @@ class FileViewModelTest {
     }
 
     @Test
+    fun upload_intent_enqueues_upload_at_current_path() = runTest {
+        coEvery { fileRepository.list("/docs") } returns ApiResult.Success(emptyList())
+        val uri = mockk<android.net.Uri>()
+        every { transferManager.enqueueUpload(any(), any()) } returns "task-up"
+
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
+        vm.onIntent(FileIntent.Load("/docs"))
+        advanceUntilIdle()
+        vm.onIntent(FileIntent.Upload(uri))
+
+        verify(exactly = 1) { transferManager.enqueueUpload(uri, "/docs") }
+    }
+
+    @Test
+    fun download_one_intent_enqueues_download() = runTest {
+        val files = listOf(makeFile("a.txt"))
+        coEvery { fileRepository.list("/") } returns ApiResult.Success(files)
+        every { transferManager.enqueueDownload(any(), any()) } returns "task-1"
+
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
+        vm.onIntent(FileIntent.Load("/"))
+        advanceUntilIdle()
+        vm.onIntent(FileIntent.DownloadOne("/a.txt"))
+
+        verify(exactly = 1) { transferManager.enqueueDownload("/a.txt", "a.txt") }
+    }
+
+    @Test
     fun multi_select_download_enqueues_transfer() = runTest {
         val initial = listOf(makeFile("a.txt"), makeFile("b.txt"))
         coEvery { fileRepository.list("/") } returns ApiResult.Success(initial)
