@@ -38,10 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.textvision.alistclient.ui.theme.CloudBackground
-import com.textvision.alistclient.ui.theme.CloudPrimary
-import com.textvision.alistclient.ui.theme.CloudSurface
-import com.textvision.alistclient.ui.theme.CloudTextPrimary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -84,13 +80,13 @@ fun WebCookieDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = CloudBackground) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // 简易顶部栏
                 androidx.compose.foundation.layout.Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(CloudSurface)
+                        .background(MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -98,20 +94,20 @@ fun WebCookieDialog(
                         Icon(
                             imageVector = Icons.Outlined.Close,
                             contentDescription = "关闭",
-                            tint = CloudTextPrimary,
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     Text(
                         text = "获取 Cookie",
                         style = MaterialTheme.typography.titleMedium,
-                        color = CloudTextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                     )
                 }
                 Text(
                     text = site.hint,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = CloudPrimary,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
                 Spacer(Modifier.height(1.dp))

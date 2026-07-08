@@ -30,8 +30,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.theme.CloudShapes
-import com.textvision.alistclient.ui.theme.CloudSurface
-import com.textvision.alistclient.ui.theme.CloudSurfaceMuted
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,9 +110,9 @@ fun DynamicFormField(
 
 private val CloudFieldColors
     @Composable get() = TextFieldDefaults.colors(
-        focusedContainerColor = CloudSurfaceMuted,
-        unfocusedContainerColor = CloudSurfaceMuted,
-        disabledContainerColor = CloudSurfaceMuted,
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         focusedIndicatorColor = Color.Transparent,
         unfocusedIndicatorColor = Color.Transparent,
         disabledIndicatorColor = Color.Transparent,
@@ -202,7 +200,7 @@ private fun SelectRow(
                 onDismissRequest = { expanded = false },
                 modifier = Modifier
                     .clip(CloudShapes.Control)
-                    .background(CloudSurface),
+                    .background(MaterialTheme.colorScheme.surface),
             ) {
                 options.forEach { (key, labelText) ->
                     DropdownMenuItem(
