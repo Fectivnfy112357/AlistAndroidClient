@@ -1,6 +1,6 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
-import com.textvision.alistclient.home.dto.HomeData
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState

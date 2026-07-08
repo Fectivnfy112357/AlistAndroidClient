@@ -1,4 +1,4 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import com.textvision.alistclient.admin.AdminRepository
 import com.textvision.alistclient.admin.AdminResult
@@ -6,15 +6,6 @@ import com.textvision.alistclient.auth.AuthRepository
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.di.IoDispatcher
-import com.textvision.alistclient.home.dto.HomeData
-import com.textvision.alistclient.home.dto.PublicData
-import com.textvision.alistclient.home.dto.SectionFailure
-import com.textvision.alistclient.home.dto.SectionResult
-import com.textvision.alistclient.home.dto.ServerStatsData
-import com.textvision.alistclient.home.dto.SessionData
-import com.textvision.alistclient.home.dto.StorageData
-import com.textvision.alistclient.home.dto.TaskBucket
-import com.textvision.alistclient.home.dto.TaskData
 import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.PublicSettings
@@ -22,6 +13,15 @@ import com.textvision.alistclient.network.dto.RoleList
 import com.textvision.alistclient.network.dto.SessionInfo
 import com.textvision.alistclient.network.dto.StorageList
 import com.textvision.alistclient.network.dto.UserList
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
+import com.textvision.alistclient.ui.feature.home.dto.PublicData
+import com.textvision.alistclient.ui.feature.home.dto.SectionFailure
+import com.textvision.alistclient.ui.feature.home.dto.SectionResult
+import com.textvision.alistclient.ui.feature.home.dto.ServerStatsData
+import com.textvision.alistclient.ui.feature.home.dto.SessionData
+import com.textvision.alistclient.ui.feature.home.dto.StorageData
+import com.textvision.alistclient.ui.feature.home.dto.TaskBucket
+import com.textvision.alistclient.ui.feature.home.dto.TaskData
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async

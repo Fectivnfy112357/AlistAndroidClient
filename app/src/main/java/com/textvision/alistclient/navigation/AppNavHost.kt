@@ -16,7 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.textvision.alistclient.file.model.FileType
-import com.textvision.alistclient.home.HomeScreen
+import com.textvision.alistclient.ui.feature.home.HomeScreen
 import com.textvision.alistclient.ui.feature.admin.AdminSiteSettingsScreen
 import com.textvision.alistclient.ui.feature.file.FileScreen
 import com.textvision.alistclient.ui.feature.auth.LoginScreen

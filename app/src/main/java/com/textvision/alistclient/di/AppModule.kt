@@ -16,8 +16,8 @@ import com.textvision.alistclient.data.secure.CredentialStore
 import com.textvision.alistclient.data.secure.EncryptedCredentialStore
 import com.textvision.alistclient.file.FileRepository
 import com.textvision.alistclient.file.FileRepositoryContract
-import com.textvision.alistclient.home.HomeRepository
-import com.textvision.alistclient.home.HomeRepositoryContract
+import com.textvision.alistclient.ui.feature.home.HomeRepository
+import com.textvision.alistclient.ui.feature.home.HomeRepositoryContract
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.common.network.NetworkMonitor

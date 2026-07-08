@@ -1,4 +1,4 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -24,10 +24,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.home.dto.SectionResult
-import com.textvision.alistclient.home.dto.StorageData
 import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.ui.components.ListItemRow
+import com.textvision.alistclient.ui.feature.home.dto.SectionResult
+import com.textvision.alistclient.ui.feature.home.dto.StorageData
 
 @Composable
 internal fun StorageSection(

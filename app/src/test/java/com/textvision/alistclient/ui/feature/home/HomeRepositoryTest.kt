@@ -1,4 +1,4 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.textvision.alistclient.admin.AdminRepository
@@ -6,11 +6,11 @@ import com.textvision.alistclient.auth.AuthRepository
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.data.secure.CredentialStore
-import com.textvision.alistclient.home.dto.HomeData
-import com.textvision.alistclient.home.dto.SectionResult
 import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.AuthTokenProvider
 import com.textvision.alistclient.network.api.AlistApi
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
+import com.textvision.alistclient.ui.feature.home.dto.SectionResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest

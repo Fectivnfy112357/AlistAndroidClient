@@ -1,13 +1,13 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import com.textvision.alistclient.common.result.ApiResult
-import com.textvision.alistclient.home.dto.HomeData
-import com.textvision.alistclient.home.dto.PublicData
-import com.textvision.alistclient.home.dto.SectionResult
-import com.textvision.alistclient.home.dto.ServerStatsData
-import com.textvision.alistclient.home.dto.SessionData
-import com.textvision.alistclient.home.dto.StorageData
-import com.textvision.alistclient.home.dto.TaskData
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
+import com.textvision.alistclient.ui.feature.home.dto.PublicData
+import com.textvision.alistclient.ui.feature.home.dto.SectionResult
+import com.textvision.alistclient.ui.feature.home.dto.ServerStatsData
+import com.textvision.alistclient.ui.feature.home.dto.SessionData
+import com.textvision.alistclient.ui.feature.home.dto.StorageData
+import com.textvision.alistclient.ui.feature.home.dto.TaskData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher

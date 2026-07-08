@@ -1,4 +1,4 @@
-package com.textvision.alistclient.home.dto
+package com.textvision.alistclient.ui.feature.home.dto
 
 data class TaskData(
     val runningCount: Int,

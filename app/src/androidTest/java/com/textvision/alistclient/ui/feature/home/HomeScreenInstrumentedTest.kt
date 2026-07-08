@@ -1,4 +1,4 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
@@ -7,15 +7,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.textvision.alistclient.home.dto.HomeData
-import com.textvision.alistclient.home.dto.PublicData
-import com.textvision.alistclient.home.dto.SectionFailure
-import com.textvision.alistclient.home.dto.SectionResult
-import com.textvision.alistclient.home.dto.ServerStatsData
-import com.textvision.alistclient.home.dto.SessionData
-import com.textvision.alistclient.home.dto.StorageData
-import com.textvision.alistclient.home.dto.TaskData
 import com.textvision.alistclient.network.dto.StorageInfo
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
+import com.textvision.alistclient.ui.feature.home.dto.PublicData
+import com.textvision.alistclient.ui.feature.home.dto.SectionFailure
+import com.textvision.alistclient.ui.feature.home.dto.SectionResult
+import com.textvision.alistclient.ui.feature.home.dto.ServerStatsData
+import com.textvision.alistclient.ui.feature.home.dto.SessionData
+import com.textvision.alistclient.ui.feature.home.dto.StorageData
+import com.textvision.alistclient.ui.feature.home.dto.TaskData
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

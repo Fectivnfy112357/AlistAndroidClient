@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,9 +17,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.textvision.alistclient.home.dto.HomeData
 import com.textvision.alistclient.ui.components.ErrorState
 import com.textvision.alistclient.ui.components.LoadingState
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
 

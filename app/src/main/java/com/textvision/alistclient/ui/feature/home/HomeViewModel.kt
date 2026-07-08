@@ -1,11 +1,11 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.di.IoDispatcher
-import com.textvision.alistclient.home.dto.HomeData
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job

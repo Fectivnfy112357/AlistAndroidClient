@@ -1,7 +1,7 @@
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import com.textvision.alistclient.common.result.ApiResult
-import com.textvision.alistclient.home.dto.HomeData
+import com.textvision.alistclient.ui.feature.home.dto.HomeData
 
 interface HomeRepositoryContract {
     suspend fun loadDashboard(): ApiResult<HomeData>

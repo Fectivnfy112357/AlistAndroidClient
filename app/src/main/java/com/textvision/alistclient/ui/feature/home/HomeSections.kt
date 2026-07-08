@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalLayoutApi::class)
 
-package com.textvision.alistclient.home
+package com.textvision.alistclient.ui.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,15 +27,15 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.home.dto.PublicData
-import com.textvision.alistclient.home.dto.SectionFailure
-import com.textvision.alistclient.home.dto.SectionResult
-import com.textvision.alistclient.home.dto.ServerStatsData
-import com.textvision.alistclient.home.dto.SessionData
-import com.textvision.alistclient.home.dto.TaskBucket
-import com.textvision.alistclient.home.dto.TaskData
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.StatusBanner
+import com.textvision.alistclient.ui.feature.home.dto.PublicData
+import com.textvision.alistclient.ui.feature.home.dto.SectionFailure
+import com.textvision.alistclient.ui.feature.home.dto.SectionResult
+import com.textvision.alistclient.ui.feature.home.dto.ServerStatsData
+import com.textvision.alistclient.ui.feature.home.dto.SessionData
+import com.textvision.alistclient.ui.feature.home.dto.TaskBucket
+import com.textvision.alistclient.ui.feature.home.dto.TaskData
 
 /** Card surface shared across dashboard sections. */
 @Composable
