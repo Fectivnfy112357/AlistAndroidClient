@@ -9,11 +9,14 @@ import com.textvision.alistclient.transfer.model.TransferStatus
 import com.textvision.alistclient.transfer.model.TransferType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class TransferTab(
     val type: TransferType,
@@ -57,6 +60,9 @@ class TransferViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _tab = MutableStateFlow(TransferTab.UPLOAD)
+    private val _isRefreshing = MutableStateFlow(false)
+
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     val state: StateFlow<TransferListUiState> = combine(
         _tab,
@@ -72,6 +78,14 @@ class TransferViewModel @Inject constructor(
 
     fun selectTab(tab: TransferTab) {
         _tab.value = tab
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            delay(500)
+            _isRefreshing.value = false
+        }
     }
 
     fun cancel(id: String) = manager.cancel(id)

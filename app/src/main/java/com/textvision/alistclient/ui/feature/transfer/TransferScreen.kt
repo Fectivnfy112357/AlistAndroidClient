@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -27,6 +28,7 @@ import com.textvision.alistclient.ui.foundation.AppTopBar
 @Composable
 fun TransferScreen(viewModel: TransferViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     AppScaffold(
         topBar = {
             AppTopBar(
@@ -64,16 +66,22 @@ fun TransferScreen(viewModel: TransferViewModel = hiltViewModel()) {
                 )
                 Spacer(Modifier.height(8.dp))
             }
-            TransferListContent(
-                rows = state.visible,
-                onCancel = viewModel::cancel,
-                onRetry = viewModel::retry,
-                onDelete = viewModel::delete,
-                emptyTitle = state.tab.emptyMessage,
-                emptyMessage = "对应类型的传输任务会显示在这里",
-                enabled = state.isOnline,
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { viewModel.refresh() },
                 modifier = Modifier.fillMaxSize(),
-            )
+            ) {
+                TransferListContent(
+                    rows = state.visible,
+                    onCancel = viewModel::cancel,
+                    onRetry = viewModel::retry,
+                    onDelete = viewModel::delete,
+                    emptyTitle = state.tab.emptyMessage,
+                    emptyMessage = "对应类型的传输任务会显示在这里",
+                    enabled = state.isOnline,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }

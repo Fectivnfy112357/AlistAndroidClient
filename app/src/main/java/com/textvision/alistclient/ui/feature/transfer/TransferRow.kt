@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -157,11 +156,9 @@ fun TransferRow(
                 } else {
                     0f
                 }
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth().height(4.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primaryContainer,
+                TransferProgress(
+                    progress = progress,
+                    modifier = Modifier,
                 )
                 Text(
                     text = if (item.totalBytes > 0L) {
