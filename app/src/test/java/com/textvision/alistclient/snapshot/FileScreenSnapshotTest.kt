@@ -97,4 +97,36 @@ class FileScreenSnapshotTest {
         composeRule.setContent { FileListSample(FileUiState(path = "/", files = files), darkTheme = true) }
         composeRule.onRoot().captureRoboImage("src/test/snapshots/images/file_screen_dark.png")
     }
+
+    @Test
+    fun file_screen_loading() {
+        composeRule.setContent { FileListSample(FileUiState(path = "/", isLoading = true)) }
+        composeRule.onRoot().captureRoboImage("src/test/snapshots/images/file_screen_loading.png")
+    }
+
+    @Test
+    fun file_screen_error() {
+        composeRule.setContent { FileListSample(FileUiState(path = "/", error = "加载失败")) }
+        composeRule.onRoot().captureRoboImage("src/test/snapshots/images/file_screen_error.png")
+    }
+
+    @Test
+    fun file_screen_multiselect() {
+        val files = listOf(
+            makeFile("Documents", "/Documents", true, FileType.Folder, null),
+            makeFile("photo.jpg", "/photo.jpg", false, FileType.Image, "jpg"),
+            makeFile("report.pdf", "/report.pdf", false, FileType.Pdf, "pdf"),
+        )
+        composeRule.setContent {
+            FileListSample(
+                FileUiState(
+                    path = "/",
+                    files = files,
+                    isMultiSelectMode = true,
+                    selection = setOf("/photo.jpg"),
+                ),
+            )
+        }
+        composeRule.onRoot().captureRoboImage("src/test/snapshots/images/file_screen_multiselect.png")
+    }
 }
