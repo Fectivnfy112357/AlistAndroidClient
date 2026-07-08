@@ -2,14 +2,12 @@ package com.textvision.alistclient.navigation
 
 import android.net.Uri
 import android.os.Bundle
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -53,23 +51,23 @@ private val PreviewArgsNavType = object : NavType<PreviewDestArgs>(isNullableAll
 fun AppNavHost(
     startAuthenticated: Boolean,
     navController: NavHostController = rememberNavController(),
-    snackbarHostState: SnackbarHostState? = null,
+    snackbarHostState: SnackbarHostState,
 ) {
     val startDestination: Any = if (startAuthenticated) FilesDest() else LoginDest
 
-    Box(Modifier.fillMaxSize()) {
-        Scaffold(
-            snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } },
-        ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                enterTransition = { hyperOsEnterTransition() },
-                exitTransition = { hyperOsExitTransition() },
-                popEnterTransition = { hyperOsPopEnterTransition() },
-                popExitTransition = { hyperOsPopExitTransition() },
-            ) {
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = { AppBottomNavBar(navController) },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            enterTransition = { hyperOsEnterTransition() },
+            exitTransition = { hyperOsExitTransition() },
+            popEnterTransition = { hyperOsPopEnterTransition() },
+            popExitTransition = { hyperOsPopExitTransition() },
+        ) {
             composable<LoginDest> {
                 LoginScreen(onLoginSuccess = {
                     navController.navigate(FilesDest()) {
@@ -134,8 +132,6 @@ fun AppNavHost(
                     onBack = { navController.popBackStack() },
                 )
             }
-            }
         }
-        AppBottomNavBar(navController, Modifier.align(Alignment.BottomCenter))
     }
 }
