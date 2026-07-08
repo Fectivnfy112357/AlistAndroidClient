@@ -65,7 +65,7 @@ interface AlistApi {
     @GET
     suspend fun listSessions(@Url url: String): AlistResponse<List<SessionInfo>>
 
-    @POST
+    @GET
     suspend fun taskUndone(@Url url: String): AlistResponse<List<TaskInfo>>
 
     @GET

@@ -1,5 +1,7 @@
 package com.textvision.alistclient.file
 
+import com.textvision.alistclient.admin.AdminRepository
+import com.textvision.alistclient.auth.AuthRepository
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.data.secure.CredentialStore
@@ -19,8 +21,12 @@ import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
 import com.textvision.alistclient.network.dto.RoleList
 import com.textvision.alistclient.network.dto.SessionInfo
+import com.textvision.alistclient.network.dto.StorageList
 import com.textvision.alistclient.network.dto.TaskInfo
 import com.textvision.alistclient.network.dto.UserList
+import io.mockk.coEvery
+import io.mockk.mockk
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -59,7 +65,7 @@ class FileRepositoryTest {
         override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
         override suspend fun copy(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("copy is not used by this test")
         override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException("move is not used by this test")
-        override suspend fun listStorage(url: String, page: Int, perPage: Int): AlistResponse<com.textvision.alistclient.network.dto.StorageList> = throw UnsupportedOperationException("listStorage is not used by this test")
+        override suspend fun listStorage(url: String, page: Int, perPage: Int): AlistResponse<StorageList> = throw UnsupportedOperationException("listStorage is not used by this test")
         override suspend fun getPublicSettings(url: String, skipAuthRetry: String): AlistResponse<com.textvision.alistclient.network.dto.PublicSettings> = throw UnsupportedOperationException("getPublicSettings is not used by this test")
         override suspend fun listUsers(url: String, page: Int, perPage: Int): AlistResponse<UserList> = throw UnsupportedOperationException("listUsers is not used by this test")
         override suspend fun listRoles(url: String, page: Int, perPage: Int): AlistResponse<RoleList> = throw UnsupportedOperationException("listRoles is not used by this test")
@@ -80,7 +86,9 @@ class FileRepositoryTest {
             map[SessionManager.KEY_TOKEN] = "old-token"
         }
         val tokenProvider = AuthTokenProvider()
-        val repository = FileRepository(api, SessionManager(store, tokenProvider))
+        val adminRepo: AdminRepository = mockk(relaxed = true)
+        coEvery { adminRepo.runAdmin<StorageList>(any(), any()) } returns com.textvision.alistclient.admin.AdminResult.Ok(null)
+        val repository = FileRepository(api, SessionManager(store, tokenProvider), adminRepo)
 
         val result = repository.list("/")
 
@@ -93,5 +101,54 @@ class FileRepositoryTest {
         assertEquals(LoginRequest("admin", "pass"), api.loginRequests.single().third)
         assertEquals("new-token", store.map[SessionManager.KEY_TOKEN])
         assertEquals("new-token", tokenProvider.getToken())
+    }
+
+    private class ThreeItemApi : AlistApi {
+        override suspend fun list(url: String, request: FsListRequest): AlistResponse<AlistFsList> =
+            AlistResponse(200, "success", AlistFsList(content = listOf(
+                AlistFileDto(name = "我的文件"),
+                AlistFileDto(name = "我的百度网盘"),
+                AlistFileDto(name = "我的照片"),
+            )))
+        override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> = throw UnsupportedOperationException()
+        override suspend fun search(url: String, request: FsSearchRequest): AlistResponse<AlistFsList> = throw UnsupportedOperationException()
+        override suspend fun mkdir(url: String, request: MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun rename(url: String, request: RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun copy(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun listStorage(url: String, page: Int, perPage: Int): AlistResponse<StorageList> = throw UnsupportedOperationException()
+        override suspend fun getPublicSettings(url: String, skipAuthRetry: String): AlistResponse<com.textvision.alistclient.network.dto.PublicSettings> = throw UnsupportedOperationException()
+        override suspend fun listUsers(url: String, page: Int, perPage: Int): AlistResponse<UserList> = throw UnsupportedOperationException()
+        override suspend fun listRoles(url: String, page: Int, perPage: Int): AlistResponse<RoleList> = throw UnsupportedOperationException()
+        override suspend fun listSessions(url: String): AlistResponse<List<SessionInfo>> = throw UnsupportedOperationException()
+        override suspend fun taskUndone(url: String): AlistResponse<List<TaskInfo>> = throw UnsupportedOperationException()
+        override suspend fun updateStorage(url: String, body: com.textvision.alistclient.network.dto.StoragePatch): AlistResponse<Unit> = throw UnsupportedOperationException()
+        override suspend fun listDrivers(url: String, page: Int, perPage: Int): AlistResponse<Map<String, com.textvision.alistclient.network.dto.DriverInfo>> = throw UnsupportedOperationException()
+        override suspend fun listSettings(url: String, page: Int, perPage: Int): AlistResponse<List<com.textvision.alistclient.network.dto.SettingItem>> = throw UnsupportedOperationException()
+        override suspend fun saveSettings(url: String, body: com.textvision.alistclient.network.dto.SettingSaveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+    }
+
+    @Test fun listFiltersDisabledMountPaths() = runTest {
+        val api = ThreeItemApi()
+        val store = MemoryStore().apply {
+            map[SessionManager.KEY_SERVER_URL] = "http://server/"
+            map[SessionManager.KEY_USERNAME] = "u"
+            map[SessionManager.KEY_PASSWORD] = "p"
+            map[SessionManager.KEY_TOKEN] = "t"
+        }
+        val adminRepo: AdminRepository = mockk(relaxed = true)
+        coEvery { adminRepo.runAdmin<StorageList>(any(), any()) } returns com.textvision.alistclient.admin.AdminResult.Ok(
+            StorageList(content = listOf(
+                com.textvision.alistclient.network.dto.StorageInfo(id = 1, mountPath = "/我的文件", driver = "Local", disabled = false),
+                com.textvision.alistclient.network.dto.StorageInfo(id = 2, mountPath = "/我的百度网盘", driver = "BaiduNetdisk", disabled = true),
+                com.textvision.alistclient.network.dto.StorageInfo(id = 3, mountPath = "/我的照片", driver = "Local", disabled = false),
+            ))
+        )
+        val repository = FileRepository(api, SessionManager(store, AuthTokenProvider()), adminRepo)
+        val result = repository.list("/")
+        assertTrue(result is ApiResult.Success<*>)
+        val names = (result as ApiResult.Success).data.map { it.name }
+        assertEquals(listOf("我的文件", "我的照片"), names)
     }
 }

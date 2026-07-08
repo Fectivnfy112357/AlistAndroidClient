@@ -67,7 +67,7 @@ class SettingsViewModel @Inject constructor(
         val current = _uiState.value.storages.firstOrNull { it.id == id } ?: return
         val previous = current
         _uiState.update { state ->
-            state.copy(storages = state.storages.map { if (it.id == id) it.copy(status = if (enabled) "work" else "disabled") else it })
+            state.copy(storages = state.storages.map { if (it.id == id) it.copy(disabled = !enabled, status = if (enabled) "work" else "disabled") else it })
         }
         viewModelScope.launch {
             val patch = StoragePatch(
@@ -77,17 +77,12 @@ class SettingsViewModel @Inject constructor(
                 disabled = !enabled,
                 addition = current.addition ?: "{}",
             )
-            when (val r = storageRepository.update(base, patch)) {
-                is AdminResult.Ok -> Unit
-                else -> {
-                    _uiState.update { state ->
-                        state.copy(
-                            storages = state.storages.map { if (it.id == id) previous else it },
-                            errorMessage = failureMessage(r),
-                        )
-                    }
-                }
-            }
+            val r = storageRepository.update(base, patch)
+            // Always sync with server's authoritative state — Alist may flip
+            // `disabled` (e.g. driver reload failure) before returning, so
+            // optimistic state must not be trusted. Surface errors as banners only.
+            _uiState.update { it.copy(errorMessage = failureMessage(r)) }
+            loadAdminData()
         }
     }
 

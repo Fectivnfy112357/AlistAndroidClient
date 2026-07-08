@@ -59,6 +59,7 @@ import com.textvision.alistclient.ui.components.CloudScaffold
 import com.textvision.alistclient.ui.components.CloudSearchBar
 import com.textvision.alistclient.ui.components.CloudStatusBanner
 import com.textvision.alistclient.ui.components.CloudTopBar
+import com.textvision.alistclient.ui.components.bottomBarInset
 import com.textvision.alistclient.ui.components.FileTypeIcon
 import com.textvision.alistclient.ui.theme.CloudErrorText
 import com.textvision.alistclient.ui.theme.CloudPrimary
@@ -91,7 +92,7 @@ fun FileScreen(
         is FileUiState.Error -> s.path
     }
 
-    CloudScaffold(showBottomPadding = true) {
+    CloudScaffold(bottomInset = bottomBarInset()) {
         CloudTopBar(
             title = "我的文件",
             subtitle = currentPath,

@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AdminDtosTest {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
 
     @Test fun storageInfoMapsSnakeCaseKeys() {
         val raw = """
@@ -40,12 +40,13 @@ class AdminDtosTest {
     }
 
     @Test fun userListParses() {
-        val raw = """{"code":200,"message":"success","data":{"content":[{"id":1,"username":"admin","disabled":false,"role":"2"}],"total":1}}"""
+        val raw = """{"code":200,"message":"success","data":{"content":[{"id":1,"username":"admin","disabled":false,"role":[2]}],"total":1}}"""
         val resp = json.decodeFromString<AlistResponse<UserList>>(raw)
         assertEquals(200, resp.code)
         assertEquals(1, resp.data!!.content.size)
         assertEquals("admin", resp.data.content[0].username)
-        assertEquals("2", resp.data.content[0].role)
+        val role = resp.data.content[0].role
+        assertTrue("role should be array, was $role", role.toString() == "[2]")
     }
 
     @Test fun roleListParses() {
@@ -124,5 +125,19 @@ class AdminDtosTest {
         val c = json.decodeFromString<ConfigItem>(raw)
         assertEquals("30,60,120", c.options)
         assertEquals("30", c.defaultAsString())
+    }
+
+    @Test fun storagePatchSerializesDisabledFalse() {
+        val patch = StoragePatch(
+            id = 6,
+            mountPath = "/我的夸克",
+            driver = "Quark",
+            disabled = false,
+            addition = "{}",
+        )
+        val body = json.encodeToString(StoragePatch.serializer(), patch)
+        println("FULL_BODY: $body")
+        assertTrue("body: $body", body.contains("\"disabled\":false"))
+        assertTrue("body: $body", body.contains("\"addition\":\"{}\""))
     }
 }

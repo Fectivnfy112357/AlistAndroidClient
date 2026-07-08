@@ -63,7 +63,8 @@ data class User(
     val id: Long? = null,
     val username: String = "",
     @SerialName("base_path") val basePath: String? = null,
-    val role: String = "",
+    /** v3 returns role as an array of role IDs (e.g. [2]); accept as JSON and let consumers pick first id. */
+    val role: kotlinx.serialization.json.JsonElement = kotlinx.serialization.json.JsonNull,
     val disabled: Boolean = false,
     val permission: Int = 0,
     @SerialName("sso_id") val ssoId: String? = null,

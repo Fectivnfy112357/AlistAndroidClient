@@ -70,7 +70,18 @@ class AdminSiteSettingsViewModel @Inject constructor(
                 .map { (k, v) -> k to (v ?: "") }
             when (val r = settingsRepository.save(base, patches)) {
                 is AdminResult.Ok -> _uiState.value = state.copy(isSaving = false, saved = true)
-                else -> _uiState.value = state.copy(isSaving = false, errorMessage = "保存失败")
+                is AdminResult.ServerError -> _uiState.value = state.copy(
+                    isSaving = false,
+                    errorMessage = r.message?.takeIf { it.isNotBlank() } ?: "保存失败 (HTTP ${r.code})",
+                )
+                AdminResult.Unauthorized -> _uiState.value = state.copy(
+                    isSaving = false,
+                    errorMessage = "未登录或登录已过期",
+                )
+                is AdminResult.Network -> _uiState.value = state.copy(
+                    isSaving = false,
+                    errorMessage = "网络错误：无法连接服务器",
+                )
             }
         }
     }

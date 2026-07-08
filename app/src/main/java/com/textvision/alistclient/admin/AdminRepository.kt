@@ -49,13 +49,13 @@ class AdminRepository @Inject constructor(
             when {
                 resp.code == 200 -> AdminResult.Ok(resp.data)
                 resp.code == 401 || resp.code == 403 -> AdminResult.Unauthorized
-                else -> AdminResult.ServerError(resp.code)
+                else -> AdminResult.ServerError(resp.code, resp.message)
             }
         } catch (t: CancellationException) {
             throw t
         } catch (t: HttpException) {
             val code = t.code()
-            if (code == 401 || code == 403) AdminResult.Unauthorized else AdminResult.ServerError(code)
+            if (code == 401 || code == 403) AdminResult.Unauthorized else AdminResult.ServerError(code, t.message)
         } catch (t: Throwable) {
             AdminResult.Network
         }

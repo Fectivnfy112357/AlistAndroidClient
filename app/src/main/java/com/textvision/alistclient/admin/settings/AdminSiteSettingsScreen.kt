@@ -14,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +32,7 @@ import com.textvision.alistclient.ui.components.CloudCard
 import com.textvision.alistclient.ui.components.CloudScaffold
 import com.textvision.alistclient.ui.components.CloudStatusBanner
 import com.textvision.alistclient.ui.components.CloudTopBar
+import com.textvision.alistclient.ui.components.bottomBarInset
 
 @Composable
 fun AdminSiteSettingsScreen(
@@ -43,7 +45,7 @@ fun AdminSiteSettingsScreen(
         if ((state as? AdminSiteSettingsUiState.Form)?.saved == true) onBack()
     }
 
-    CloudScaffold(showBottomPadding = true) {
+    CloudScaffold(bottomInset = bottomBarInset()) {
         CloudTopBar(
             title = "完整设置",
             navigationIcon = {
@@ -64,7 +66,11 @@ fun AdminSiteSettingsScreen(
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     s.groups.forEach { group ->
                         CloudCard {
-                            Text("分组：${group.key}")
+                            Text(
+                                text = "分组：${group.key}",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            )
                             group.items.forEach { item ->
                                 RenderSettingItem(
                                     item = item,

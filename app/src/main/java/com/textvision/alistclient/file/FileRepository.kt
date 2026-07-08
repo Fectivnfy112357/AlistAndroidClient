@@ -1,5 +1,7 @@
 package com.textvision.alistclient.file
 
+import com.textvision.alistclient.admin.AdminRepository
+import com.textvision.alistclient.admin.AdminResult
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.auth.model.SavedSession
 import com.textvision.alistclient.common.result.ApiResult
@@ -22,6 +24,7 @@ import javax.inject.Singleton
 class FileRepository @Inject constructor(
     private val api: AlistApi,
     private val sessionManager: SessionManager,
+    private val adminRepository: AdminRepository,
 ) : FileRepositoryContract, FileOperationRepositoryContract {
     private fun baseUrl(): String =
         sessionManager.loadSavedSession()?.serverUrl ?: error("No active session — cannot resolve server URL")
@@ -30,13 +33,26 @@ class FileRepository @Inject constructor(
         request = {
             val base = baseUrl()
             val response = api.list("${base}api/fs/list", FsListRequest(path = path))
-            if (response.code == 200) response.data?.content.orEmpty()
-                .map { it.toFileItem(path, base) }
-                .sortedWith(compareByDescending<FileItem> { it.isDir }.thenBy { it.name.lowercase() })
-                .let { ApiResult.Success(it) }
-            else ApiResult.Failure(response.code, response.message)
+            if (response.code == 200) {
+                val disabledMounts = disabledMountPaths(base)
+                response.data?.content.orEmpty()
+                    .map { it.toFileItem(path, base) }
+                    .filter { it.name !in disabledMounts }
+                    .sortedWith(compareByDescending<FileItem> { it.isDir }.thenBy { it.name.lowercase() })
+                    .let { ApiResult.Success(it) }
+            } else ApiResult.Failure(response.code, response.message)
         }
     )
+
+    /**
+     * Fetch the set of disabled mount paths from the admin storage list. Returns an
+     * empty set for non-admin callers so file listing is unaffected for them.
+     */
+    private suspend fun disabledMountPaths(base: String): Set<String> =
+        when (val r = adminRepository.runAdmin(base) { api.listStorage("${base}api/admin/storage/list") }) {
+            is AdminResult.Ok -> r.data?.content?.filter { it.disabled }?.map { it.mountPath.trim('/') }?.toSet().orEmpty()
+            else -> emptySet()
+        }
 
     override suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>> = runAlist {
         val base = baseUrl()

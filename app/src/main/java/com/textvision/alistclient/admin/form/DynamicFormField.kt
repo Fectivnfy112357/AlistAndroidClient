@@ -1,5 +1,6 @@
 package com.textvision.alistclient.admin.form
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -15,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,9 +24,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.textvision.alistclient.ui.theme.CloudShapes
+import com.textvision.alistclient.ui.theme.CloudSurface
+import com.textvision.alistclient.ui.theme.CloudSurfaceMuted
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +40,7 @@ fun DynamicFormField(
     value: Any?,
     onValueChange: (Any?) -> Unit,
     modifier: Modifier = Modifier,
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     when (item) {
         is FormItem.Text -> TextFieldRow(
@@ -41,6 +49,7 @@ fun DynamicFormField(
             keyboardType = KeyboardType.Text,
             onChange = onValueChange,
             modifier = modifier,
+            trailing = trailing,
         )
         is FormItem.Url -> TextFieldRow(
             label = item.label,
@@ -48,14 +57,27 @@ fun DynamicFormField(
             keyboardType = KeyboardType.Uri,
             onChange = onValueChange,
             modifier = modifier,
+            trailing = trailing,
         )
         is FormItem.TextArea -> Column(modifier.padding(vertical = 4.dp)) {
-            Text(item.label, style = MaterialTheme.typography.bodyMedium)
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = item.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                )
+                trailing?.invoke()
+            }
             OutlinedTextField(
                 value = (value as? String).orEmpty(),
                 onValueChange = { onValueChange(it) },
                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                 minLines = 3,
+                shape = CloudShapes.Control,
+                colors = CloudFieldColors,
             )
         }
         is FormItem.Bool -> BoolRow(
@@ -88,6 +110,16 @@ fun DynamicFormField(
     }
 }
 
+private val CloudFieldColors
+    @Composable get() = TextFieldDefaults.colors(
+        focusedContainerColor = CloudSurfaceMuted,
+        unfocusedContainerColor = CloudSurfaceMuted,
+        disabledContainerColor = CloudSurfaceMuted,
+        focusedIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent,
+        disabledIndicatorColor = Color.Transparent,
+    )
+
 @Composable
 private fun TextFieldRow(
     label: String,
@@ -95,15 +127,28 @@ private fun TextFieldRow(
     keyboardType: KeyboardType,
     onChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     Column(modifier.padding(vertical = 4.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+            )
+            trailing?.invoke()
+        }
         OutlinedTextField(
             value = value,
             onValueChange = onChange,
             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
             singleLine = keyboardType != KeyboardType.Text || true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            shape = CloudShapes.Control,
+            colors = CloudFieldColors,
         )
     }
 }
@@ -149,10 +194,15 @@ private fun SelectRow(
                 readOnly = true,
                 modifier = Modifier.menuAnchor().fillMaxWidth(),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                shape = CloudShapes.Control,
+                colors = CloudFieldColors,
             )
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .clip(CloudShapes.Control)
+                    .background(CloudSurface),
             ) {
                 options.forEach { (key, labelText) ->
                     DropdownMenuItem(

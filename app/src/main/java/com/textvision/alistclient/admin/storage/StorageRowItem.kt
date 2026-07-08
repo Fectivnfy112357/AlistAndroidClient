@@ -19,7 +19,7 @@ fun StorageRowItem(
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val enabled = storage.status != "disabled"
+    val enabled = !storage.disabled
     CloudListItem(
         title = storage.mountPath,
         subtitle = storage.driver,

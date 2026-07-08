@@ -94,32 +94,49 @@ class StorageEditViewModel @Inject constructor(
         val base = sessionManager.loadSavedSession()?.serverUrl ?: return
         viewModelScope.launch {
             _uiState.value = state.copy(isSaving = true, errorMessage = null)
-            val additionalNames = (state.driver?.additional ?: emptyList()).map { it.name }.toSet()
-            val additionOnly = state.fieldValues.filterKeys { it in additionalNames }
+            val additionalItems = state.driver?.additional ?: emptyList()
+            val additionalNames = additionalItems.map { it.name }.toSet()
+            // 把 fieldValues 按 ConfigItem.type 还原为正确 JSON 类型（bool/number/string）
+            val typeByName = additionalItems.associate { it.name to it.type?.lowercase() }
+            val additionOnly = state.fieldValues
+                .filterKeys { it in additionalNames }
+                .mapValues { (k, v) -> coerceForJson(v, typeByName[k]) }
             val addition = serializeAddition(additionOnly)
+            val v = state.fieldValues
             val patch = StoragePatch(
                 id = state.storage.id ?: 0L,
-                mountPath = state.storage.mountPath,
+                mountPath = readCommonString(v, "mount_path", state.storage.mountPath) ?: state.storage.mountPath,
                 driver = state.storage.driver,
                 disabled = !state.enabled,
-                order = state.storage.order,
-                remark = state.storage.remark,
-                cacheExpiration = state.storage.cacheExpiration,
-                webProxy = state.storage.webProxy,
-                webdavPolicy = state.storage.webdavPolicy,
-                downProxyUrl = state.storage.downProxyUrl,
-                downProxySign = state.storage.downProxySign,
-                proxyRange = state.storage.proxyRange,
-                orderBy = state.storage.orderBy,
-                orderDirection = state.storage.orderDirection,
-                extractFolder = state.storage.extractFolder,
-                disableIndex = state.storage.disableIndex,
-                enableSign = state.storage.enableSign,
+                order = readCommonInt(v, "order", state.storage.order),
+                remark = readCommonString(v, "remark", state.storage.remark),
+                cacheExpiration = readCommonInt(v, "cache_expiration", state.storage.cacheExpiration),
+                webProxy = readCommonBool(v, "web_proxy", state.storage.webProxy),
+                webdavPolicy = readCommonString(v, "webdav_policy", state.storage.webdavPolicy),
+                downProxyUrl = readCommonString(v, "down_proxy_url", state.storage.downProxyUrl),
+                downProxySign = readCommonBool(v, "down_proxy_sign", state.storage.downProxySign),
+                proxyRange = readCommonBool(v, "proxy_range", state.storage.proxyRange),
+                orderBy = readCommonString(v, "order_by", state.storage.orderBy),
+                orderDirection = readCommonString(v, "order_direction", state.storage.orderDirection),
+                extractFolder = readCommonString(v, "extract_folder", state.storage.extractFolder),
+                disableIndex = readCommonBool(v, "disable_index", state.storage.disableIndex),
+                enableSign = readCommonBool(v, "enable_sign", state.storage.enableSign),
                 addition = addition,
             )
             when (val r = storageRepository.update(base, patch)) {
                 is AdminResult.Ok -> _uiState.value = state.copy(isSaving = false, saved = true)
-                else -> _uiState.value = state.copy(isSaving = false, errorMessage = "保存失败")
+                is AdminResult.ServerError -> _uiState.value = state.copy(
+                    isSaving = false,
+                    errorMessage = r.message?.takeIf { it.isNotBlank() } ?: "保存失败 (HTTP ${r.code})",
+                )
+                AdminResult.Unauthorized -> _uiState.value = state.copy(
+                    isSaving = false,
+                    errorMessage = "未登录或登录已过期",
+                )
+                is AdminResult.Network -> _uiState.value = state.copy(
+                    isSaving = false,
+                    errorMessage = "网络错误：无法连接服务器",
+                )
             }
         }
     }
@@ -130,7 +147,12 @@ class StorageEditViewModel @Inject constructor(
             val json = kotlinx.serialization.json.Json.parseToJsonElement(raw).jsonObject
             json.mapValues { (_, v) ->
                 when (v) {
-                    is kotlinx.serialization.json.JsonPrimitive -> v.content
+                    is kotlinx.serialization.json.JsonPrimitive -> when (v.content) {
+                        "true" -> true
+                        "false" -> false
+                        else -> v.content
+                    }
+                    is kotlinx.serialization.json.JsonNull -> null
                     else -> v.toString()
                 }
             }
@@ -139,18 +161,76 @@ class StorageEditViewModel @Inject constructor(
         }
     }
 
-    private fun serializeAddition(values: Map<String, Any?>): String {
-        val obj = kotlinx.serialization.json.JsonObject(
-            values.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v?.toString() ?: "") }
-        )
-        return obj.toString()
+    /** 把 Any? 用户输入值按 ConfigItem.type 归一化为 Bool/Number/String/JsonNull。 */
+    private fun coerceForJson(value: Any?, type: String?): kotlinx.serialization.json.JsonElement {
+        if (value == null) return kotlinx.serialization.json.JsonNull
+        return when (type) {
+            "bool", "boolean" -> kotlinx.serialization.json.JsonPrimitive(
+                when (value) {
+                    is Boolean -> value
+                    is String -> value.equals("true", ignoreCase = true)
+                    else -> false
+                }
+            )
+            "number", "int", "integer", "float", "double" -> {
+                val s = value.toString()
+                val d = s.toDoubleOrNull()
+                if (d != null) kotlinx.serialization.json.JsonPrimitive(d)
+                else kotlinx.serialization.json.JsonPrimitive(s)
+            }
+            else -> kotlinx.serialization.json.JsonPrimitive(value.toString())
+        }
+    }
+
+    private fun serializeAddition(values: Map<String, kotlinx.serialization.json.JsonElement>): String {
+        return kotlinx.serialization.json.JsonObject(values).toString()
     }
 
     private fun flatStorageFields(s: StorageInfo): Map<String, Any?> {
         val m = mutableMapOf<String, Any?>()
         m["mount_path"] = s.mountPath
-        if (s.status == "disabled") m["disabled"] = true
+        m["order"] = s.order
+        m["remark"] = s.remark ?: ""
+        m["cache_expiration"] = s.cacheExpiration
+        m["web_proxy"] = s.webProxy
+        m["webdav_policy"] = s.webdavPolicy ?: ""
+        m["down_proxy_url"] = s.downProxyUrl ?: ""
+        m["down_proxy_sign"] = s.downProxySign
+        m["proxy_range"] = s.proxyRange
+        m["order_by"] = s.orderBy ?: ""
+        m["order_direction"] = s.orderDirection ?: ""
+        m["extract_folder"] = s.extractFolder ?: ""
+        m["disable_index"] = s.disableIndex
+        m["enable_sign"] = s.enableSign
+        m["disabled"] = s.status == "disabled"
         return m
+    }
+
+    /** 从 fieldValues 读 common 扁平字段的值（用户可能编辑过）。 */
+    private fun readCommon(
+        values: Map<String, Any?>,
+        name: String,
+        fallback: Any?,
+    ): Any? = if (values.containsKey(name)) values[name] else fallback
+
+    private fun readCommonString(values: Map<String, Any?>, name: String, fallback: String?): String? {
+        val raw = readCommon(values, name, fallback)
+        val s = raw?.toString().orEmpty()
+        return s.ifEmpty { null }
+    }
+
+    private fun readCommonInt(values: Map<String, Any?>, name: String, fallback: Int): Int {
+        val raw = readCommon(values, name, fallback) ?: return fallback
+        return raw.toString().toIntOrNull() ?: fallback
+    }
+
+    private fun readCommonBool(values: Map<String, Any?>, name: String, fallback: Boolean): Boolean {
+        val raw = readCommon(values, name, fallback) ?: return fallback
+        return when (raw) {
+            is Boolean -> raw
+            is String -> raw.equals("true", ignoreCase = true)
+            else -> fallback
+        }
     }
 }
 

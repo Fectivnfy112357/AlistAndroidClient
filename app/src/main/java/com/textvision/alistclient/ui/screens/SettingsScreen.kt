@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.textvision.alistclient.admin.form.localizedLabel
 import com.textvision.alistclient.admin.storage.StorageRowItem
 import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.ui.components.CloudBannerKind
@@ -33,6 +34,7 @@ import com.textvision.alistclient.ui.components.CloudListItem
 import com.textvision.alistclient.ui.components.CloudScaffold
 import com.textvision.alistclient.ui.components.CloudStatusBanner
 import com.textvision.alistclient.ui.components.CloudTopBar
+import com.textvision.alistclient.ui.components.bottomBarInset
 import com.textvision.alistclient.ui.theme.CloudErrorText
 import com.textvision.alistclient.ui.theme.CloudPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
@@ -52,7 +54,7 @@ fun SettingsScreen(
     LaunchedEffect(loggedOut) { if (loggedOut) onLoggedOut() }
     LaunchedEffect(Unit) { viewModel.loadAdminData() }
 
-    CloudScaffold(showBottomPadding = true) {
+    CloudScaffold(bottomInset = bottomBarInset()) {
         CloudTopBar(title = "设置", subtitle = "账号与服务器管理")
         CloudCard {
             CloudListItem(
@@ -166,10 +168,4 @@ private fun QuickSettingDialog(
     )
 }
 
-private fun displayLabel(key: String): String = when (key) {
-    "site_title" -> "站点标题"
-    "logo" -> "Logo URL"
-    "login_background" -> "登录页背景图"
-    "announcement" -> "登录页公告"
-    else -> key
-}
+private fun displayLabel(key: String): String = localizedLabel(key)

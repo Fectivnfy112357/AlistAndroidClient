@@ -39,6 +39,7 @@ import com.textvision.alistclient.ui.components.CloudCard
 import com.textvision.alistclient.ui.components.CloudEmptyState
 import com.textvision.alistclient.ui.components.CloudScaffold
 import com.textvision.alistclient.ui.components.CloudTopBar
+import com.textvision.alistclient.ui.components.bottomBarInset
 import com.textvision.alistclient.ui.components.TransferProgress
 import com.textvision.alistclient.ui.theme.CloudErrorContainer
 import com.textvision.alistclient.ui.theme.CloudErrorText
@@ -155,7 +156,7 @@ fun TransferScreenContent(
 ) {
     var selectedTab by remember { mutableStateOf(TransferTab.Upload) }
     val state = TransferListUiState(transfers, selectedTab)
-    CloudScaffold(showBottomPadding = true) {
+    CloudScaffold(bottomInset = bottomBarInset()) {
         CloudTopBar(title = "传输", subtitle = state.summaryText)
         TransferTabSwitcher(selectedTab = selectedTab, onSelect = { selectedTab = it })
         Spacer(Modifier.height(10.dp))
