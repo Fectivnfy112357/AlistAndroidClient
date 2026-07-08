@@ -1,6 +1,7 @@
 package com.textvision.alistclient.home
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.textvision.alistclient.admin.AdminRepository
 import com.textvision.alistclient.auth.AuthRepository
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.common.result.ApiResult
@@ -60,7 +61,9 @@ class HomeRepositoryTest {
             .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(AlistApi::class.java)
-        repo = HomeRepository(api, session, AuthRepository(api, session), UnconfinedTestDispatcher())
+        val authRepo = AuthRepository(api, session)
+        val adminRepo = AdminRepository(api, session, authRepo, UnconfinedTestDispatcher())
+        repo = HomeRepository(api, session, authRepo, adminRepo, UnconfinedTestDispatcher())
     }
 
     @After fun tearDown() { server.shutdown() }
