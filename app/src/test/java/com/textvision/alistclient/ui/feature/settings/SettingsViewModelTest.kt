@@ -79,4 +79,57 @@ class SettingsViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test fun loadAdminDataPopulatesStorages() = runTest {
+        coEvery { storage.list(any()) } returns AdminResult.Ok(
+            StorageList(
+                content = listOf(
+                    StorageInfo(id = 1, mountPath = "/local", driver = "Local", status = "work"),
+                    StorageInfo(id = 2, mountPath = "/onedrive", driver = "Onedrive", status = "disabled"),
+                )
+            )
+        )
+        coEvery { settings.list(any()) } returns AdminResult.Ok(emptyList())
+        val viewModel = vm()
+        viewModel.loadAdminData()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.storages.size)
+        assertEquals(1L, state.storages[0].id)
+        assertEquals(null, state.errorMessage)
+        assertEquals(false, state.isLoading)
+    }
+
+    @Test fun loadAdminDataFailureSurfacesError() = runTest {
+        coEvery { storage.list(any()) } returns AdminResult.ServerError(code = 500, message = "boom")
+        coEvery { settings.list(any()) } returns AdminResult.Ok(emptyList())
+        val viewModel = vm()
+        viewModel.loadAdminData()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.storages.isEmpty())
+        assertTrue(state.errorMessage.orEmpty(), state.errorMessage?.contains("ServerError") == true)
+        assertEquals(false, state.isLoading)
+    }
+
+    @Test fun toggleStorageFailureSurfacesError() = runTest {
+        // list keeps returning the failure, so the reload triggered by
+        // toggleStorage leaves the surfaced error in place.
+        coEvery { storage.list(any()) } returns AdminResult.ServerError(code = 500)
+        coEvery { storage.update(any(), any()) } returns AdminResult.ServerError(code = 500)
+        val viewModel = vm()
+        // seed a storage so toggleStorage finds a matching entry
+        coEvery { storage.list(any()) } returnsMany listOf(
+            AdminResult.Ok(StorageList(content = listOf(StorageInfo(id = 1, mountPath = "/local", driver = "Local", status = "work")))),
+            AdminResult.ServerError(code = 500),
+        )
+        coEvery { settings.list(any()) } returns AdminResult.Ok(emptyList())
+        viewModel.loadAdminData()
+        assertEquals(1, viewModel.uiState.value.storages.size)
+
+        viewModel.toggleStorage(id = 1, enabled = false)
+
+        val state = viewModel.uiState.value
+        assertTrue(state.errorMessage.orEmpty(), state.errorMessage?.contains("ServerError") == true)
+    }
 }
