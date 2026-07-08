@@ -1,5 +1,7 @@
 package com.textvision.alistclient.ui.feature.file
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -60,6 +62,14 @@ fun FileListContent(
         items(files, key = { it.path }) { file ->
             val selected = file.path in state.selection
             ListItemRow(
+                modifier = Modifier.animateItem(
+                    fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
+                    placementSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    ),
+                    fadeOutSpec = spring(stiffness = Spring.StiffnessMedium),
+                ),
                 leading = { FileTypeIcon(file.type.toFileCategory()) },
                 title = file.name,
                 subtitle = if (file.isDir) "文件夹" else FileSizeFormatter.humanize(file.size),

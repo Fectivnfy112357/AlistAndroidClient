@@ -1,5 +1,11 @@
 package com.textvision.alistclient.ui.feature.transfer
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,16 +77,25 @@ fun TransferScreen(viewModel: TransferViewModel = hiltViewModel()) {
                 onRefresh = { viewModel.refresh() },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                TransferListContent(
-                    rows = state.visible,
-                    onCancel = viewModel::cancel,
-                    onRetry = viewModel::retry,
-                    onDelete = viewModel::delete,
-                    emptyTitle = state.tab.emptyMessage,
-                    emptyMessage = "对应类型的传输任务会显示在这里",
-                    enabled = state.isOnline,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                AnimatedContent(
+                    targetState = state.tab,
+                    transitionSpec = {
+                        fadeIn(spring(stiffness = Spring.StiffnessMedium)) togetherWith
+                            fadeOut(spring(stiffness = Spring.StiffnessMedium))
+                    },
+                    label = "tab",
+                ) { tab ->
+                    TransferListContent(
+                        rows = state.visible,
+                        onCancel = viewModel::cancel,
+                        onRetry = viewModel::retry,
+                        onDelete = viewModel::delete,
+                        emptyTitle = tab.emptyMessage,
+                        emptyMessage = "对应类型的传输任务会显示在这里",
+                        enabled = state.isOnline,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
     }

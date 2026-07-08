@@ -1,5 +1,7 @@
 package com.textvision.alistclient.ui.feature.transfer
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -47,6 +49,14 @@ fun TransferListContent(
                 onRetry = onRetry,
                 onDelete = onDelete,
                 enabled = enabled,
+                modifier = Modifier.animateItem(
+                    fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
+                    placementSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    ),
+                    fadeOutSpec = spring(stiffness = Spring.StiffnessMedium),
+                ),
             )
         }
     }
