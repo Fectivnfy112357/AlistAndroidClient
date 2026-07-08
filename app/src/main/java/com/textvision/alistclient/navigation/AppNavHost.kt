@@ -22,7 +22,7 @@ import com.textvision.alistclient.ui.feature.auth.LoginScreen
 import com.textvision.alistclient.ui.feature.transfer.TransferScreen
 import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
 import com.textvision.alistclient.ui.screens.PreviewScreen
-import com.textvision.alistclient.ui.screens.SettingsScreen
+import com.textvision.alistclient.ui.feature.settings.SettingsScreen
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.typeOf

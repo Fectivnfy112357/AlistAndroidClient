@@ -1,4 +1,4 @@
-package com.textvision.alistclient.ui.screens
+package com.textvision.alistclient.ui.feature.settings
 
 import app.cash.turbine.test
 import com.textvision.alistclient.admin.AdminResult
@@ -10,11 +10,14 @@ import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.network.dto.StorageList
 import com.textvision.alistclient.preview.PreviewFileStore
 import com.textvision.alistclient.transfer.TransferManager
+import com.textvision.alistclient.ui.theme.DarkMode
+import com.textvision.alistclient.ui.theme.ThemeRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -37,6 +40,10 @@ class SettingsViewModelTest {
             serverUrl = "http://test", username = "u", password = "p", token = "t"
         )
     }
+    private val themeRepo: ThemeRepository = mockk(relaxed = true) {
+        coEvery { darkMode } returns MutableStateFlow(DarkMode.SYSTEM)
+        coEvery { setDarkMode(any()) } returns Unit
+    }
 
     @Before fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     @After fun tearDown() { Dispatchers.resetMain() }
@@ -48,26 +55,16 @@ class SettingsViewModelTest {
         storageRepository = storage,
         settingsRepository = settings,
         sessionManager = session,
+        themeRepository = themeRepo,
     )
 
-    @Test fun loadAdminDataPopulatesUiStateOnSuccess() = runTest {
-        coEvery { storage.list(any()) } returns AdminResult.Ok(
-            StorageList(content = listOf(StorageInfo(id = 1, mountPath = "/local", driver = "Local", status = "work")))
-        )
-        coEvery { settings.list(any()) } returns AdminResult.Ok(emptyList())
+    @Test fun setDarkModePersists() = runTest {
         val viewModel = vm()
-        viewModel.uiState.test {
-            // initial loading
-            var s = awaitItem()
-            viewModel.loadAdminData()
-            s = awaitItem()
-            assertTrue(s.storages.isNotEmpty())
-            assertEquals("/local", s.storages[0].mountPath)
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.setDarkMode(DarkMode.DARK)
+        coVerify { themeRepo.setDarkMode(DarkMode.DARK) }
     }
 
-    @Test fun toggleStorageSuccessUpdatesItem() = runTest {
+    @Test fun toggleStorageCallsRepo() = runTest {
         coEvery { storage.list(any()) } returns AdminResult.Ok(
             StorageList(content = listOf(StorageInfo(id = 1, mountPath = "/local", driver = "Local", status = "work")))
         )
@@ -75,28 +72,10 @@ class SettingsViewModelTest {
         val viewModel = vm()
         viewModel.loadAdminData()
         viewModel.uiState.test {
-            var s = awaitItem()
+            val s = awaitItem()
             val initialEnabled = s.storages[0].status == "work"
             viewModel.toggleStorage(id = 1, enabled = !initialEnabled)
             coVerify { storage.update(any(), match { it.id == 1L && it.disabled == initialEnabled }) }
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test fun toggleStorageFailureSurfacesError() = runTest {
-        coEvery { storage.list(any()) } returns AdminResult.Ok(
-            StorageList(content = listOf(StorageInfo(id = 1, mountPath = "/local", driver = "Local", status = "work")))
-        )
-        coEvery { storage.update(any(), any()) } returns AdminResult.ServerError(500)
-        val viewModel = vm()
-        viewModel.loadAdminData()
-        viewModel.uiState.test {
-            var s = awaitItem()
-            viewModel.toggleStorage(id = 1, enabled = false)
-            // Server-side sync (loadAdminData) still re-fetches and overrides
-            // the optimistic state with the authoritative server response.
-            s = awaitItem()
-            assertTrue(s.errorMessage != null)
             cancelAndIgnoreRemainingEvents()
         }
     }

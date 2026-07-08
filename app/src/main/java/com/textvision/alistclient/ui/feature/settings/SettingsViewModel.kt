@@ -1,4 +1,4 @@
-package com.textvision.alistclient.ui.screens
+package com.textvision.alistclient.ui.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +12,8 @@ import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.network.dto.StoragePatch
 import com.textvision.alistclient.preview.PreviewFileStore
 import com.textvision.alistclient.transfer.TransferManager
+import com.textvision.alistclient.ui.theme.DarkMode
+import com.textvision.alistclient.ui.theme.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +27,7 @@ data class SettingsUiState(
     val quickSettings: List<SettingItem> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val darkMode: DarkMode = DarkMode.SYSTEM,
 )
 
 @HiltViewModel
@@ -35,12 +38,21 @@ class SettingsViewModel @Inject constructor(
     private val storageRepository: StorageRepositoryContract,
     private val settingsRepository: SettingsRepositoryContract,
     private val sessionManager: SessionManager,
+    private val themeRepository: ThemeRepository,
 ) : ViewModel() {
     private val _loggedOut = MutableStateFlow(false)
     val loggedOut: StateFlow<Boolean> = _loggedOut.asStateFlow()
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            themeRepository.darkMode.collect { mode ->
+                _uiState.update { it.copy(darkMode = mode) }
+            }
+        }
+    }
 
     fun loadAdminData() {
         val base = sessionManager.loadSavedSession()?.serverUrl ?: return
@@ -78,9 +90,6 @@ class SettingsViewModel @Inject constructor(
                 addition = current.addition ?: "{}",
             )
             val r = storageRepository.update(base, patch)
-            // Always sync with server's authoritative state — Alist may flip
-            // `disabled` (e.g. driver reload failure) before returning, so
-            // optimistic state must not be trusted. Surface errors as banners only.
             _uiState.update { it.copy(errorMessage = failureMessage(r)) }
             loadAdminData()
         }
@@ -100,6 +109,12 @@ class SettingsViewModel @Inject constructor(
                 }
                 else -> _uiState.update { it.copy(errorMessage = failureMessage(r)) }
             }
+        }
+    }
+
+    fun setDarkMode(mode: DarkMode) {
+        viewModelScope.launch {
+            themeRepository.setDarkMode(mode)
         }
     }
 
