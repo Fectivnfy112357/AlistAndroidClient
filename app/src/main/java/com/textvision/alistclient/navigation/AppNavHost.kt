@@ -17,7 +17,7 @@ import androidx.navigation.navArgument
 import com.textvision.alistclient.admin.settings.AdminSiteSettingsScreen
 import com.textvision.alistclient.admin.storage.StorageEditScreen
 import com.textvision.alistclient.ui.components.CloudBottomBar
-import com.textvision.alistclient.ui.screens.FileScreen
+import com.textvision.alistclient.ui.feature.file.FileScreen
 import com.textvision.alistclient.home.HomeScreen
 import com.textvision.alistclient.ui.screens.LoginScreen
 import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
@@ -77,6 +77,9 @@ fun AppNavHost(startAuthenticated: Boolean) {
                                     size = item.size,
                                 )
                             )
+                        },
+                        onFolderNavigate = { folderPath ->
+                            navController.navigate(AppRoute.Files.create(folderPath))
                         },
                     )
                 }
