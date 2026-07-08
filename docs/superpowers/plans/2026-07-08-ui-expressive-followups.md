@@ -1053,7 +1053,19 @@ git commit -m "feat(network): AuthInterceptor emits SessionEvent.Unauthorized on
 ```kotlin
 package com.textvision.alistclient.auth
 
-import com.textvision.alistclient.navigation.AppRoute
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
+
+package com.textvision.alistclient.auth
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -1070,8 +1082,9 @@ class SessionGate @Inject constructor(
     private val authRepository: AuthRepository,
     private val scope: CoroutineScope,
 ) {
-    private val _navEvent = MutableSharedFlow<AppRoute>(extraBufferCapacity = 4)
-    val navEvent: SharedFlow<AppRoute> = _navEvent.asSharedFlow()
+    // signal-only: 消费者固定跳 LoginDest,不需路由参数
+    private val _navEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    val navEvent: SharedFlow<Unit> = _navEvent.asSharedFlow()
 
     private val _isNetworkDown = MutableStateFlow(false)
     val isNetworkDown: StateFlow<Boolean> = _isNetworkDown.asStateFlow()
@@ -1082,7 +1095,7 @@ class SessionGate @Inject constructor(
                 when (event) {
                     SessionEvent.Unauthorized -> {
                         authRepository.logout()
-                        _navEvent.emit(AppRoute.Login)
+                        _navEvent.emit(Unit)
                     }
                     SessionEvent.NetworkDown -> _isNetworkDown.value = true
                 }
@@ -1103,11 +1116,8 @@ class SessionGate @Inject constructor(
 CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
     AlistClientTheme(darkTheme = darkTheme) {
         LaunchedEffect(Unit) {
-            sessionGate.navEvent.collect { route ->
-                when (route) {
-                    AppRoute.Login -> navController.navigate(LoginDest) { popUpTo(0) { inclusive = true } }
-                    else -> {}
-                }
+            sessionGate.navEvent.collect {
+                navController.navigate(LoginDest) { popUpTo(0) { inclusive = true } }
             }
         }
         AppNavHost(startAuthenticated = authRepository.loadSavedSession() != null, snackbarHostState = snackbarHostState)
@@ -1115,7 +1125,7 @@ CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
 }
 ```
 
-- `AppRoute.Login` 需在 navigation 包内定义 (若已 LoginDest,直接用)
+- navEvent 设计为 signal-only (`SharedFlow<Unit>`),消费端固定跳 LoginDest。理由:目前只有 Login 一种目标,无需携带路由参数。
 
 - [ ] **Step 3: 加 SessionGateTest**
 
@@ -1127,7 +1137,7 @@ fun `unauthorized event clears session and emits Login nav`() = runTest {
     authRepo.emitSessionEvent(SessionEvent.Unauthorized)
     advanceUntilIdle()
     verify { authRepo.logout() }
-    assertEquals(AppRoute.Login, gate.navEvent.replayCache.last())
+    assertEquals(Unit, gate.navEvent.replayCache.last())  // signal
 }
 ```
 
@@ -1913,7 +1923,7 @@ git commit -m "docs(progress): Phase 5 followups complete (19 tasks, 18 items cl
 - [x] **Type consistency**:
   - `SnackbarHostState` (Task 1) 非空,MainActivity 调用一致
   - `ListItemRow.onMoreClick` (Task 2) 可空参数,Task 4 调用一致
-  - `SessionGate.navEvent` (Task 11) 与 `AppRoute.Login` 引用一致
+  - `SessionGate.navEvent` (Task 11) 信号型 `SharedFlow<Unit>`,不依赖不存在的 `AppRoute` 类型;消费端用 `LoginDest` (来自 AppDestination.kt)
   - `TransferStatus.activeStatuses` (Task 22) 引用一致
   - `PreviewDestArgs.fileTypeName` (Task 23) 改后引用一致
 - [x] **TDD**: 每个 task 都是"失败测试 → 最小实现 → 通过" 模式
