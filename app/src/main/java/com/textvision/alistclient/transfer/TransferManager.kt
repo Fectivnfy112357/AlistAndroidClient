@@ -4,7 +4,9 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.file.FileNameValidator
 import com.textvision.alistclient.transfer.data.TransferDao
@@ -231,6 +233,10 @@ class TransferManager @Inject constructor(
                         updateStatusUnlessCancelled(id, TransferStatus.Failed, "下载失败：HTTP ${response.code}", generation)
                         return
                     }
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        updateStatusUnlessCancelled(id, TransferStatus.Failed, "需要 Android 10 或更高版本以保存到下载目录", generation)
+                        return
+                    }
                     uri = createDownloadUri(displayName)
                     val output = requireNotNull(context.contentResolver.openOutputStream(uri)) { "无法创建下载文件" }
                     val body = response.body ?: error("响应体为空")
@@ -324,6 +330,7 @@ class TransferManager @Inject constructor(
 
     private fun transferUrl(path: String): String = transferUrl(path, null)
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun createDownloadUri(displayName: String): Uri {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
@@ -335,6 +342,7 @@ class TransferManager @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun publishDownloadUri(uri: Uri) {
         val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
         context.contentResolver.update(uri, values, null, null)

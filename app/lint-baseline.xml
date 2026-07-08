@@ -23,17 +23,6 @@
     </issue>
 
     <issue
-        id="NewApi"
-        message="Field requires API level 29 (current min is 26): `android.provider.MediaStore.Downloads#EXTERNAL_CONTENT_URI`"
-        errorLine1="        return requireNotNull(context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)) {"
-        errorLine2="                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/textvision/alistclient/transfer/TransferManager.kt"
-            line="333"
-            column="62"/>
-    </issue>
-
-    <issue
         id="AndroidGradlePluginVersion"
         message="A newer version of com.android.application than 8.7.2 is available: 9.2.1. (There is also a newer version of 8.7.𝑥 available, if upgrading to 9.2.1 is difficult: 8.7.3)"
         errorLine1="agp = &quot;8.7.2&quot;"
