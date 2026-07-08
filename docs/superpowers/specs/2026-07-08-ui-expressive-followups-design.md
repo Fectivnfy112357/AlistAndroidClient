@@ -37,10 +37,11 @@
 2. **每项结束**:`./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest` 全绿
 3. **P0/P1 项**额外:在 `test_avd` 模拟器 (`.superpowers/specs` GPU 软件渲染) 手动验证
 4. **依赖关系**:
-   - P1-5 (AppError) 必须在 P0-1 (Snackbar) 之后:Snackbar 接入后才有错误展示消费者
-   - P1-6 (Cloud* 替换) 在 P0-4 (@Preview) 之后:替换后再补 Preview 防止双重改动
-   - P1-7 (PreviewScreen) 在 P1-6 之后:共用 Cloud* 替换路径
+   - P0-2 (FileScreen lost features) 必须在 P0-1 (Snackbar 重叠) 之后:lost features 用 Snackbar 反馈,先修 Snackbar 才能展示
+   - P1-6 (Cloud* 替换) 必须在 P0-4 (@Preview) 之前:替换后再补 Preview 防止双重重写同一组件
+   - P1-7 (PreviewScreen) 紧跟 P1-6 之后完成
    - P2-12 (VM 统一) 在 P1-10 (测试恢复) 之后:先恢复测试基线再统一模式
+   - P1-5 (AppError 链路) 与 P0-1 (Snackbar) 无强依赖,可独立执行
 5. **不重写**:每项只动必要代码,不趁机扩大改动 (例:P0-3 不改 FileListContent 整体结构)
 6. **worktree**:不需要,18 项改动域小,main 直接逐项 commit
 
@@ -91,7 +92,7 @@ Task 18 重做 FileScreen 时丢失:① AppBar 上传入口 ② 每行下载/分
 
 ### 设计
 **(a) Upload 入口**
-- `FileScreen` TopBar 加 `IconButton(Icons.AutoMirrored.Filled.ArrowBackward) -> 选择文件` (实际为 `Icons.Default.Upload`)
+- `FileScreen` TopBar 加 `IconButton(Icons.Default.Upload)`
 - 点击后启动 `ActivityResultContracts.GetContent("*/*")`,用户选文件后:
   - 计算目标路径 = `currentPath + file.name`
   - 调 `TransferManager.enqueueUpload(uri, targetPath)` (沿用现有上传通道)
@@ -147,23 +148,26 @@ object FileSizeFormatter {
 ### 设计
 按"主题组件 → 通用组件 → 屏幕 shell"三档铺 25+ @Preview:
 
-**主题 token (5 个)**:
-- `theme/ColorPreview.kt` → LightColors / DarkColors / DynamicColors
-- `theme/TypePreview.kt` → DisplayLarge / BodyMedium / LabelSmall
-- `theme/ShapePreview.kt` → AppShapes (Card / Button / Dialog)
-- `theme/MotionPreview.kt` → HyperOsMotion (SpringFast / SpringMedium / emphasized)
+**主题 token (5 个 Preview)**:
+- `theme/ColorPreview.kt` (1): LightColors + DarkColors 拼接单张
+- `theme/TypePreview.kt` (1): 三档样式 (Display/Body/Label) 拼一张
+- `theme/ShapePreview.kt` (1): AppShapes (Card / Button / Dialog) 拼一张
+- `theme/MotionPreview.kt` (1): SpringFast / SpringMedium / emphasized 单张
+- `theme/ThemePreview.kt` (1): AlistClientTheme 整体配色预览
 
-**通用组件 (12 个)**:
-- AppScaffold / AppTopBar / AppBottomNavBar / StatusBanner (Info/Warning/Error/Success) / AppAlertDialog / EmptyState / ErrorState / LoadingState / ListItemRow / ActionButton (Primary/Secondary/Tonal) / SearchField / FileTypeIcon (6 文件类型各 1,共 6,选 Folder/Pdf/Image/Audio/Video/Other 6 个,合计 +6)
+**通用组件 (13 个 Preview)**:
+- AppScaffold / AppTopBar (含 back + actions) / AppBottomNavBar / StatusBanner (Info/Warning/Error/Success 共 1 张) / AppAlertDialog / EmptyState / ErrorState / LoadingState / ListItemRow / ActionButton (Primary/Secondary/Tonal 共 1 张) / SearchField / FileTypeIcon (Folder/Pdf/Image/Audio/Video/Other 共 1 张) — 每个组件 1 张,合计 12 张
+- 再加 1 张 FileTypeIcon 6 文件类型网格对照(便于 AS IDE 查看)
 
-**屏幕 shell (5+ 个)**:
-- LoginScreen (空状态) / FileScreen (空 + loading) / HomeScreen (loading) / SettingsScreen / TransferScreen (空)
+**屏幕 shell (5 个 Preview)**:
+- LoginScreen (空状态) / FileScreen (空) / HomeScreen (loading) / SettingsScreen / TransferScreen (空)
 
-每个 Preview 用 `AlistClientTheme { ... }` 包裹,提供 `darkTheme = false/true` 两个变体 (光暗各算 1 个时,数量 ×2 也可)。
+合计:5 + 13 + 5 = 23 张。若需 ≥ 25,可为 SettingsScreen 与 AppScaffold 各加 1 张 dark 变体凑足 (darkTheme = true)。
 
 ### 验收
 - 数量统计:`@Preview` 注解数 ≥ 25 (`grep -rn '@Preview' app/src/main/java | wc -l`)
 - AS 中每张 Preview 可渲染,不报错
+- 文件集中放 `theme/*Preview.kt` 和 `feature/<name>/<Screen>Preview.kt` 不与主屏幕混编
 - 不引入新依赖 (Compose Preview runtime 已含)
 
 ---
@@ -208,20 +212,27 @@ Task 16 定义 `AppError` sealed model,但无人消费。`HomeViewModel` 在 401
 admin/storage,admin/cookie,admin/form,home,preview,DirectoryBrowser 仍 import Cloud*。Task 15 标 @Deprecated,Task 32 保守未删。
 
 ### 设计
-**逐步替换路径**:
+**分两步拆,避免单项过大**:
+- **6a (Cloud* 替换)** 改 6 文件 (StorageRowItem / WebCookieDialog / DynamicFormField / HomeScreen / Preview 3 文件 [§7 同做] / DirectoryBrowser),保留旧 Cloud*.kt 文件,标 @Deprecated
+- **6b (Cloud* 删除)** 6a 全部替换通过 + 视觉回归无问题后,执行:删 11 个 Cloud*.kt + Color.kt 5 个 @Deprecated alias
+
+### 6a Cloud* 替换
 1. `admin/storage/StorageRowItem.kt`: `CloudListItem` → `ListItemRow`,`CloudPrimary` → `MaterialTheme.colorScheme.primary`
 2. `admin/cookie/WebCookieDialog.kt`: `CloudBackground/Surface/TextPrimary/Primary` → `MaterialTheme.colorScheme.{background,surface,onSurface,primary}`
 3. `admin/form/DynamicFormField.kt`: `CloudSurfaceMuted` → `colorScheme.surfaceContainerHigh`
 4. `home/HomeScreen.kt`: `CloudScaffold/TopBar/...` → `AppScaffold/AppTopBar`
 5. `preview/*`: 见 §7
 6. `DirectoryBrowser.kt`: 重写为 `LazyColumn + ListItemRow + Breadcrumb`,删 `CloudScaffold/TopBar/ListItem` 引用
+
+### 6b Cloud* 删除 (在 6a 全绿后单独 commit)
 7. **删除 `Cloud*.kt` 11 个文件** (Card/ActionButton/AlertDialog/ListItem/Scaffold/SearchBar/StatusBanner/TopBar/EmptyState/RoundIconButton/PillButton)
 8. **删除 `Color.kt` 5 个 @Deprecated alias** (CloudBackground/CloudPrimary/CloudSurface/CloudSurfaceMuted/CloudTextPrimary)
 
 ### 验收
-- `grep -rn 'Cloud' app/src/main/java` = 0 (除注释/CHANGELOG)
+- 6a 完成后:`grep -rn 'Cloud' app/src/main/java | grep -v '@Deprecated'` 应只剩 Color.kt 的 @Deprecated alias + Cloud*.kt 文件内部 `@Deprecated` 注解行;屏视觉无回归
+- 6b 完成后:`grep -rn 'Cloud' app/src/main/java` = 0 (除注释/CHANGELOG)
 - 全套测试 + lint 绿
-- 模拟器:Storage/Admin/Preview/Picker 四屏视觉无回归
+- 模拟器:Storage/Admin/Preview/Picker/Home 五屏视觉无回归
 
 ---
 
@@ -332,7 +343,8 @@ Task 23/24 删除部分测试覆盖。
 
 迁移清单:
 - `SettingsViewModel`:`MutableStateFlow + asStateFlow` → `combine + stateIn`
-- `PreviewViewModel`:Task 25 报告有意不强行 StateFlow,本任务**不强行改**,保持现状,在 spec 中标注"已知偏离"
+- `PreviewViewModel`:Task 25 报告有意不强行 StateFlow,本任务**不强行改**,保持现状,在 spec 中标注"已知偏离,理由 = Preview 是事件驱动而非状态驱动"
+- `AuthViewModel`:`LoginViewModel` 已被 Task 21 接管为干净 UDF (Intent + StateFlow),不动
 
 ### 验收
 - 全套测试 + lint 绿
@@ -408,9 +420,12 @@ Task 23/24 删除部分测试覆盖。
 9 条 `ModifierParameter` warning + 1 条 `ObsoleteSdkInt` (`TransferNotificationController.kt:21` `SDK_INT < O` 永远 false)
 
 ### 设计
+- 先跑 `lintDebug` 输出当前 9 条 `ModifierParameter` 精确路径(`grep -n 'ModifierParameter' lint-baseline.xml` + 对照源码)
 - `TransferNotificationController.kt:21` 删 SDK 检查块 (minSdk=26,O=26)
-- 9 条 ModifierParameter warning 由 lint baseline 移除:逐文件加 `@Suppress("ModifierParameter")` 仅在参数名无意义时,否则改 `modifier: Modifier = Modifier` 默认值
-- 跑 `lintDebug` 后清 lint-baseline.xml 对应行
+- 对每条 ModifierParameter:
+  - 若参数无意义 → `@Suppress("ModifierParameter")`
+  - 否则 → 改默认值 `modifier: Modifier = Modifier` 让使用者传 / 不传皆可
+- 改完后跑 `lintDebug` → 清 `lint-baseline.xml` 对应行 → 文件应缩至少 5 行
 
 ### 验收
 - `lintDebug` 无新 warning
@@ -453,7 +468,9 @@ MSYS_NO_PATHCONV=1 "D:/programming/devtools/android/sdk/platform-tools/adb.exe" 
 
 | 风险 | 缓解 |
 |------|------|
-| P1-6 Cloud* 替换牵动 6 屏视觉 | 替换前保留原文件备份在 git;出问题时 `git revert` 单项 commit |
+| P1-6 Cloud* 替换牵动 6 屏视觉 | 拆 6a/6b 两步,中间加一次视觉回归;出问题时 `git revert` 单项 commit |
 | P1-5 AppError 链路跨多个 VM | 先在 HomeViewModel 单点验证,再扩到 Settings/Transfer |
 | P0-2 FileScreen upload 触发需要 SAF 权限 | 沿用现成 `ActivityResultContracts.GetContent`,不引新依赖 |
 | 18 项总跨度大 | 每项独立 commit + 独立测试,任一项失败可单独回滚 |
+| P0-4 @Preview 在 Roborazzi baseline 改动后失准 | @Preview 路径不参与 Roborazzi (Roborazzi 只跑指定 ScreenName),预览失准不影响图基 |
+| §6a 视觉回归 | 跑 `gitnexus_detect_changes` + `recordRoborazziDebug` 视觉对比 baseline |
