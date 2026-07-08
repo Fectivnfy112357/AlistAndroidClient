@@ -13,14 +13,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.textvision.alistclient.admin.settings.AdminSiteSettingsScreen
-import com.textvision.alistclient.admin.storage.StorageEditScreen
 import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.home.HomeScreen
+import com.textvision.alistclient.ui.feature.admin.AdminSiteSettingsScreen
 import com.textvision.alistclient.ui.feature.file.FileScreen
 import com.textvision.alistclient.ui.feature.auth.LoginScreen
+import com.textvision.alistclient.ui.feature.picker.MoveCopyTargetPickerScreen
+import com.textvision.alistclient.ui.feature.storage.StorageEditScreen
 import com.textvision.alistclient.ui.feature.transfer.TransferScreen
-import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
 import com.textvision.alistclient.ui.feature.preview.PreviewScreen
 import com.textvision.alistclient.ui.feature.settings.SettingsScreen
 import kotlinx.serialization.json.Json
