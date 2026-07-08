@@ -39,12 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.ui.theme.CloudErrorText
-import com.textvision.alistclient.ui.theme.CloudPrimary
-import com.textvision.alistclient.ui.theme.CloudPrimarySoft
-import com.textvision.alistclient.ui.theme.CloudSurfaceMuted
-import com.textvision.alistclient.ui.theme.CloudTextPrimary
-import com.textvision.alistclient.ui.theme.CloudTextSecondary
 import com.textvision.alistclient.ui.theme.cloudClickable
 import kotlinx.coroutines.delay
 
@@ -99,14 +93,14 @@ internal fun AudioPreview(url: String) {
             modifier = Modifier
                 .size(140.dp)
                 .clip(CircleShape)
-                .background(CloudPrimarySoft),
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Filled.MusicNote,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
-                tint = CloudPrimary,
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
 
@@ -114,7 +108,7 @@ internal fun AudioPreview(url: String) {
         Text(
             text = error ?: if (!isPrepared) "加载中…" else if (isPlaying) "正在播放" else "已暂停",
             style = MaterialTheme.typography.bodyMedium,
-            color = if (error != null) CloudErrorText else CloudTextSecondary,
+            color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(Modifier.height(20.dp))
@@ -135,17 +129,17 @@ internal fun AudioPreview(url: String) {
             valueRange = 0f..(durationMs.coerceAtLeast(1).toFloat()),
             enabled = isPrepared && error == null,
             colors = SliderDefaults.colors(
-                thumbColor = CloudPrimary,
-                activeTrackColor = CloudPrimary,
-                inactiveTrackColor = CloudSurfaceMuted,
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(formatDuration(displayPos), style = MaterialTheme.typography.labelMedium, color = CloudTextSecondary)
-            Text(formatDuration(durationMs), style = MaterialTheme.typography.labelMedium, color = CloudTextSecondary)
+            Text(formatDuration(displayPos), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(formatDuration(durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Spacer(Modifier.height(24.dp))
@@ -170,7 +164,7 @@ internal fun AudioPreview(url: String) {
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(CloudPrimary)
+                    .background(MaterialTheme.colorScheme.primary)
                     .cloudClickable(enabled = isPrepared && error == null) {
                         runCatching {
                             if (isPlaying) player.pause() else player.start()
@@ -213,7 +207,7 @@ private fun AudioControlButton(
         modifier = Modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(CloudSurfaceMuted)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .cloudClickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -221,7 +215,7 @@ private fun AudioControlButton(
             imageVector = icon,
             contentDescription = contentDescription,
             modifier = Modifier.size(24.dp),
-            tint = if (enabled) CloudTextPrimary else CloudTextSecondary,
+            tint = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

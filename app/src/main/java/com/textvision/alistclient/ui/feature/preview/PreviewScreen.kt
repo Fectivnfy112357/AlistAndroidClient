@@ -1,27 +1,26 @@
 package com.textvision.alistclient.ui.feature.preview
 
 import android.content.Intent
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.preview.MimeTypeResolver
 import com.textvision.alistclient.preview.PreviewMode
 import com.textvision.alistclient.preview.PreviewRouter
-import com.textvision.alistclient.ui.components.CloudCard
-import com.textvision.alistclient.ui.components.CloudRoundIconButton
-import com.textvision.alistclient.ui.components.CloudScaffold
-import com.textvision.alistclient.ui.components.CloudTopBar
+import com.textvision.alistclient.ui.foundation.AppScaffold
+import com.textvision.alistclient.ui.foundation.AppTopBar
 
 @Composable
 fun PreviewScreen(
@@ -61,25 +60,24 @@ fun PreviewScreen(
             runCatching { context.startActivity(intent) }
         }
     }
-    CloudScaffold {
-        CloudTopBar(
-            title = "文件预览",
-            subtitle = name,
-            navigationIcon = {
-                CloudRoundIconButton(
-                    icon = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "返回",
-                    onClick = onBack,
-                )
-                Spacer(Modifier.width(10.dp))
-            },
-            action = {
-                CloudRoundIconButton(Icons.Outlined.Download, "下载", onDownload)
-                Spacer(Modifier.width(6.dp))
-                CloudRoundIconButton(Icons.AutoMirrored.Outlined.OpenInNew, "外部打开", onExternalOpen)
-            },
-        )
-        CloudCard(modifier = Modifier.weight(1f)) {
+    AppScaffold(
+        topBar = {
+            AppTopBar(
+                title = "文件预览",
+                subtitle = name,
+                onNavigateUp = onBack,
+                actions = {
+                    IconButton(onClick = onDownload) {
+                        Icon(Icons.Outlined.Download, contentDescription = "下载")
+                    }
+                    IconButton(onClick = onExternalOpen) {
+                        Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = "外部打开")
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        Card(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             when (mode) {
                 is PreviewMode.Image -> ImagePreview(mode.url)
                 is PreviewMode.Text -> TextPreview(mode.url, viewModel.textRepository)
