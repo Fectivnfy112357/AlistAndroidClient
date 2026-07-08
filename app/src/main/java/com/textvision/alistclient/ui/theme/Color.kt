@@ -176,64 +176,7 @@ object DarkColorScheme {
 // Legacy aliases — preserve for existing code compatibility
 // ══════════════════════════════════════════════════════════════════════════════
 @Deprecated("Use LightColorScheme.primary / IndigoBlue40", ReplaceWith("IndigoBlue40"))
-val CloudPrimary = IndigoBlue40
-
-@Deprecated("Use LightColorScheme.primary / IndigoBlue40", ReplaceWith("IndigoBlue40"))
 val AlistBlue = IndigoBlue40
-
-@Deprecated("Use LightColorScheme.primary")
-val CloudPrimaryDark = IndigoBlue80
-
-@Deprecated("Use LightColorScheme.primaryContainer")
-val CloudPrimarySoft = IndigoBlue90
-
-@Deprecated("Use LightColorScheme.onPrimary")
-val CloudOnPrimary = Color(0xFFFFFFFF)
-
-@Deprecated("Use LightColorScheme.background")
-val CloudBackground = Color(0xFFFEFBFF)
-
-@Deprecated("Use LightColorScheme.surfaceContainerHighest")
-val CloudBackgroundDeep = Color(0xFFE6E3E9)
-
-@Deprecated("Use LightColorScheme.surface")
-val CloudSurface = Color(0xFFFFFFFF)
-
-@Deprecated("Use LightColorScheme.surfaceContainer")
-val CloudSurfaceMuted = Color(0xFFF2EFF4)
-
-@Deprecated("Use LightColorScheme.surfaceContainerHighest")
-val CloudSurfaceStrong = Color(0xFFE6E3E9)
-
-@Deprecated("Use Outline")
-val CloudOutline = Color(0x1F222230)
-
-@Deprecated("Use LightColorScheme.onSurface")
-val CloudTextPrimary = Neutral10
-
-@Deprecated("Use LightColorScheme.onSurfaceVariant")
-val CloudTextSecondary = Neutral40
-
-@Deprecated("Use Neutral60")
-val CloudTextTertiary = Neutral60
-
-@Deprecated("Use Error90 + Error40")
-val CloudWarningContainer = Color(0xFFFFF4DF)
-
-@Deprecated("Use Tertiary40")
-val CloudWarningText = Color(0xFF8A520D)
-
-@Deprecated("Use Error90 + Error40")
-val CloudErrorContainer = Color(0xFFFFECEF)
-
-@Deprecated("Use Error40")
-val CloudErrorText = Color(0xFFB4233B)
-
-@Deprecated("Use Tertiary90 + Tertiary40")
-val CloudSuccessContainer = Color(0xFFEAF8EF)
-
-@Deprecated("Use Tertiary40")
-val CloudSuccessText = Color(0xFF247A3D)
 
 @Deprecated("Use tertiaryContainer")
 val FolderTint = Tertiary90
