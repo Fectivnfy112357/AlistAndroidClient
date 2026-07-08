@@ -15,6 +15,7 @@ import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.ui.components.EmptyState
 import com.textvision.alistclient.ui.components.FileTypeIcon
 import com.textvision.alistclient.ui.components.ListItemRow
+import com.textvision.alistclient.ui.components.LoadingState
 import com.textvision.alistclient.ui.components.toFileCategory
 
 @Composable
@@ -27,6 +28,10 @@ fun FileListContent(
     modifier: Modifier = Modifier,
 ) {
     val files = state.visibleFiles
+    if (state.isLoading && state.files.isEmpty()) {
+        LoadingState(message = "加载中…", modifier = modifier)
+        return
+    }
     if (files.isEmpty() && !state.isLoading) {
         EmptyState(
             title = "文件夹为空",

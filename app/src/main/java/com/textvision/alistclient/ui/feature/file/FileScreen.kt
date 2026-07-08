@@ -12,11 +12,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.textvision.alistclient.file.model.FileItem
+import com.textvision.alistclient.ui.components.AppAlertDialog
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.SearchField
 import com.textvision.alistclient.ui.components.StatusBanner
@@ -31,6 +35,7 @@ fun FileScreen(
     vm: FileViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialPath) {
         if (state.path != initialPath) {
@@ -73,10 +78,11 @@ fun FileScreen(
                 FileMultiSelectBar(
                     selectionCount = state.selection.size,
                     onSelectAll = {
-                        val paths = state.visibleFiles.map { it.path }
-                        paths.forEach { vm.onIntent(FileIntent.MultiSelectToggle(it)) }
+                        state.visibleFiles.map { it.path }
+                            .filter { it !in state.selection }
+                            .forEach { vm.onIntent(FileIntent.MultiSelectToggle(it)) }
                     },
-                    onDelete = { vm.onIntent(FileIntent.MultiSelectDelete(state.selection.toList())) },
+                    onDelete = { showDeleteConfirm = true },
                     onDownload = { vm.onIntent(FileIntent.MultiSelectDownload(state.selection.toList())) },
                     onClear = { vm.onIntent(FileIntent.MultiSelectClear) },
                 )
@@ -88,5 +94,20 @@ fun FileScreen(
                 onFolderNavigate = onFolderNavigate,
             )
         }
+    }
+
+    if (showDeleteConfirm) {
+        AppAlertDialog(
+            title = "删除确认",
+            message = "确定删除选中的 ${state.selection.size} 项吗？此操作不可恢复。",
+            confirmLabel = "删除",
+            onConfirm = {
+                vm.onIntent(FileIntent.MultiSelectDelete(state.selection.toList()))
+                showDeleteConfirm = false
+            },
+            dismissLabel = "取消",
+            onDismiss = { showDeleteConfirm = false },
+            destructive = true,
+        )
     }
 }
