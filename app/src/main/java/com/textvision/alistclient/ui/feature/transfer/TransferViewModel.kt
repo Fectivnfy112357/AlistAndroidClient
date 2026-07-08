@@ -2,6 +2,7 @@ package com.textvision.alistclient.ui.feature.transfer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.transfer.TransferManager
 import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
@@ -26,6 +27,7 @@ enum class TransferTab(
 data class TransferListUiState(
     val all: List<TransferEntity> = emptyList(),
     val tab: TransferTab = TransferTab.UPLOAD,
+    val isOnline: Boolean = true,
 ) {
     val visible: List<TransferEntity> = all.filter { it.type == tab.type }
     val summary: String
@@ -51,6 +53,7 @@ private val ActiveTransferStatuses = setOf(
 @HiltViewModel
 class TransferViewModel @Inject constructor(
     private val manager: TransferManager,
+    private val networkMonitor: NetworkMonitorContract,
 ) : ViewModel() {
 
     private val _tab = MutableStateFlow(TransferTab.UPLOAD)
@@ -58,11 +61,12 @@ class TransferViewModel @Inject constructor(
     val state: StateFlow<TransferListUiState> = combine(
         _tab,
         manager.observeTransfers(),
-    ) { tab, all ->
-        TransferListUiState(all = all, tab = tab)
+        networkMonitor.isOnline,
+    ) { tab, all, online ->
+        TransferListUiState(all = all, tab = tab, isOnline = online)
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
+        started = SharingStarted.Eagerly,
         initialValue = TransferListUiState(),
     )
 

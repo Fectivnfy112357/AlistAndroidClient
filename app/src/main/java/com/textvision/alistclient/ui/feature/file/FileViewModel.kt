@@ -2,6 +2,7 @@ package com.textvision.alistclient.ui.feature.file
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.file.FileRepository
 import com.textvision.alistclient.file.model.FileItem
@@ -9,8 +10,10 @@ import com.textvision.alistclient.transfer.TransferManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -18,10 +21,21 @@ import kotlinx.coroutines.launch
 class FileViewModel @Inject constructor(
     private val fileRepository: FileRepository,
     private val transferManager: TransferManager,
+    private val networkMonitor: NetworkMonitorContract,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FileUiState())
-    val state: StateFlow<FileUiState> = _state.asStateFlow()
+
+    val state: StateFlow<FileUiState> = combine(
+        _state,
+        networkMonitor.isOnline,
+    ) { ui, online ->
+        ui.copy(isOnline = online)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = FileUiState(),
+    )
 
     fun onIntent(intent: FileIntent) {
         when (intent) {

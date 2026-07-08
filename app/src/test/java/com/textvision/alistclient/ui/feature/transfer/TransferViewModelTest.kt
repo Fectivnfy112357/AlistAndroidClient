@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.feature.transfer
 
+import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.transfer.TransferManager
 import io.mockk.every
 import io.mockk.mockk
@@ -27,11 +28,13 @@ class TransferViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val manager: TransferManager = mockk(relaxed = true)
+    private val networkMonitor: NetworkMonitorContract = mockk(relaxed = true)
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         every { manager.observeTransfers() } returns flowOf(emptyList())
+        every { networkMonitor.isOnline } returns MutableStateFlow(true)
     }
 
     @After
@@ -44,8 +47,8 @@ class TransferViewModelTest {
         // Mirror the production wiring: combine + stateIn. Use Eagerly so the
         // test can read .value without keeping a separate collector alive.
         val tab = MutableStateFlow(TransferTab.UPLOAD)
-        val state = combine(tab, manager.observeTransfers()) { t, all ->
-            TransferListUiState(all = all, tab = t)
+        val state = combine(tab, manager.observeTransfers(), networkMonitor.isOnline) { t, all, online ->
+            TransferListUiState(all = all, tab = t, isOnline = online)
         }.stateIn(backgroundScope, SharingStarted.Eagerly, TransferListUiState())
 
         advanceUntilIdle()
@@ -67,7 +70,7 @@ class TransferViewModelTest {
 
     @Test
     fun cancel_delegates_to_manager() = runTest {
-        val viewModel = TransferViewModel(manager)
+        val viewModel = TransferViewModel(manager, networkMonitor)
 
         viewModel.cancel("id1")
         verify { manager.cancel("id1") }

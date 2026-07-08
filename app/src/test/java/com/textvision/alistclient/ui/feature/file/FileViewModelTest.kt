@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.feature.file
 
+import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.common.result.ApiResult
 import com.textvision.alistclient.file.FileRepository
 import com.textvision.alistclient.file.model.FileItem
@@ -12,6 +13,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -31,10 +33,12 @@ class FileViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val fileRepository: FileRepository = mockk()
     private val transferManager: TransferManager = mockk(relaxed = true)
+    private val networkMonitor: NetworkMonitorContract = mockk(relaxed = true)
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        every { networkMonitor.isOnline } returns MutableStateFlow(true)
     }
 
     @After
@@ -60,7 +64,7 @@ class FileViewModelTest {
         val files = listOf(makeFile("a.txt"), makeFile("b.txt"))
         coEvery { fileRepository.list("/") } returns ApiResult.Success(files)
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
 
@@ -75,7 +79,7 @@ class FileViewModelTest {
     fun load_failure_emits_error() = runTest {
         coEvery { fileRepository.list("/") } returns ApiResult.Failure(500, "boom")
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
 
@@ -88,7 +92,7 @@ class FileViewModelTest {
     fun load_network_error_emits_error() = runTest {
         coEvery { fileRepository.list("/") } returns ApiResult.NetworkError(RuntimeException("offline"))
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
 
@@ -101,7 +105,7 @@ class FileViewModelTest {
         val files = listOf(makeFile("apple.txt"), makeFile("banana.txt"))
         coEvery { fileRepository.list("/") } returns ApiResult.Success(files)
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
         vm.onIntent(FileIntent.Search("apple"))
@@ -117,7 +121,7 @@ class FileViewModelTest {
             listOf(makeFile("a.txt"), makeFile("b.txt"))
         )
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
         vm.onIntent(FileIntent.MultiSelectToggle("/a.txt"))
@@ -132,7 +136,7 @@ class FileViewModelTest {
     fun multi_select_clear_empties_selection() = runTest {
         coEvery { fileRepository.list("/") } returns ApiResult.Success(listOf(makeFile("a.txt")))
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
         vm.onIntent(FileIntent.MultiSelectToggle("/a.txt"))
@@ -151,7 +155,7 @@ class FileViewModelTest {
         )
         coEvery { fileRepository.delete(listOf("/b.txt")) } returns ApiResult.Success(Unit)
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
         vm.onIntent(FileIntent.MultiSelectDelete(listOf("/b.txt")))
@@ -168,7 +172,7 @@ class FileViewModelTest {
         coEvery { fileRepository.list("/") } returns ApiResult.Success(initial)
         every { transferManager.enqueueDownload(any(), any()) } returns "task-1"
 
-        val vm = FileViewModel(fileRepository, transferManager)
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
         vm.onIntent(FileIntent.MultiSelectDownload(listOf("/a.txt", "/b.txt")))

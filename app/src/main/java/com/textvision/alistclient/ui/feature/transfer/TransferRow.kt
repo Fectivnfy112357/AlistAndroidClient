@@ -53,6 +53,7 @@ fun TransferRow(
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
     onDelete: (String) -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -117,7 +118,10 @@ fun TransferRow(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (item.isActive) {
-                        IconButton(onClick = { onCancel(item.id) }) {
+                        IconButton(
+                            onClick = { onCancel(item.id) },
+                            enabled = enabled,
+                        ) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "取消",
@@ -125,7 +129,10 @@ fun TransferRow(
                             )
                         }
                     } else if (item.status == TransferStatus.Failed || item.status == TransferStatus.Interrupted) {
-                        IconButton(onClick = { onRetry(item.id) }) {
+                        IconButton(
+                            onClick = { onRetry(item.id) },
+                            enabled = enabled,
+                        ) {
                             Icon(
                                 imageVector = Icons.Filled.Refresh,
                                 contentDescription = "重试",

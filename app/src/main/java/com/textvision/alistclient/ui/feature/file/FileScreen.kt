@@ -74,6 +74,12 @@ fun FileScreen(
                     onAction = { vm.onIntent(FileIntent.Load(state.path)) },
                 )
             }
+            if (!state.isOnline) {
+                StatusBanner(
+                    kind = BannerKind.WARNING,
+                    message = "当前离线，部分操作不可用",
+                )
+            }
             if (state.isMultiSelectMode) {
                 FileMultiSelectBar(
                     selectionCount = state.selection.size,

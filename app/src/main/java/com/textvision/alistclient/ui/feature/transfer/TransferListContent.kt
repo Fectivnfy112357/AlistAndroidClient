@@ -19,6 +19,7 @@ fun TransferListContent(
     onRetry: (String) -> Unit,
     onDelete: (String) -> Unit,
     emptyTitle: String,
+    enabled: Boolean = true,
     emptyMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -45,6 +46,7 @@ fun TransferListContent(
                 onCancel = onCancel,
                 onRetry = onRetry,
                 onDelete = onDelete,
+                enabled = enabled,
             )
         }
     }

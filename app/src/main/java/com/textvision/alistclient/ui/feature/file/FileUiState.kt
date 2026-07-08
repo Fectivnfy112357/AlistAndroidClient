@@ -12,6 +12,7 @@ data class FileUiState(
     val query: String = "",
     val selection: Set<String> = emptySet(),
     val isMultiSelectMode: Boolean = false,
+    val isOnline: Boolean = true,
 ) {
     val visibleFiles: List<FileItem>
         get() = if (query.isBlank()) files
