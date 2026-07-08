@@ -3,6 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > 用中文与用户对话。
+> alist测试地址是 http://textvision.top:5244
+> 账密是 fectivnfy/Yishengaini12345
 
 ## 本地开发环境（Windows 11）
 
@@ -149,7 +151,7 @@ The project follows a spec → plan → task → report workflow documented in `
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **alist** (2382 symbols, 4875 relationships, 201 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **alist** (2582 symbols, 5235 relationships, 215 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
