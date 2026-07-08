@@ -36,7 +36,7 @@ data class TransferListUiState(
     val summary: String
         get() {
             if (all.isEmpty()) return "传输任务"
-            val active = visible.count { it.status in ActiveTransferStatuses }
+            val active = visible.count { it.status in TransferStatus.activeStatuses }
             val failed = visible.count { it.status == TransferStatus.Failed || it.status == TransferStatus.Interrupted }
             val completed = visible.count { it.status == TransferStatus.Success }
             return listOfNotNull(
@@ -46,12 +46,6 @@ data class TransferListUiState(
             ).joinToString(" · ").ifBlank { "暂无进行中的任务" }
         }
 }
-
-private val ActiveTransferStatuses = setOf(
-    TransferStatus.Waiting,
-    TransferStatus.Uploading,
-    TransferStatus.Downloading,
-)
 
 @HiltViewModel
 class TransferViewModel @Inject constructor(

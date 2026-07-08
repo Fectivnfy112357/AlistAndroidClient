@@ -12,4 +12,9 @@ enum class TransferStatus(
     Failed(canRetry = true, retryLabel = "重试", displayName = "失败"),
     Cancelled(canRetry = false, retryLabel = null, displayName = "已取消"),
     Interrupted(canRetry = true, retryLabel = "重新传输", displayName = "已中断"),
+    ;
+
+    companion object {
+        val activeStatuses: Set<TransferStatus> = setOf(Waiting, Uploading, Downloading)
+    }
 }

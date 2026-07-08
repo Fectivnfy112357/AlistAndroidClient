@@ -31,17 +31,11 @@ import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
 import com.textvision.alistclient.ui.components.AppAlertDialog
 
-private val ActiveTransferStatuses = setOf(
-    TransferStatus.Waiting,
-    TransferStatus.Uploading,
-    TransferStatus.Downloading,
-)
-
 private val TransferEntity.statusText: String
     get() = status.displayName + (failureReason?.let { "：$it" } ?: "")
 
 private val TransferEntity.isActive: Boolean
-    get() = status in ActiveTransferStatuses
+    get() = status in TransferStatus.activeStatuses
 
 private val TransferEntity.isComplete: Boolean
     get() = status == TransferStatus.Success
