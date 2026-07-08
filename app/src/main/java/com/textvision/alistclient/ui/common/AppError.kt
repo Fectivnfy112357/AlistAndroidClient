@@ -14,7 +14,6 @@ sealed interface AppError {
 fun Throwable.toAppError(): AppError = when (this) {
     is IOException -> AppError.Network(message)
     is HttpException -> if (code() in 401..403) AppError.Unauthorized(message()) else AppError.Server(code(), message())
-    is AppError -> this
     else -> AppError.Unknown(message ?: this::class.simpleName.orEmpty())
 }
 
