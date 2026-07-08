@@ -32,7 +32,7 @@ fun DirectoryBrowser(
                             title = dir.name,
                             subtitle = "文件夹",
                             onClick = { onOpen(dir.path) },
-                            leading = { FileTypeIcon(fileCategoryFromMime(null, dir.name)) },
+                            leading = { FileTypeIcon(dir.type.toFileCategory()) },
                             trailing = { Text("›") },
                         )
                     }
