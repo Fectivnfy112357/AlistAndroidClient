@@ -17,10 +17,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun SearchField(
+    modifier: Modifier = Modifier,
     query: String,
     onQueryChange: (String) -> Unit,
     placeholder: String = "搜索",
-    modifier: Modifier = Modifier,
 ) {
     TextField(
         value = query,

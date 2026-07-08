@@ -42,12 +42,12 @@ private val TransferEntity.isComplete: Boolean
 
 @Composable
 fun TransferRow(
+    modifier: Modifier = Modifier,
     item: TransferEntity,
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
     onDelete: (String) -> Unit,
     enabled: Boolean = true,
-    modifier: Modifier = Modifier,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 

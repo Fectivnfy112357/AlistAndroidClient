@@ -20,10 +20,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun ErrorState(
+    modifier: Modifier = Modifier,
     message: String,
     retryLabel: String? = "重试",
     onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),

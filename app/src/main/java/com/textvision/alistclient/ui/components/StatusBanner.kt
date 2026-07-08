@@ -29,11 +29,11 @@ enum class BannerKind { INFO, WARNING, ERROR, SUCCESS }
 
 @Composable
 fun StatusBanner(
+    modifier: Modifier = Modifier,
     kind: BannerKind,
     message: String,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     val (icon, containerColor, contentColor) = when (kind) {
         BannerKind.INFO -> Triple(Icons.Outlined.Info, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurface)

@@ -19,12 +19,12 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun EmptyState(
+    modifier: Modifier = Modifier,
     title: String,
     icon: ImageVector? = null,
     message: String? = null,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),

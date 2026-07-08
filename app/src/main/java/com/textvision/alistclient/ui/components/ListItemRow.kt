@@ -22,13 +22,13 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListItemRow(
+    modifier: Modifier = Modifier,
     leading: @Composable () -> Unit,
     title: String,
     subtitle: String? = null,
     trailing: @Composable () -> Unit = {},
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 

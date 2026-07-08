@@ -16,6 +16,7 @@ import com.textvision.alistclient.ui.components.EmptyState
 
 @Composable
 fun TransferListContent(
+    modifier: Modifier = Modifier,
     rows: List<TransferEntity>,
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
@@ -23,7 +24,6 @@ fun TransferListContent(
     emptyTitle: String,
     enabled: Boolean = true,
     emptyMessage: String? = null,
-    modifier: Modifier = Modifier,
 ) {
     if (rows.isEmpty()) {
         Box(

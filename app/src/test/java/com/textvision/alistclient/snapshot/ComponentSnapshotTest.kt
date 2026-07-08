@@ -56,10 +56,10 @@ class ComponentSnapshotTest {
         composeRule.setContent {
             Sample {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatusBanner(BannerKind.INFO, "这是一条信息提示")
-                    StatusBanner(BannerKind.WARNING, "这是一条警告提示")
-                    StatusBanner(BannerKind.ERROR, "这是一条错误提示", actionLabel = "重试", onAction = {})
-                    StatusBanner(BannerKind.SUCCESS, "操作成功完成")
+                    StatusBanner(kind = BannerKind.INFO, message = "这是一条信息提示")
+                    StatusBanner(kind = BannerKind.WARNING, message = "这是一条警告提示")
+                    StatusBanner(kind = BannerKind.ERROR, message = "这是一条错误提示", actionLabel = "重试", onAction = {})
+                    StatusBanner(kind = BannerKind.SUCCESS, message = "操作成功完成")
                 }
             }
         }

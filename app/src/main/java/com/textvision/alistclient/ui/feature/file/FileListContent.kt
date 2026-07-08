@@ -31,6 +31,7 @@ import com.textvision.alistclient.util.FileSizeFormatter
 
 @Composable
 fun FileListContent(
+    modifier: Modifier = Modifier,
     state: FileUiState,
     onIntent: (FileIntent) -> Unit,
     onPreview: (FileItem) -> Unit,
@@ -39,7 +40,6 @@ fun FileListContent(
     onCopyLink: (FileItem) -> Unit = {},
     onDownloadFeedback: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    modifier: Modifier = Modifier,
 ) {
     val files = state.visibleFiles
     if (state.isLoading && state.files.isEmpty()) {

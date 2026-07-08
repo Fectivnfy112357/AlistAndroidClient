@@ -18,7 +18,6 @@ class TransferNotificationController @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     fun ensureChannels() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(PROGRESS_CHANNEL, "传输进度", NotificationManager.IMPORTANCE_LOW))
         manager.createNotificationChannel(NotificationChannel(RESULT_CHANNEL, "传输结果", NotificationManager.IMPORTANCE_DEFAULT))
