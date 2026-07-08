@@ -33,9 +33,11 @@ class AdminRepository @Inject constructor(
             val refreshed = refreshAndRetry(base)
             if (refreshed) {
                 val retried = safeCall(call)
-                if (retried is AdminResult.Unauthorized) sessionEventBus.emit(SessionEvent.Unauthorized)
+                // refresh login succeeded but retried endpoint still Unauthorized = role/permission
+                // issue, NOT a session invalidation. Caller decides how to surface it; do NOT emit.
                 return@withContext retried
             } else {
+                // refresh login itself failed (e.g. credentials revoked) → real session loss.
                 sessionEventBus.emit(SessionEvent.Unauthorized)
             }
         }

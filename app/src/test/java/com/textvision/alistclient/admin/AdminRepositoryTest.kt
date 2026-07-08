@@ -100,7 +100,7 @@ class AdminRepositoryTest {
         assertEquals(2, probeCount)
     }
 
-    @Test fun emitsUnauthorizedWhenStillUnauthorizedAfterRefresh() = runTest {
+    @Test fun doesNotEmitWhenRefreshSucceedsButRetryStillUnauthorized() = runTest {
         val bus = io.mockk.mockk<com.textvision.alistclient.auth.SessionEventBus>(relaxed = true)
         val emittingRepo = AdminRepository(api, session, AuthRepository(api, session), bus, UnconfinedTestDispatcher())
         server.dispatcher = object : Dispatcher() {
@@ -110,7 +110,30 @@ class AdminRepositoryTest {
                         """{"code":200,"message":"success","data":{"token":"new_tok"}}"""
                     )
                 }
-                return MockResponse().setResponseCode(401).setBody("""{"code":401,"message":"x","data":null}""")
+                // probe always Unauthorized (403) — refresh login succeeded but endpoint still fails
+                // (non-admin user / revoked admin perms). Bug previously caused an emit that kicked
+                // the user back to the login page; new behavior: caller gets Unauthorized, no emit.
+                return MockResponse().setResponseCode(403).setBody("""{"code":403,"message":"forbidden","data":null}""")
+            }
+        }
+        val probeApi = retrofit2.Retrofit.Builder()
+            .baseUrl(server.url("/"))
+            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build())
+            .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(ProbeApi::class.java)
+        val r = emittingRepo.runAdmin(server.url("/").toString()) { probeApi.probe("api/admin/probe") }
+        assertTrue("expected Unauthorized, got $r", r is AdminResult.Unauthorized)
+        io.mockk.verify(exactly = 0) { bus.emit(com.textvision.alistclient.auth.SessionEvent.Unauthorized) }
+    }
+
+    @Test fun emitsUnauthorizedWhenRefreshItselfFails() = runTest {
+        val bus = io.mockk.mockk<com.textvision.alistclient.auth.SessionEventBus>(relaxed = true)
+        val emittingRepo = AdminRepository(api, session, AuthRepository(api, session), bus, UnconfinedTestDispatcher())
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                // login itself fails → refreshAndRetry returns false → emit
+                return MockResponse().setResponseCode(401).setBody("""{"code":401,"message":"bad creds","data":null}""")
             }
         }
         val probeApi = retrofit2.Retrofit.Builder()

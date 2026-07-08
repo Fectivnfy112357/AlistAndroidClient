@@ -214,4 +214,60 @@ class FileRepositoryTest {
         assertTrue(result is ApiResult.Failure)
         verify(exactly = 1) { bus.emit(SessionEvent.Unauthorized) }
     }
+
+    @Test fun nonAdminListDoesNotEmitWhenAdminProbeStillUnauthorized() = runTest {
+        // Simulates non-admin user browsing files: fs/list succeeds, but listStorage (called via
+        // disabledMountPaths) returns Unauthorized. The previous bug was that runAdmin emitted
+        // SessionEvent.Unauthorized which kicked the user back to the login page.
+        val api = object : AlistApi {
+            override suspend fun list(url: String, request: FsListRequest): AlistResponse<AlistFsList> =
+                AlistResponse(200, "success", AlistFsList(content = listOf(AlistFileDto(name = "a.txt"))))
+            override suspend fun listStorage(url: String, page: Int, perPage: Int): AlistResponse<StorageList> =
+                AlistResponse(403, "forbidden", null)
+            override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> = throw UnsupportedOperationException()
+            override suspend fun search(url: String, request: FsSearchRequest): AlistResponse<AlistFsList> = throw UnsupportedOperationException()
+            override suspend fun mkdir(url: String, request: MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+            override suspend fun rename(url: String, request: RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+            override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+            override suspend fun copy(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+            override suspend fun move(url: String, request: CopyMovePathRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+            override suspend fun getPublicSettings(url: String, skipAuthRetry: String): AlistResponse<com.textvision.alistclient.network.dto.PublicSettings> = throw UnsupportedOperationException()
+            override suspend fun listUsers(url: String, page: Int, perPage: Int): AlistResponse<UserList> = throw UnsupportedOperationException()
+            override suspend fun listRoles(url: String, page: Int, perPage: Int): AlistResponse<RoleList> = throw UnsupportedOperationException()
+            override suspend fun listSessions(url: String): AlistResponse<List<SessionInfo>> = throw UnsupportedOperationException()
+            override suspend fun taskUndone(url: String): AlistResponse<List<TaskInfo>> = throw UnsupportedOperationException()
+            override suspend fun updateStorage(url: String, body: com.textvision.alistclient.network.dto.StoragePatch): AlistResponse<Unit> = throw UnsupportedOperationException()
+            override suspend fun listDrivers(url: String, page: Int, perPage: Int): AlistResponse<Map<String, com.textvision.alistclient.network.dto.DriverInfo>> = throw UnsupportedOperationException()
+            override suspend fun listSettings(url: String, page: Int, perPage: Int): AlistResponse<List<com.textvision.alistclient.network.dto.SettingItem>> = throw UnsupportedOperationException()
+            override suspend fun saveSettings(url: String, body: com.textvision.alistclient.network.dto.SettingSaveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
+        }
+        val store = MemoryStore().apply {
+            map[SessionManager.KEY_SERVER_URL] = "http://server/"
+            map[SessionManager.KEY_USERNAME] = "user"
+            map[SessionManager.KEY_PASSWORD] = "pass"
+            map[SessionManager.KEY_TOKEN] = "tok"
+        }
+        val tokenProvider = AuthTokenProvider()
+        // Use the real AdminRepository so the runAdmin path (refreshAndRetry + safeCall) is exercised.
+        val adminApi = mockk<AlistApi>(relaxed = true)
+        coEvery { adminApi.login(any(), any(), any()) } returns AlistResponse(200, "success", AlistLoginData("new-tok"))
+        coEvery { adminApi.listStorage(any(), any(), any()) } returns AlistResponse(403, "forbidden", null)
+        val bus = mockk<SessionEventBus>(relaxed = true)
+        val sharedSession = SessionManager(store, tokenProvider)
+        val adminRepo = AdminRepository(
+            adminApi,
+            sharedSession,
+            AuthRepository(adminApi, sharedSession),
+            bus,
+            UnconfinedTestDispatcher(),
+        )
+        // FileRepository shares the SAME bus as AdminRepository so the verify below observes
+        // any emit caused by the inner runAdmin path.
+        val repository = FileRepository(api, sharedSession, adminRepo, bus)
+
+        val result = repository.list("/")
+
+        assertTrue("expected Success, got $result", result is ApiResult.Success<*>)
+        verify(exactly = 0) { bus.emit(SessionEvent.Unauthorized) }
+    }
 }
