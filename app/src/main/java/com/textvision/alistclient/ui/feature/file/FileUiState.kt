@@ -22,5 +22,5 @@ data class FileUiState(
         get() = selection.isEmpty()
 
     val isAllSelected: Boolean
-        get() = files.isNotEmpty() && selection.size == files.size
+        get() = visibleFiles.isNotEmpty() && visibleFiles.all { it.path in selection }
 }
