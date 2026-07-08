@@ -18,7 +18,7 @@ import com.textvision.alistclient.admin.storage.StorageEditScreen
 import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.home.HomeScreen
 import com.textvision.alistclient.ui.feature.file.FileScreen
-import com.textvision.alistclient.ui.screens.LoginScreen
+import com.textvision.alistclient.ui.feature.auth.LoginScreen
 import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
 import com.textvision.alistclient.ui.screens.PreviewScreen
 import com.textvision.alistclient.ui.screens.SettingsScreen
