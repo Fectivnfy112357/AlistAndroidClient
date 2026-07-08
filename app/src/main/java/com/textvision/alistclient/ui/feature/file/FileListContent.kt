@@ -25,6 +25,7 @@ import com.textvision.alistclient.ui.components.FileTypeIcon
 import com.textvision.alistclient.ui.components.ListItemRow
 import com.textvision.alistclient.ui.components.LoadingState
 import com.textvision.alistclient.ui.components.toFileCategory
+import com.textvision.alistclient.util.FileSizeFormatter
 
 @Composable
 fun FileListContent(
@@ -34,6 +35,7 @@ fun FileListContent(
     onFolderNavigate: (path: String) -> Unit,
     onShare: (FileItem) -> Unit = {},
     onCopyLink: (FileItem) -> Unit = {},
+    onDownloadFeedback: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier,
 ) {
@@ -60,7 +62,7 @@ fun FileListContent(
             ListItemRow(
                 leading = { FileTypeIcon(file.type.toFileCategory()) },
                 title = file.name,
-                subtitle = if (file.isDir) "文件夹" else "${file.size} bytes",
+                subtitle = if (file.isDir) "文件夹" else FileSizeFormatter.humanize(file.size),
                 onClick = {
                     when {
                         state.isMultiSelectMode -> onIntent(FileIntent.MultiSelectToggle(file.path))
@@ -85,6 +87,7 @@ fun FileListContent(
                             onIntent = onIntent,
                             onShare = onShare,
                             onCopyLink = onCopyLink,
+                            onDownloadFeedback = onDownloadFeedback,
                         )
                     }
                 } else {
@@ -101,6 +104,7 @@ private fun FileRowMenu(
     onIntent: (FileIntent) -> Unit,
     onShare: (FileItem) -> Unit,
     onCopyLink: (FileItem) -> Unit,
+    onDownloadFeedback: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
@@ -112,6 +116,7 @@ private fun FileRowMenu(
             onClick = {
                 expanded = false
                 onIntent(FileIntent.DownloadOne(file.path))
+                onDownloadFeedback()
             },
         )
         DropdownMenuItem(

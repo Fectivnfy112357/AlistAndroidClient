@@ -145,6 +145,9 @@ fun FileScreen(
                         scope.launch { snackbar.showSnackbar("已复制直链") }
                     }
                 },
+                onDownloadFeedback = {
+                    scope.launch { snackbar.showSnackbar("已加入下载队列") }
+                },
             )
         }
     }
