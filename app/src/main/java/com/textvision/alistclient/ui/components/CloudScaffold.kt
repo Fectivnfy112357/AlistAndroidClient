@@ -20,7 +20,7 @@ import com.textvision.alistclient.ui.theme.CloudBackground
 
 /**
  * Reserved height for a floating bottom bar (64dp visual bar + 24dp outer padding).
- * Pages that sit above [CloudBottomBar] should use [bottomBarInset] so content
+ * Pages that sit above the app bottom navigation bar should use [bottomBarInset] so content
  * never slides behind the bar.
  */
 val CloudBottomBarReservedHeight: Dp = 96.dp

@@ -1,151 +1,132 @@
 package com.textvision.alistclient.navigation
 
+import android.net.Uri
+import android.os.Bundle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.textvision.alistclient.admin.settings.AdminSiteSettingsScreen
 import com.textvision.alistclient.admin.storage.StorageEditScreen
-import com.textvision.alistclient.ui.components.CloudBottomBar
-import com.textvision.alistclient.ui.feature.file.FileScreen
+import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.home.HomeScreen
+import com.textvision.alistclient.ui.feature.file.FileScreen
 import com.textvision.alistclient.ui.screens.LoginScreen
 import com.textvision.alistclient.ui.screens.MoveCopyTargetPickerScreen
 import com.textvision.alistclient.ui.screens.PreviewScreen
 import com.textvision.alistclient.ui.screens.SettingsScreen
 import com.textvision.alistclient.ui.screens.TransferScreen
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
+import kotlin.reflect.typeOf
+
+/** Custom NavType so [PreviewDest] can carry the nested [PreviewDestArgs] serializable payload. */
+private val PreviewArgsNavType = object : NavType<PreviewDestArgs>(isNullableAllowed = false) {
+    private val serializer = serializer<PreviewDestArgs>()
+
+    override fun get(bundle: Bundle, key: String): PreviewDestArgs? =
+        bundle.getString(key)?.let { Json.decodeFromString(serializer, it) }
+
+    override fun parseValue(value: String): PreviewDestArgs =
+        Json.decodeFromString(serializer, Uri.decode(value))
+
+    override fun serializeAsValue(value: PreviewDestArgs): String =
+        Uri.encode(Json.encodeToString(serializer, value))
+
+    override fun put(bundle: Bundle, key: String, value: PreviewDestArgs) {
+        bundle.putString(key, Json.encodeToString(serializer, value))
+    }
+}
 
 @Composable
-fun AppNavHost(startAuthenticated: Boolean) {
-    val navController = rememberNavController()
-    val startDestination = if (startAuthenticated) AppRoute.Files.route else AppRoute.Login.route
-    val backStack by navController.currentBackStackEntryAsState()
-    val currentRoute = backStack?.destination?.route
-    val showBottomBar = currentRoute in setOf(AppRoute.Home.route, AppRoute.Files.route, AppRoute.Transfers.route, AppRoute.Settings.route)
+fun AppNavHost(
+    startAuthenticated: Boolean,
+    navController: NavHostController = rememberNavController(),
+) {
+    val startDestination: Any = if (startAuthenticated) FilesDest() else LoginDest
 
-    MaterialTheme {
-        Box(Modifier.fillMaxSize()) {
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                modifier = Modifier.fillMaxSize(),
-                enterTransition = { hyperOsEnterTransition() },
-                exitTransition = { hyperOsExitTransition() },
-                popEnterTransition = { hyperOsPopEnterTransition() },
-                popExitTransition = { hyperOsPopExitTransition() },
-            ) {
-                composable(AppRoute.Login.route) {
-                    LoginScreen(onLoginSuccess = {
-                        navController.navigate(AppRoute.Files.create()) {
-                            popUpTo(AppRoute.Login.route) { inclusive = true }
-                        }
-                    })
-                }
-                composable(AppRoute.Home.route) {
-                    HomeScreen(
-                        onStorageClick = { mountPath: String ->
-                            navController.navigate(AppRoute.Files.create(mountPath))
-                        },
-                    )
-                }
-                composable(
-                    route = AppRoute.Files.route,
-                    arguments = listOf(navArgument("path") { type = NavType.StringType; defaultValue = "/" }),
-                ) { entry ->
-                    val path = URLDecoder.decode(entry.arguments?.getString("path") ?: "/", StandardCharsets.UTF_8.name())
-                    FileScreen(
-                        initialPath = path,
-                        onPreview = { item ->
-                            navController.navigate(
-                                AppRoute.Preview.create(
+    Box(Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = { hyperOsEnterTransition() },
+            exitTransition = { hyperOsExitTransition() },
+            popEnterTransition = { hyperOsPopEnterTransition() },
+            popExitTransition = { hyperOsPopExitTransition() },
+        ) {
+            composable<LoginDest> {
+                LoginScreen(onLoginSuccess = {
+                    navController.navigate(FilesDest()) {
+                        popUpTo(LoginDest) { inclusive = true }
+                    }
+                })
+            }
+            composable<HomeDest> {
+                HomeScreen(onStorageClick = { mountPath -> navController.navigate(FilesDest(mountPath)) })
+            }
+            composable<FilesDest> { entry ->
+                val dest = entry.toRoute<FilesDest>()
+                FileScreen(
+                    initialPath = dest.path,
+                    onPreview = { item ->
+                        navController.navigate(
+                            PreviewDest(
+                                PreviewDestArgs(
                                     name = item.name,
                                     path = item.path,
-                                    type = item.type,
+                                    mime = item.type.name,
                                     downloadUrl = item.downloadUrl,
                                     size = item.size,
-                                )
-                            )
-                        },
-                        onFolderNavigate = { folderPath ->
-                            navController.navigate(AppRoute.Files.create(folderPath))
-                        },
-                    )
-                }
-                composable(AppRoute.Transfers.route) { TransferScreen() }
-                composable(AppRoute.Settings.route) {
-                    SettingsScreen(
-                        onLoggedOut = {
-                            navController.navigate(AppRoute.Login.route) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        },
-                        onStorageClick = { id ->
-                            navController.navigate(AppRoute.StorageEdit.create(id))
-                        },
-                        onAdvancedSettings = {
-                            navController.navigate(AppRoute.AdminSiteSettings.route)
-                        },
-                    )
-                }
-                composable(AppRoute.AdminSiteSettings.route) {
-                    AdminSiteSettingsScreen(
-                        onBack = { navController.popBackStack() },
-                    )
-                }
-                composable(
-                    route = AppRoute.StorageEdit.route,
-                    arguments = listOf(navArgument("id") { type = NavType.LongType }),
-                ) { entry ->
-                    val id = entry.arguments?.getLong("id") ?: 0L
-                    StorageEditScreen(
-                        storageId = id,
-                        onBack = { navController.popBackStack() },
-                    )
-                }
-                composable(AppRoute.MoveCopyPicker.route) {
-                    MoveCopyTargetPickerScreen(onTargetSelected = { navController.popBackStack() })
-                }
-                composable(
-                    route = AppRoute.Preview.route,
-                    arguments = listOf(navArgument("payload") { type = NavType.StringType })
-                ) { entry ->
-                    val payload = requireNotNull(entry.arguments?.getString("payload"))
-                    val args = AppRoute.Preview.decode(payload)
-                    PreviewScreen(
-                        name = args.name,
-                        path = args.path,
-                        type = args.type,
-                        downloadUrl = args.downloadUrl,
-                        size = args.size,
-                        onBack = { navController.popBackStack() },
-                    )
-                }
-            }
-            if (showBottomBar) {
-                CloudBottomBar(
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                                ),
+                            ),
+                        )
                     },
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    onFolderNavigate = { folderPath -> navController.navigate(FilesDest(folderPath)) },
+                )
+            }
+            composable<TransfersDest> { TransferScreen() }
+            composable<SettingsDest> {
+                SettingsScreen(
+                    onLoggedOut = {
+                        navController.navigate(LoginDest) { popUpTo(0) { inclusive = true } }
+                    },
+                    onStorageClick = { id -> navController.navigate(StorageEditDest(id.toInt())) },
+                    onAdvancedSettings = { navController.navigate(AdminSiteSettingsDest) },
+                )
+            }
+            composable<AdminSiteSettingsDest> {
+                AdminSiteSettingsScreen(onBack = { navController.popBackStack() })
+            }
+            composable<StorageEditDest> { entry ->
+                val id = entry.toRoute<StorageEditDest>().id
+                StorageEditScreen(storageId = id.toLong(), onBack = { navController.popBackStack() })
+            }
+            composable<MoveCopyPickerDest> {
+                MoveCopyTargetPickerScreen(onTargetSelected = { navController.popBackStack() })
+            }
+            composable<PreviewDest>(
+                typeMap = mapOf(typeOf<PreviewDestArgs>() to PreviewArgsNavType),
+            ) { entry ->
+                val args = entry.toRoute<PreviewDest>().args
+                val fileType = runCatching { FileType.valueOf(args.mime) }.getOrDefault(FileType.Other)
+                PreviewScreen(
+                    name = args.name,
+                    path = args.path,
+                    type = fileType,
+                    downloadUrl = args.downloadUrl,
+                    size = args.size,
+                    onBack = { navController.popBackStack() },
                 )
             }
         }
+        AppBottomNavBar(navController, Modifier.align(Alignment.BottomCenter))
     }
 }
