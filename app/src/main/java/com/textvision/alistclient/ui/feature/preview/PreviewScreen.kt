@@ -80,7 +80,7 @@ fun PreviewScreen(
         Card(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             when (mode) {
                 is PreviewMode.Image -> ImagePreview(mode.url)
-                is PreviewMode.Text -> TextPreview(mode.url, viewModel.textRepository)
+                is PreviewMode.Text -> TextPreview(mode.url, viewModel::fetchText)
                 is PreviewMode.Audio -> AudioPreview(mode.url)
                 is PreviewMode.TextTooLarge -> PreviewFallback(
                     title = "文件过大",

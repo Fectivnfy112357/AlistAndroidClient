@@ -8,9 +8,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PreviewViewModel @Inject constructor(
-    val textRepository: PreviewTextRepository,
+    private val textRepository: PreviewTextRepository,
     private val transferManager: TransferManager,
 ) : ViewModel() {
     fun enqueueDownload(path: String, name: String): String =
         transferManager.enqueueDownload(remotePath = path, fileName = name)
+
+    suspend fun fetchText(url: String): String =
+        textRepository.fetch(url).getOrElse { "无法读取文件" }
 }

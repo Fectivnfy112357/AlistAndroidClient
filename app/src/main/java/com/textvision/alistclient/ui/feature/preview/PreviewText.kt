@@ -14,13 +14,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.preview.PreviewTextRepository
 
 @Composable
-internal fun TextPreview(url: String, textRepository: PreviewTextRepository) {
+internal fun TextPreview(url: String, fetch: suspend (String) -> String) {
     var text by remember(url) { mutableStateOf("加载中") }
     LaunchedEffect(url) {
-        text = textRepository.fetch(url).getOrElse { "无法读取文件" }
+        text = fetch(url)
     }
     Text(
         text = text,

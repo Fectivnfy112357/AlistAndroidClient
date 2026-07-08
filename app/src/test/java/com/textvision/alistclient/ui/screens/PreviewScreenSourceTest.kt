@@ -22,9 +22,12 @@ class PreviewScreenSourceTest {
         val text = File("src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewText.kt").readText()
         val audio = File("src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewAudio.kt").readText()
         val fallback = File("src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewFallback.kt").readText()
+        val viewModel = File(viewModelPath).readText()
 
         assertTrue("Image preview uses AsyncImage", image.contains("AsyncImage"))
-        assertTrue("Text preview uses PreviewTextRepository", text.contains("PreviewTextRepository"))
+        // Text repository is now owned by the view model; the composable receives a suspend fetch fn.
+        assertTrue("Text preview receives a suspend fetch fn", text.contains("fetch: suspend (String) -> String"))
+        assertTrue("View model wires PreviewTextRepository", viewModel.contains("PreviewTextRepository"))
         assertTrue("Audio preview wires MediaPlayer", audio.contains("MediaPlayer"))
         assertTrue("Fallback preview covers TextTooLarge/External/Unavailable", fallback.contains("PreviewFallback"))
     }
