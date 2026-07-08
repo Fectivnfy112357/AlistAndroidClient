@@ -8,6 +8,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
+@Deprecated(
+    message = "使用 Breadcrumb 替代；Phase 4 删除",
+    replaceWith = ReplaceWith("Breadcrumb(path, onNavigate, modifier)"),
+)
 @Composable
 fun BreadcrumbBar(path: String, onNavigate: (String) -> Unit, modifier: Modifier = Modifier) {
     val parts = path.trim('/').split('/').filter { it.isNotBlank() }
