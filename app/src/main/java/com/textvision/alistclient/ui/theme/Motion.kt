@@ -1,8 +1,12 @@
 package com.textvision.alistclient.ui.theme
 
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
@@ -18,20 +22,40 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 
-internal object CloudMotion {
-    const val DurationShortMillis = 120
-    const val DurationMediumMillis = 240
-    const val DurationLongMillis = 300
+object CloudMotion {
+    // Spring specs
+    val SpringFast: AnimationSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessHigh
+    )
+    val SpringMedium: AnimationSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
+    val SpringSlow: AnimationSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessLow
+    )
+    // Tween durations
+    const val TweenShort: Int = 120
+    const val TweenMedium: Int = 240
+    const val TweenLong: Int = 400
+    val Easing = FastOutSlowInEasing
 
-    const val PressedScale = 0.94f
-    const val RestScale = 1f
+    // Internal (legacy)
+    internal const val DurationShortMillis = 120
+    internal const val DurationMediumMillis = 240
+    internal const val DurationLongMillis = 300
 
-    val FloatTween: FiniteAnimationSpec<Float> = tween(
+    internal const val PressedScale = 0.94f
+    internal const val RestScale = 1f
+
+    internal val FloatTween: FiniteAnimationSpec<Float> = tween(
         durationMillis = DurationMediumMillis,
         easing = LinearEasing,
     )
 
-    val OffsetTween: FiniteAnimationSpec<IntOffset> = tween(
+    internal val OffsetTween: FiniteAnimationSpec<IntOffset> = tween(
         durationMillis = DurationMediumMillis,
         easing = LinearEasing,
     )
