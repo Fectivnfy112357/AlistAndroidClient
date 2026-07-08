@@ -57,7 +57,7 @@ class AdminRepositoryTest {
         }
         tokenProvider = AuthTokenProvider()
         session = SessionManager(store, tokenProvider)
-        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build()
+        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build()
         api = retrofit2.Retrofit.Builder()
             .baseUrl(server.url("/"))
             .client(client)
@@ -91,7 +91,7 @@ class AdminRepositoryTest {
         }
         val probeApi = retrofit2.Retrofit.Builder()
             .baseUrl(server.url("/"))
-            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build())
+            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build())
             .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(ProbeApi::class.java)

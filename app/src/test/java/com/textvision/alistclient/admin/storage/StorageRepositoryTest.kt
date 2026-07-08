@@ -55,7 +55,7 @@ class StorageRepositoryTest {
         }
         tokenProvider = AuthTokenProvider()
         session = SessionManager(store, tokenProvider)
-        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider)).build()
+        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokenProvider, com.textvision.alistclient.auth.SessionEventBus())).build()
         api = retrofit2.Retrofit.Builder()
             .baseUrl(server.url("/"))
             .client(client)

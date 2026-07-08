@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 class NetworkModuleTest {
     @Test
     fun okHttpLoggingDoesNotBufferLargeTransferBodies() {
-        val client = NetworkModule.provideOkHttpClient(AuthInterceptor(AuthTokenProvider()))
+        val client = NetworkModule.provideOkHttpClient(AuthInterceptor(AuthTokenProvider(), com.textvision.alistclient.auth.SessionEventBus()))
         val logging = client.interceptors.filterIsInstance<HttpLoggingInterceptor>().single()
 
         assertNotEquals(HttpLoggingInterceptor.Level.BODY, logging.level)
@@ -19,7 +19,7 @@ class NetworkModuleTest {
 
     @Test
     fun okHttpAllowsLongRunningLargeFileTransfers() {
-        val client = NetworkModule.provideOkHttpClient(AuthInterceptor(AuthTokenProvider()))
+        val client = NetworkModule.provideOkHttpClient(AuthInterceptor(AuthTokenProvider(), com.textvision.alistclient.auth.SessionEventBus()))
 
         assertEquals(TimeUnit.SECONDS.toMillis(15).toInt(), client.connectTimeoutMillis)
         assertEquals(0, client.writeTimeoutMillis)
