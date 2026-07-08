@@ -28,6 +28,10 @@ import com.textvision.alistclient.ui.theme.CloudWarningText
 
 enum class CloudBannerKind { Info, Warning, Error }
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("StatusBanner(kind, message, actionLabel, onAction, modifier)"),
+)
 @Composable
 fun CloudStatusBanner(
     text: String,

@@ -14,6 +14,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("EmptyState(title, icon, message, actionLabel, onAction, modifier)"),
+)
 @Composable
 fun CloudEmptyState(
     title: String,
@@ -44,6 +48,10 @@ fun CloudEmptyState(
     }
 }
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("EmptyState"),
+)
 @Composable
 fun CloudLoadingState(text: String = "加载中") {
     Column(

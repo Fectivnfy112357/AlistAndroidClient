@@ -33,6 +33,10 @@ import com.textvision.alistclient.ui.theme.CloudTextPrimary
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
 import com.textvision.alistclient.ui.theme.cloudClickable
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("AppBottomBar(currentRoute, items, onNavigate)"),
+)
 @Composable
 fun CloudBottomBar(
     currentRoute: String?,

@@ -24,6 +24,10 @@ import com.textvision.alistclient.ui.theme.CloudPrimarySoft
 import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.cloudClickable
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("ActionButton(text, onClick, modifier, variant, enabled, loading, leadingIcon)"),
+)
 @Composable
 fun CloudRoundIconButton(
     icon: ImageVector,
@@ -45,6 +49,10 @@ fun CloudRoundIconButton(
     }
 }
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("ActionButton(text, onClick, modifier, variant, enabled, loading, leadingIcon)"),
+)
 @Composable
 fun CloudPillButton(
     text: String,

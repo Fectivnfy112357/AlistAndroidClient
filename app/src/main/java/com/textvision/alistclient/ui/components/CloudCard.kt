@@ -13,6 +13,10 @@ import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.CloudSurface
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("Surface(modifier, shape = MaterialTheme.shapes.medium, content)"),
+)
 @Composable
 fun CloudCard(
     modifier: Modifier = Modifier,

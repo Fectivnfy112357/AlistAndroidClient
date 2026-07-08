@@ -32,6 +32,10 @@ fun bottomBarInset(): Dp {
     return navInset + CloudBottomBarReservedHeight
 }
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("AppScaffold(modifier, topBar, bottomBar, content)"),
+)
 @Composable
 fun CloudScaffold(
     modifier: Modifier = Modifier,

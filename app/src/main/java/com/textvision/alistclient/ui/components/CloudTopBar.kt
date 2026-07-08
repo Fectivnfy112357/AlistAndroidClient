@@ -14,6 +14,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.theme.CloudTextSecondary
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("AppTopBar(title, subtitle, onNavigateUp, actions)"),
+)
 @Composable
 fun CloudTopBar(
     title: String,

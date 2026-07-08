@@ -20,6 +20,10 @@ import com.textvision.alistclient.ui.theme.CloudShapes
 import com.textvision.alistclient.ui.theme.CloudSurfaceMuted
 import com.textvision.alistclient.ui.theme.CloudTextTertiary
 
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("SearchField(query, onQueryChange, placeholder, modifier)"),
+)
 @Composable
 fun CloudSearchBar(
     value: String,

@@ -31,6 +31,10 @@ import com.textvision.alistclient.ui.theme.cloudClickable
  * 统一风格的确认弹框，替代原始 Material3 [androidx.compose.material3.AlertDialog]，
  * 与 Cloud 设计系统的圆角、配色、按钮保持一致。
  */
+@Deprecated(
+    message = "使用 M3 Expressive 组件替代；Phase 4 删除",
+    replaceWith = ReplaceWith("AppAlertDialog(title, message, confirmLabel, onConfirm, dismissLabel, onDismiss, destructive)"),
+)
 @Composable
 fun CloudAlertDialog(
     title: String,
