@@ -88,7 +88,7 @@ fun AppNavHost(
                                 PreviewDestArgs(
                                     name = item.name,
                                     path = item.path,
-                                    mime = item.type.name,
+                                    fileTypeName = item.type.name,
                                     downloadUrl = item.downloadUrl,
                                     size = item.size,
                                 ),
@@ -122,7 +122,7 @@ fun AppNavHost(
                 typeMap = mapOf(typeOf<PreviewDestArgs>() to PreviewArgsNavType),
             ) { entry ->
                 val args = entry.toRoute<PreviewDest>().args
-                val fileType = runCatching { FileType.valueOf(args.mime) }.getOrDefault(FileType.Other)
+                val fileType = runCatching { FileType.valueOf(args.fileTypeName) }.getOrDefault(FileType.Other)
                 PreviewScreen(
                     name = args.name,
                     path = args.path,

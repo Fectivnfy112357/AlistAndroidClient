@@ -25,7 +25,7 @@ data object HomeDest
 data class PreviewDestArgs(
     val name: String,
     val path: String,
-    val mime: String,
+    val fileTypeName: String,
     val downloadUrl: String?,
     val size: Long,
 )
