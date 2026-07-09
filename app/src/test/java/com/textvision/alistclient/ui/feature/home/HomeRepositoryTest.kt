@@ -24,8 +24,10 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeRepositoryTest {
@@ -147,21 +149,39 @@ class HomeRepositoryTest {
         assertEquals(500, (r as ApiResult.Failure).code)
     }
 
-    @Test fun retrySectionRefetchesOnlyThatSection() = runTest {
-        // First load: public ok, storage ok, user ok, role ok, session ok, 7×task ok
-        enqueue(publicOk()); enqueue(storageOk()); enqueue(userOk()); enqueue(roleOk()); enqueue(sessionOk())
-        repeat(7) { enqueue(taskOk()) }
-        val r1 = repo.loadDashboard() as ApiResult.Success
-        val countAfterFirst = server.requestCount
+    @Test fun retrySectionRefetchesOnlyThatSection() = runTest(UnconfinedTestDispatcher()) {
+        installPathDispatcher()
 
-        // retry storage
-        enqueue("""{"code":200,"message":"success","data":{"content":[{"mount_path":"/new","driver":"Local","status":"work"}],"total":1}}""")
+        // First load: 1 public + 1 storage + 1 user + 1 role + 1 session + 7 task = 12 requests.
+        val r1 = repo.loadDashboard() as ApiResult.Success
+        val initialStorage = r1.data.storageSection as SectionResult.Ok
+        assertEquals("/local", initialStorage.data.storages.first().mountPath)
+
+        // Drain the initial request queue so takeRequest only sees the retry.
+        repeat(server.requestCount) {
+            server.takeRequest(2_000, TimeUnit.MILLISECONDS)
+                ?: fail("Expected initial request within 2s at iteration $it; remaining=${server.requestCount}")
+        }
+
+        // path dispatcher responds to the retry based on URL pattern.
+        // Retry only the storage section.
         val r2 = repo.retrySection(r1.data, SectionKey.Storage)
         val storage = r2.storageSection as SectionResult.Ok
-        assertEquals("/new", storage.data.storages.first().mountPath)
-        assertEquals(countAfterFirst + 1, server.requestCount)
-        // public unchanged
-        assertEquals((r1.data.publicSection as SectionResult.Ok).data.siteTitle,
-            (r2.publicSection as SectionResult.Ok).data.siteTitle)
+        assertEquals("/local", storage.data.storages.first().mountPath)
+
+        // The retry MUST hit /api/admin/storage/list exactly once.
+        val retryRequest: RecordedRequest = server.takeRequest(2_000, TimeUnit.MILLISECONDS)!!
+        assertEquals("GET", retryRequest.method)
+        assertTrue(retryRequest.path?.contains("/api/admin/storage/list") == true)
+
+        // No additional request after the retry (public section was NOT refetched).
+        val extra = server.takeRequest(200, TimeUnit.MILLISECONDS)
+        assertEquals(null, extra)
+
+        // publicSection unchanged.
+        assertEquals(
+            (r1.data.publicSection as SectionResult.Ok).data.siteTitle,
+            (r2.publicSection as SectionResult.Ok).data.siteTitle,
+        )
     }
 }
