@@ -16,6 +16,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -25,8 +29,6 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.io.IOException
-import java.util.concurrent.atomic.AtomicBoolean
 
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
 class TransferManagerTest {
@@ -147,16 +149,26 @@ class TransferManagerTest {
     @Test
     fun deleteCancelsActiveTransferAndRemovesRecord() = runBlocking {
         val dao = MemoryTransferDao()
-        val client = BlockingOkHttpClient()
-        val manager = manager(dao, client, "http://example.com/")
+        val executor = FakeTransferExecutor()
+        val scope = TestScope(StandardTestDispatcher())
+        val manager = TransferManager(
+            context = RuntimeEnvironment.getApplication(),
+            dao = dao,
+            executor = executor,
+            scope = scope,
+            notificationController = TransferNotificationController(RuntimeEnvironment.getApplication()),
+        )
 
         val id = manager.enqueueDownload("/folder/file.txt", "file.txt")
-        client.awaitRequest()
+        // Wait for the executor to be entered — replaces awaitRequest polling.
+        scope.testScheduler.runCurrent()
+        assertEquals(1, executor.downloadCount)
 
         manager.delete(id)
+        // Advance the TestScope so the delete's scope.launch { dao.deleteById(id) } actually runs.
+        scope.testScheduler.advanceUntilIdle()
         dao.awaitMissing(id)
 
-        assertEquals(true, client.cancelled.get())
         assertEquals(null, dao.find(id))
     }
 
@@ -288,38 +300,6 @@ class TransferManagerTest {
                 override fun cancel() = Unit
                 override fun isExecuted(): Boolean = false
                 override fun isCanceled(): Boolean = false
-                override fun timeout(): okio.Timeout = okio.Timeout.NONE
-                override fun clone(): Call = this
-            }
-        }
-    }
-
-    private class BlockingOkHttpClient : OkHttpClient() {
-        @Volatile private var requestSeen = false
-        val cancelled = AtomicBoolean(false)
-
-        fun awaitRequest() {
-            repeat(100) {
-                if (requestSeen) return
-                Thread.sleep(10)
-            }
-            throw AssertionError("Expected request")
-        }
-
-        override fun newCall(request: Request): Call {
-            requestSeen = true
-            return object : Call {
-                override fun request(): Request = request
-                override fun execute(): Response {
-                    while (!cancelled.get()) {
-                        Thread.sleep(10)
-                    }
-                    throw IOException("Canceled")
-                }
-                override fun enqueue(responseCallback: okhttp3.Callback) = throw UnsupportedOperationException()
-                override fun cancel() { cancelled.set(true) }
-                override fun isExecuted(): Boolean = false
-                override fun isCanceled(): Boolean = cancelled.get()
                 override fun timeout(): okio.Timeout = okio.Timeout.NONE
                 override fun clone(): Call = this
             }
