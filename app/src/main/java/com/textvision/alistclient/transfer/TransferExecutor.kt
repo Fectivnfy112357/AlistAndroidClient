@@ -100,6 +100,16 @@ sealed interface TransferOutcome {
  * via [invokeOnCompletion]. When the caller (TransferManager) cancels the
  * parent job, the call's [Call.cancel] fires so the blocking [Call.execute]
  * unblocks and surfaces the cancellation through the standard exception path.
+ *
+ * **API 29+ requirement for downloads:** [runDownload] returns
+ * `TransferOutcome.Failed("需要 Android 10 或更高版本以保存到下载目录")` when
+ * `Build.VERSION.SDK_INT < Q`. This is NOT a `@RequiresApi` lint suppression —
+ * it guards a real silent-failure bug: `MediaStore.Downloads.EXTERNAL_CONTENT_URI`
+ * with `IS_PENDING` returns null or stale URIs on API 26-28, leaving users with
+ * a phantom "success" and no file. Do NOT delete this branch without first
+ * either bumping minSdk to 29 or implementing a legacy
+ * `Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)` fallback.
+ * See `docs/superpowers/specs/2026-07-09-followups-fixes-and-deviations-design.md` §3.2.
  */
 @Singleton
 class RealTransferExecutor @Inject constructor(
@@ -246,6 +256,7 @@ class RealTransferExecutor @Inject constructor(
 
     private fun transferUrl(path: String): String = transferUrl(path, null)
 
+    /** SDK guard lives in [runDownload]; only reachable on API 29+. */
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun createDownloadUri(displayName: String): Uri {
         val values = ContentValues().apply {
@@ -258,6 +269,7 @@ class RealTransferExecutor @Inject constructor(
         }
     }
 
+    /** SDK guard lives in [runDownload]; only reachable on API 29+. */
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun publishDownloadUri(uri: Uri) {
         val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
