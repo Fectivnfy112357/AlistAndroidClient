@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.ui.theme.CloudMotion
+import com.textvision.alistclient.ui.theme.AppMotion
 
 @Composable
 fun TransferProgress(
@@ -17,7 +17,7 @@ fun TransferProgress(
 ) {
     val animated by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = CloudMotion.SpringFast,
+        animationSpec = AppMotion.SpringFast,
         label = "transferProgress",
     )
     LinearProgressIndicator(

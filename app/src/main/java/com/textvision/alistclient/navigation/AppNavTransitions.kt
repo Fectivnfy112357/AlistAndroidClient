@@ -12,13 +12,13 @@ import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
-import com.textvision.alistclient.ui.theme.CloudMotion
+import com.textvision.alistclient.ui.theme.AppMotion
 
-internal const val AppNavMotionDurationMillis = CloudMotion.DurationMediumMillis
+internal const val AppNavMotionDurationMillis = AppMotion.DurationMediumMillis
 
-private val AppNavTween = CloudMotion.FloatTween
+private val AppNavTween = AppMotion.FloatTween
 
-private val AppNavOffsetTween = CloudMotion.OffsetTween
+private val AppNavOffsetTween = AppMotion.OffsetTween
 
 private fun NavDestination?.isMainTab(): Boolean = this != null && (
     hasRoute(FilesDest::class) ||

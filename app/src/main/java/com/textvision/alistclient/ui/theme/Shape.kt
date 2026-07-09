@@ -19,12 +19,3 @@ val AppShapes = Shapes(
     large = RoundedCornerShape(Corner.Large),
     extraLarge = RoundedCornerShape(Corner.ExtraLarge),
 )
-
-object CloudShapes {
-    val Card = RoundedCornerShape(24.dp)
-    val Panel = RoundedCornerShape(28.dp)
-    val Control = RoundedCornerShape(18.dp)
-    val IconTile = RoundedCornerShape(15.dp)
-    val BottomBar = RoundedCornerShape(26.dp)
-    val Pill = RoundedCornerShape(999.dp)
-}

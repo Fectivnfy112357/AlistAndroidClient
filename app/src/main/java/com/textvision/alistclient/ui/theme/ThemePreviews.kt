@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -28,6 +29,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+
+private val PreviewCardShape = RoundedCornerShape(24.dp)
+private val PreviewPanelShape = RoundedCornerShape(28.dp)
+private val PreviewPillShape = RoundedCornerShape(999.dp)
 
 @Composable
 private fun ColorSwatch(name: String, color: Color) {
@@ -103,29 +108,29 @@ private fun ShapePreview() {
                     Surface(shape = AppShapes.medium, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
                     Surface(shape = AppShapes.large, color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
                 }
-                Text("CloudShapes Card / Panel / Pill")
+                Text("AppShapes Card / Panel / Pill")
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Surface(shape = CloudShapes.Card, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
-                    Surface(shape = CloudShapes.Panel, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
-                    Surface(shape = CloudShapes.Pill, color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
+                    Surface(shape = PreviewCardShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
+                    Surface(shape = PreviewPanelShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
+                    Surface(shape = PreviewPillShape, color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.size(72.dp, 40.dp)) {}
                 }
             }
         }
     }
 }
 
-@Preview(name = "CloudMotion SpringFast", showBackground = true, widthDp = 360)
+@Preview(name = "AppMotion SpringFast", showBackground = true, widthDp = 360)
 @Composable
 private fun MotionPreview() {
     var toggle by remember { mutableStateOf(false) }
     AlistClientTheme(dynamicColor = false) {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("CloudMotion.SpringFast animated width")
+                Text("AppMotion.SpringFast animated width")
                 val barColor = MaterialTheme.colorScheme.primary
                 val width by animateFloatAsState(
                     targetValue = if (toggle) 300f else 100f,
-                    animationSpec = CloudMotion.SpringFast,
+                    animationSpec = AppMotion.SpringFast,
                     label = "fast",
                 )
                 Canvas(modifier = Modifier.fillMaxWidth().height(40.dp)) {

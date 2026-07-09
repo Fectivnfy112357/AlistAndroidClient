@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.sp
 
 // Material 3 Expressive Type Scale (spec §3.2)
 // All styles use FontFamily.Default (system font) per global constraint.
-// Retains CloudTypography alias for backward compatibility.
 val AppTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.Default,
@@ -116,6 +115,3 @@ val AppTypography = Typography(
         letterSpacing = 0.5.sp,
     ),
 )
-
-/** Alias for backward compatibility with existing code referencing CloudTypography. */
-val CloudTypography = AppTypography

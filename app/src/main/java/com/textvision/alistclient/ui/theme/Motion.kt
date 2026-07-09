@@ -22,7 +22,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 
-object CloudMotion {
+object AppMotion {
     // Spring specs
     val SpringFast: AnimationSpec<Float> = spring(
         dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -42,7 +42,6 @@ object CloudMotion {
     const val TweenLong: Int = 400
     val Easing = FastOutSlowInEasing
 
-    // Internal (legacy)
     internal const val DurationShortMillis = 120
     internal const val DurationMediumMillis = 240
     internal const val DurationLongMillis = 300
@@ -61,6 +60,29 @@ object CloudMotion {
     )
 }
 
+/**
+ * @deprecated Use [AppMotion]. Retained as a forwarding alias during the
+ * UI Expressive followup migration; will be removed once no production code
+ * references it. See `docs/superpowers/specs/2026-07-09-followups-fixes-and-deviations-design.md` §3.2.
+ */
+@Deprecated("Use AppMotion", ReplaceWith("AppMotion"))
+object CloudMotion {
+    val SpringFast: AnimationSpec<Float> get() = AppMotion.SpringFast
+    val SpringMedium: AnimationSpec<Float> get() = AppMotion.SpringMedium
+    val SpringSlow: AnimationSpec<Float> get() = AppMotion.SpringSlow
+    const val TweenShort: Int = AppMotion.TweenShort
+    const val TweenMedium: Int = AppMotion.TweenMedium
+    const val TweenLong: Int = AppMotion.TweenLong
+    val Easing get() = AppMotion.Easing
+    internal const val DurationShortMillis: Int = AppMotion.DurationShortMillis
+    internal const val DurationMediumMillis: Int = AppMotion.DurationMediumMillis
+    internal const val DurationLongMillis: Int = AppMotion.DurationLongMillis
+    internal const val PressedScale: Float = AppMotion.PressedScale
+    internal const val RestScale: Float = AppMotion.RestScale
+    internal val FloatTween: FiniteAnimationSpec<Float> get() = AppMotion.FloatTween
+    internal val OffsetTween: FiniteAnimationSpec<IntOffset> get() = AppMotion.OffsetTween
+}
+
 @Stable
 fun Modifier.cloudClickable(
     enabled: Boolean = true,
@@ -71,9 +93,9 @@ fun Modifier.cloudClickable(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (enabled && pressed) CloudMotion.PressedScale else CloudMotion.RestScale,
+        targetValue = if (enabled && pressed) AppMotion.PressedScale else AppMotion.RestScale,
         animationSpec = tween(
-            durationMillis = CloudMotion.DurationShortMillis,
+            durationMillis = AppMotion.DurationShortMillis,
             easing = LinearEasing,
         ),
         label = "cloud click scale",

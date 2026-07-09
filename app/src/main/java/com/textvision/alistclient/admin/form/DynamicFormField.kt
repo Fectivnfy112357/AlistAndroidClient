@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.ui.theme.CloudShapes
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +74,7 @@ fun DynamicFormField(
                 onValueChange = { onValueChange(it) },
                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                 minLines = 3,
-                shape = CloudShapes.Control,
+                shape = RoundedCornerShape(18.dp),
                 colors = CloudFieldColors,
             )
         }
@@ -145,7 +145,7 @@ private fun TextFieldRow(
             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
             singleLine = keyboardType != KeyboardType.Text || true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            shape = CloudShapes.Control,
+            shape = RoundedCornerShape(18.dp),
             colors = CloudFieldColors,
         )
     }
@@ -192,14 +192,14 @@ private fun SelectRow(
                 readOnly = true,
                 modifier = Modifier.menuAnchor().fillMaxWidth(),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                shape = CloudShapes.Control,
+                shape = RoundedCornerShape(18.dp),
                 colors = CloudFieldColors,
             )
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
                 modifier = Modifier
-                    .clip(CloudShapes.Control)
+                    .clip(RoundedCornerShape(18.dp))
                     .background(MaterialTheme.colorScheme.surface),
             ) {
                 options.forEach { (key, labelText) ->
