@@ -66,6 +66,21 @@ interface TransferExecutor {
      * for coroutine cancellation to propagate through Dispatchers.IO.
      */
     fun cancel(id: String)
+
+    /**
+     * Cancel every in-flight IO registered with this executor. Used by
+     * TransferManager.clearAllTasks to interrupt every blocking
+     * [okhttp3.Call.execute] in a single synchronous sweep before the per-id
+     * coroutine cancellation propagates through Dispatchers.IO.
+     */
+    fun cancelAll()
+
+    /**
+     * Number of in-flight IO operations currently registered. Used by
+     * TransferManager to size the foreground notification summary; mirrored
+     * pre-refactor from `TransferManager.activeCalls.size`.
+     */
+    fun activeCallCount(): Int
 }
 
 /** Outcome surfaced by [TransferExecutor.runDownload]/[runUpload] to TransferManager. */
@@ -213,6 +228,15 @@ class RealTransferExecutor @Inject constructor(
     override fun cancel(id: String) {
         activeCalls.remove(id)?.cancel()
     }
+
+    override fun cancelAll() {
+        // Snapshot entries then cancel; ConcurrentHashMap is safe to mutate
+        // while iterating but the goal here is to call cancel() exactly once
+        // per call regardless of intermediate `finally` removal races.
+        activeCalls.values.toList().forEach { it.cancel() }
+    }
+
+    override fun activeCallCount(): Int = activeCalls.size
 
     private fun uploadRequest(uploadPath: String, body: RequestBody): Request = Request.Builder()
         .url(transferUrl("api/fs/put"))

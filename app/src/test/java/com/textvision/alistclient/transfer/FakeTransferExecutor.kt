@@ -25,4 +25,8 @@ class FakeTransferExecutor : TransferExecutor {
     ): TransferOutcome = TransferOutcome.Success
 
     override fun cancel(id: String) = Unit
+
+    override fun cancelAll() = Unit
+
+    override fun activeCallCount(): Int = 0
 }

@@ -196,8 +196,7 @@ class TransferManager @Inject constructor(
         activeJobs.forEach { (_, job) -> job.cancel() }
         activeJobs.clear()
         cancelNotified.clear()
-        // Cancel in-flight IO via the executor too; coroutine cancellation alone
-        // cannot interrupt a blocking Call.execute().
+        executor.cancelAll()
         scope.launch { dao.deleteAll() }
     }
 
@@ -259,7 +258,7 @@ class TransferManager @Inject constructor(
         if (isActive(generation, id)) {
             dao.updateStatus(id, status, reason, System.currentTimeMillis())
             when (status) {
-                TransferStatus.Uploading, TransferStatus.Downloading -> notificationController.showProgressSummary(1, null)
+                TransferStatus.Uploading, TransferStatus.Downloading -> notificationController.showProgressSummary(executor.activeCallCount().coerceAtLeast(1), null)
                 TransferStatus.Success, TransferStatus.Failed, TransferStatus.Cancelled, TransferStatus.Interrupted -> notificationController.clearProgress()
                 TransferStatus.Waiting -> Unit
             }
