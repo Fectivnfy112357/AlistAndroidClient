@@ -22,6 +22,8 @@ import com.textvision.alistclient.network.AuthInterceptor
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.common.network.NetworkMonitor
 import com.textvision.alistclient.common.network.NetworkMonitorContract
+import com.textvision.alistclient.transfer.RealTransferExecutor
+import com.textvision.alistclient.transfer.TransferExecutor
 import com.textvision.alistclient.transfer.data.TransferDao
 import dagger.Binds
 import kotlinx.coroutines.CoroutineDispatcher
@@ -140,6 +142,10 @@ object NetworkModule {
     @ApplicationScope
     fun provideApplicationScope(@IoDispatcher dispatcher: CoroutineDispatcher): CoroutineScope =
         CoroutineScope(SupervisorJob() + dispatcher)
+
+    @Provides
+    @Singleton
+    fun provideTransferExecutor(impl: RealTransferExecutor): TransferExecutor = impl
 
     @Provides
     @Singleton

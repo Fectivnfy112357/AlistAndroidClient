@@ -10,6 +10,9 @@ import com.textvision.alistclient.transfer.data.TransferDao
 import com.textvision.alistclient.transfer.data.TransferEntity
 import com.textvision.alistclient.transfer.model.TransferStatus
 import com.textvision.alistclient.transfer.model.TransferType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -28,10 +31,26 @@ import java.util.concurrent.atomic.AtomicBoolean
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
 class TransferManagerTest {
     @Test
+    fun transferManagerAcceptsInjectedExecutorAndScope() {
+        // Compile-time check: TransferManager constructor accepts (TransferExecutor, CoroutineScope)
+        // Runtime check: a no-op FakeTransferExecutor + TestScope boots without crashing
+        val executor = FakeTransferExecutor()
+        val scope = kotlinx.coroutines.test.TestScope()
+        val manager = TransferManager(
+            context = RuntimeEnvironment.getApplication(),
+            dao = MemoryTransferDao(),
+            executor = executor,
+            scope = scope,
+            notificationController = TransferNotificationController(RuntimeEnvironment.getApplication()),
+        )
+        // Smoke: scope is reachable; no crash
+        assertEquals(executor, manager.executorForTest)
+    }
+
+    @Test
     fun downloadUsesRootDPathWhenSavedServerUrlContainsPathPrefix() {
         val client = CapturingOkHttpClient()
-        val sessionManager = savedSessionManager("http://example.com/alist/")
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), client, sessionManager)
+        val manager = manager(client, "http://example.com/alist/")
 
         manager.enqueueDownload("/folder/file.txt", "file.txt")
         client.awaitRequest()
@@ -41,24 +60,20 @@ class TransferManagerTest {
 
     @Test
     fun uploadUsesRootApiFsPutWhenSavedServerUrlContainsPathPrefix() {
-        val client = CapturingOkHttpClient()
-        val sessionManager = savedSessionManager("http://example.com/alist/")
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), client, sessionManager)
+        val executor = realExecutor(savedSessionManager("http://example.com/alist/"), CapturingOkHttpClient())
 
-        val url = TransferManager::class.java.getDeclaredMethod("transferUrl", String::class.java).apply { isAccessible = true }
-            .invoke(manager, "api/fs/put")
+        val url = RealTransferExecutor::class.java.getDeclaredMethod("transferUrl", String::class.java).apply { isAccessible = true }
+            .invoke(executor, "api/fs/put")
 
         assertEquals("http://example.com/alist/api/fs/put", url)
     }
 
     @Test
     fun downloadEncodesRawPathSegmentsWithoutDoubleEncoding() {
-        val client = CapturingOkHttpClient()
-        val sessionManager = savedSessionManager("http://example.com/alist/")
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), client, sessionManager)
+        val executor = realExecutor(savedSessionManager("http://example.com/alist/"), CapturingOkHttpClient())
 
-        val url = TransferManager::class.java.getDeclaredMethod("transferUrl", String::class.java, String::class.java).apply { isAccessible = true }
-            .invoke(manager, "d", "/space name/hash#name/percent%/a%2Fb.txt/雪.txt")
+        val url = RealTransferExecutor::class.java.getDeclaredMethod("transferUrl", String::class.java, String::class.java).apply { isAccessible = true }
+            .invoke(executor, "d", "/space name/hash#name/percent%/a%2Fb.txt/雪.txt")
 
         assertEquals("http://example.com/alist/d/space%20name/hash%23name/percent%25/a%252Fb.txt/%E9%9B%AA.txt", url)
     }
@@ -66,38 +81,38 @@ class TransferManagerTest {
 
     @Test
     fun uploadRequestAllowsAuthInterceptorToAttachToken() {
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
-        val uploadRequest = TransferManager::class.java.getDeclaredMethod("uploadRequest", String::class.java, okhttp3.RequestBody::class.java).apply { isAccessible = true }
+        val executor = realExecutor(savedSessionManager("http://example.com/alist/"), CapturingOkHttpClient())
+        val uploadRequest = RealTransferExecutor::class.java.getDeclaredMethod("uploadRequest", String::class.java, okhttp3.RequestBody::class.java).apply { isAccessible = true }
 
-        val request = uploadRequest.invoke(manager, "/target/file.txt", "ok".toRequestBody()) as Request
+        val request = uploadRequest.invoke(executor, "/target/file.txt", "ok".toRequestBody()) as Request
 
         assertEquals(null, request.header(SkipAuthRetry.HEADER))
         assertEquals(false, SkipAuthRetry.shouldSkip(request))
     }
 
     @Test fun localizeUploadFailureMapsStorageNotFoundToChinese() {
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
-        val localize = TransferManager::class.java.declaredMethods.first { it.name.startsWith("localizeUploadFailure") }.apply { isAccessible = true }
+        val executor = realExecutor(savedSessionManager("http://example.com/alist/"), CapturingOkHttpClient())
+        val localize = RealTransferExecutor::class.java.declaredMethods.first { it.name.startsWith("localizeUploadFailure") }.apply { isAccessible = true }
 
-        val mapped = localize.invoke(manager, 500, "failed get storage: storage not found; please add a storage first") as String
+        val mapped = localize.invoke(executor, 500, "failed get storage: storage not found; please add a storage first") as String
 
         assertEquals("存储未挂载，请先在 Alist 后台挂载存储", mapped)
     }
 
     @Test fun localizeUploadFailureMapsUnauthorizedToLoginPrompt() {
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
-        val localize = TransferManager::class.java.declaredMethods.first { it.name.startsWith("localizeUploadFailure") }.apply { isAccessible = true }
+        val executor = realExecutor(savedSessionManager("http://example.com/alist/"), CapturingOkHttpClient())
+        val localize = RealTransferExecutor::class.java.declaredMethods.first { it.name.startsWith("localizeUploadFailure") }.apply { isAccessible = true }
 
-        val mapped = localize.invoke(manager, 401, "token invalid") as String
+        val mapped = localize.invoke(executor, 401, "token invalid") as String
 
         assertEquals("登录已失效，请重新登录", mapped)
     }
 
     @Test fun localizeDownloadFailureMapsUnknownHostToFriendlyMessage() {
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/alist/"))
-        val localize = TransferManager::class.java.declaredMethods.first { it.name.startsWith("localizeDownloadFailure") }.apply { isAccessible = true }
+        val executor = realExecutor(savedSessionManager("http://example.com/alist/"), CapturingOkHttpClient())
+        val localize = RealTransferExecutor::class.java.declaredMethods.first { it.name.startsWith("localizeDownloadFailure") }.apply { isAccessible = true }
 
-        val mapped = localize.invoke(manager, java.net.UnknownHostException("Unable to resolve host \"x.test\"")) as String
+        val mapped = localize.invoke(executor, java.net.UnknownHostException("Unable to resolve host \"x.test\"")) as String
 
         assertEquals("无法解析服务器地址，请检查网络", mapped)
     }
@@ -108,7 +123,7 @@ class TransferManagerTest {
         val now = System.currentTimeMillis()
         dao.upsert(TransferEntity("waiting", "a", "/a", null, null, 0, 0, TransferType.Download, TransferStatus.Waiting, null, now, now))
         dao.upsert(TransferEntity("failed", "b", "/b", null, null, 0, 0, TransferType.Download, TransferStatus.Failed, "x", now, now))
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), dao, CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
+        val manager = manager(dao, CapturingOkHttpClient(), "http://example.com/")
 
         manager.markInterruptedOnStartup()
 
@@ -120,7 +135,7 @@ class TransferManagerTest {
     fun deleteRemovesCompletedTransferRecord() = runBlocking {
         val dao = MemoryTransferDao()
         val now = System.currentTimeMillis()
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), dao, CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
+        val manager = manager(dao, CapturingOkHttpClient(), "http://example.com/")
         dao.upsert(TransferEntity("done", "done.jpg", "/done.jpg", null, null, 100, 100, TransferType.Download, TransferStatus.Success, null, now, now))
 
         manager.delete("done")
@@ -133,7 +148,7 @@ class TransferManagerTest {
     fun deleteCancelsActiveTransferAndRemovesRecord() = runBlocking {
         val dao = MemoryTransferDao()
         val client = BlockingOkHttpClient()
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), dao, client, savedSessionManager("http://example.com/"))
+        val manager = manager(dao, client, "http://example.com/")
 
         val id = manager.enqueueDownload("/folder/file.txt", "file.txt")
         client.awaitRequest()
@@ -147,31 +162,31 @@ class TransferManagerTest {
 
     @Test
     fun sanitizeUploadPathRejectsFileNamesInvalidInFileBrowser() {
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
-        val sanitize = TransferManager::class.java.getDeclaredMethod("sanitizeUploadPath", String::class.java, String::class.java).apply { isAccessible = true }
+        val executor = realExecutor(savedSessionManager("http://example.com/"), CapturingOkHttpClient())
+        val sanitize = RealTransferExecutor::class.java.getDeclaredMethod("sanitizeUploadPath", String::class.java, String::class.java).apply { isAccessible = true }
 
-        assertEquals(null, sanitize.invoke(manager, "/target", "."))
-        assertEquals(null, sanitize.invoke(manager, "/target", ".."))
-        assertEquals(null, sanitize.invoke(manager, "/target", "a/b.txt"))
-        assertEquals(null, sanitize.invoke(manager, "/target", "a\b.txt"))
-        assertEquals(null, sanitize.invoke(manager, "/target", "ab.txt"))
-        assertEquals(null, sanitize.invoke(manager, "/target", "a".repeat(256)))
-        assertEquals("/target/good.txt", sanitize.invoke(manager, "/target", "good.txt"))
+        assertEquals(null, sanitize.invoke(executor, "/target", "."))
+        assertEquals(null, sanitize.invoke(executor, "/target", ".."))
+        assertEquals(null, sanitize.invoke(executor, "/target", "a/b.txt"))
+        assertEquals(null, sanitize.invoke(executor, "/target", "a\\b.txt"))
+        assertEquals(null, sanitize.invoke(executor, "/target", "ab.txt"))
+        assertEquals(null, sanitize.invoke(executor, "/target", "a".repeat(256)))
+        assertEquals("/target/good.txt", sanitize.invoke(executor, "/target", "good.txt"))
     }
 
     @Test
     fun sanitizeUploadPathEncodesNonAsciiSegmentsForFilePathHeader() {
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
-        val sanitize = TransferManager::class.java.getDeclaredMethod("sanitizeUploadPath", String::class.java, String::class.java).apply { isAccessible = true }
+        val executor = realExecutor(savedSessionManager("http://example.com/"), CapturingOkHttpClient())
+        val sanitize = RealTransferExecutor::class.java.getDeclaredMethod("sanitizeUploadPath", String::class.java, String::class.java).apply { isAccessible = true }
 
-        assertEquals("/%E6%88%91%E7%9A%84%E6%96%87%E4%BB%B6/alist-500mb-test.bin", sanitize.invoke(manager, "/我的文件", "alist-500mb-test.bin"))
+        assertEquals("/%E6%88%91%E7%9A%84%E6%96%87%E4%BB%B6/alist-500mb-test.bin", sanitize.invoke(executor, "/我的文件", "alist-500mb-test.bin"))
     }
 
     @Test
     fun alistUploadResultTreatsNon200JsonCodeAsFailure() {
-        val manager = TransferManager(RuntimeEnvironment.getApplication(), MemoryTransferDao(), CapturingOkHttpClient(), savedSessionManager("http://example.com/"))
-        val parser = TransferManager::class.java.getDeclaredMethod("toAlistUploadResult", String::class.java).apply { isAccessible = true }
-        val result = parser.invoke(manager, """{"code":500,"message":"object not found","data":null}""")
+        val executor = realExecutor(savedSessionManager("http://example.com/"), CapturingOkHttpClient())
+        val parser = RealTransferExecutor::class.java.getDeclaredMethod("toAlistUploadResult", String::class.java).apply { isAccessible = true }
+        val result = parser.invoke(executor, """{"code":500,"message":"object not found","data":null}""")
         val isSuccess = result!!::class.java.getDeclaredMethod("isSuccess").apply { isAccessible = true }
         val message = result::class.java.getDeclaredField("message").apply { isAccessible = true }
 
@@ -186,6 +201,20 @@ class TransferManagerTest {
         return manager
     }
 
+    private fun realExecutor(sessionManager: SessionManager, client: OkHttpClient): RealTransferExecutor =
+        RealTransferExecutor(RuntimeEnvironment.getApplication(), sessionManager, client)
+
+    private fun manager(client: OkHttpClient, serverUrl: String): TransferManager =
+        manager(MemoryTransferDao(), client, serverUrl)
+
+    private fun manager(dao: TransferDao, client: OkHttpClient, serverUrl: String): TransferManager =
+        TransferManager(
+            context = RuntimeEnvironment.getApplication(),
+            dao = dao,
+            executor = realExecutor(savedSessionManager(serverUrl), client),
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            notificationController = TransferNotificationController(RuntimeEnvironment.getApplication()),
+        )
     private class MemoryStore : CredentialStore {
         private val map = mutableMapOf<String, String>()
         override fun saveString(key: String, value: String) { map[key] = value }

@@ -8,10 +8,12 @@ import java.io.File
 class TransferManagerSourceTest {
     @Test
     fun downloadsUsePublicMediaStoreDownloadsInsteadOfPrivateFilesDir() {
-        val source = File("src/main/java/com/textvision/alistclient/transfer/TransferManager.kt").readText()
+        // Post-refactor: MediaStore.IO lives in RealTransferExecutor, not TransferManager.
+        val managerSource = File("src/main/java/com/textvision/alistclient/transfer/TransferManager.kt").readText()
+        val executorSource = File("src/main/java/com/textvision/alistclient/transfer/TransferExecutor.kt").readText()
 
-        assertTrue(source.contains("MediaStore.Downloads.EXTERNAL_CONTENT_URI"))
-        assertTrue(source.contains("MediaStore.MediaColumns.RELATIVE_PATH"))
-        assertFalse(source.contains("File(context.filesDir, \"downloads\")"))
+        assertFalse(managerSource.contains("File(context.filesDir, \"downloads\")"))
+        assertTrue(executorSource.contains("MediaStore.Downloads.EXTERNAL_CONTENT_URI"))
+        assertTrue(executorSource.contains("MediaStore.MediaColumns.RELATIVE_PATH"))
     }
 }
