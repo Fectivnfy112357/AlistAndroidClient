@@ -35,6 +35,15 @@ val CandyLilac      = Color(0xFFD8C7FF)
 val CandyLilacBg    = Color(0xFFECE2FF)
 
 // ══════════════════════════════════════════════════════════════════════════════
+// Music gradient stops — used by MusicPreviewScreen 300dp cover and
+// MusicHeroCard pink→magenta→violet banner. Spec §4.2 decorative gradient
+// (pre-approved). Added in Task 26.
+// ══════════════════════════════════════════════════════════════════════════════
+val MusicPink       = Color(0xFFFFA1BD)
+val MusicMagenta    = Color(0xFFC46683)
+val MusicViolet     = Color(0xFF7C5BC7)
+
+// ══════════════════════════════════════════════════════════════════════════════
 // Ink (text hierarchy)
 // ══════════════════════════════════════════════════════════════════════════════
 val Ink         = Color(0xFF1F3A5F)

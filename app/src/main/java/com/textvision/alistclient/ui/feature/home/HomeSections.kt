@@ -52,7 +52,7 @@ import com.textvision.alistclient.ui.theme.Brand600
 //  Chip primitives (prototype pill chips)
 // ═══════════════════════════════════════════════════════════════════════════
 
-internal enum class ChipKind { PRIMARY, MINT, GRAY }
+internal enum class ChipKind { PRIMARY, MINT, GRAY, LILAC }
 
 @Composable
 private fun chipColors(kind: ChipKind): Triple<Color, Color, Color> = when (kind) {
@@ -70,6 +70,11 @@ private fun chipColors(kind: ChipKind): Triple<Color, Color, Color> = when (kind
         MaterialTheme.colorScheme.surfaceVariant,
         MaterialTheme.colorScheme.onSurfaceVariant,
         MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    ChipKind.LILAC -> Triple(
+        com.textvision.alistclient.ui.theme.CandyLilacBg,
+        MaterialTheme.colorScheme.onSurface,
+        com.textvision.alistclient.ui.theme.CandyLilac,
     )
 }
 
