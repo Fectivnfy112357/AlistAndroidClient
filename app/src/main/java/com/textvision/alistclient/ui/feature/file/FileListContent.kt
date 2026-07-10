@@ -2,31 +2,44 @@ package com.textvision.alistclient.ui.feature.file
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.file.model.FileItem
+import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.ui.components.EmptyState
 import com.textvision.alistclient.ui.components.FileTypeIcon
 import com.textvision.alistclient.ui.components.ListItemRow
 import com.textvision.alistclient.ui.components.LoadingState
 import com.textvision.alistclient.ui.components.toFileCategory
+import com.textvision.alistclient.ui.icons.AppIcons
+import com.textvision.alistclient.ui.theme.AlistTheme
 import com.textvision.alistclient.util.FileSizeFormatter
 
 @Composable
@@ -61,16 +74,33 @@ fun FileListContent(
     ) {
         items(files, key = { it.path }) { file ->
             val selected = file.path in state.selection
+            val rowBackground = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                Color.Transparent
+            }
             ListItemRow(
-                modifier = Modifier.animateItem(
-                    fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
-                    placementSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.small)
+                    .background(rowBackground)
+                    .animateItem(
+                        fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
+                        placementSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium,
+                        ),
+                        fadeOutSpec = spring(stiffness = Spring.StiffnessMedium),
                     ),
-                    fadeOutSpec = spring(stiffness = Spring.StiffnessMedium),
-                ),
-                leading = { FileTypeIcon(file.type.toFileCategory()) },
+                leading = {
+                    if (state.isMultiSelectMode) {
+                        SelectCheckCircle(
+                            selected = selected,
+                            onClick = { onIntent(FileIntent.MultiSelectToggle(file.path)) },
+                        )
+                    } else {
+                        FileTypeIcon(file.type.toFileCategory())
+                    }
+                },
                 title = file.name,
                 subtitle = if (file.isDir) "文件夹" else FileSizeFormatter.humanize(file.size),
                 onClick = {
@@ -82,14 +112,7 @@ fun FileListContent(
                 },
                 onLongClick = { onIntent(FileIntent.MultiSelectToggle(file.path)) },
                 trailing = if (state.isMultiSelectMode) {
-                    {
-                        IconButton(onClick = { onIntent(FileIntent.MultiSelectToggle(file.path)) }) {
-                            Icon(
-                                imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                                contentDescription = if (selected) "已选中" else "未选中",
-                            )
-                        }
-                    }
+                    {}
                 } else if (!file.isDir) {
                     {
                         FileRowMenu(
@@ -104,6 +127,38 @@ fun FileListContent(
                     {}
                 },
             )
+        }
+    }
+}
+
+/** 22×22 selection check circle used in multi-select mode. */
+@Composable
+private fun SelectCheckCircle(
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clip(CircleShape)
+            .then(
+                if (selected) {
+                    Modifier.background(MaterialTheme.colorScheme.primary)
+                } else {
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        IconButton(onClick = onClick, modifier = Modifier.size(22.dp)) {
+            if (selected) {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = "已选中",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
         }
     }
 }
@@ -143,5 +198,77 @@ private fun FileRowMenu(
                 onCopyLink(file)
             },
         )
+    }
+}
+
+// ---------------------------------------------------------------------------
+//  Previews
+// ---------------------------------------------------------------------------
+
+private val sampleFiles = listOf(
+    FileItem(
+        name = "Documents", path = "/Documents", isDir = true, size = 0L,
+        modifiedAt = null, extension = null, type = FileType.Folder,
+        thumbnailUrl = null, downloadUrl = null,
+    ),
+    FileItem(
+        name = "photo.jpg", path = "/photo.jpg", isDir = false, size = 12_400_000L,
+        modifiedAt = null, extension = "jpg", type = FileType.Image,
+        thumbnailUrl = null, downloadUrl = null,
+    ),
+    FileItem(
+        name = "report.pdf", path = "/report.pdf", isDir = false, size = 340_000L,
+        modifiedAt = null, extension = "pdf", type = FileType.Pdf,
+        thumbnailUrl = null, downloadUrl = null,
+    ),
+)
+
+@Preview(name = "FileList Light")
+@Composable
+private fun FileListContentPreviewLight() {
+    AlistTheme {
+        Surface {
+            FileListContent(
+                state = FileUiState(path = "/", files = sampleFiles),
+                onIntent = {},
+                onPreview = {},
+                onFolderNavigate = {},
+            )
+        }
+    }
+}
+
+@Preview(name = "FileList Dark", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun FileListContentPreviewDark() {
+    AlistTheme {
+        Surface {
+            FileListContent(
+                state = FileUiState(
+                    path = "/",
+                    files = sampleFiles,
+                    isMultiSelectMode = true,
+                    selection = setOf("/photo.jpg"),
+                ),
+                onIntent = {},
+                onPreview = {},
+                onFolderNavigate = {},
+            )
+        }
+    }
+}
+
+@Preview(name = "FileList LargeFont", fontScale = 1.6f)
+@Composable
+private fun FileListContentPreviewLargeFont() {
+    AlistTheme {
+        Surface {
+            FileListContent(
+                state = FileUiState(path = "/", files = sampleFiles),
+                onIntent = {},
+                onPreview = {},
+                onFolderNavigate = {},
+            )
+        }
     }
 }

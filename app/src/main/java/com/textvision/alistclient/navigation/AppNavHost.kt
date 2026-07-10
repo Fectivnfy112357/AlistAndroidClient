@@ -96,6 +96,11 @@ fun AppNavHost(
                         )
                     },
                     onFolderNavigate = { folderPath -> navController.navigate(FilesDest(folderPath)) },
+                    onBack = if (dest.path != "/") {
+                        { navController.popBackStack() }
+                    } else {
+                        null
+                    },
                 )
             }
             composable<TransfersDest> { TransferScreen() }

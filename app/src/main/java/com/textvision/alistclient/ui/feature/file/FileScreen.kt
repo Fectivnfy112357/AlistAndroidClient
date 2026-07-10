@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.feature.file
 
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -7,9 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -24,7 +22,6 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
-import android.content.Intent
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.textvision.alistclient.LocalSnackbarHostState
@@ -35,6 +32,7 @@ import com.textvision.alistclient.ui.components.SearchField
 import com.textvision.alistclient.ui.components.StatusBanner
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
+import com.textvision.alistclient.ui.icons.AppIcons
 import kotlinx.coroutines.launch
 
 @Composable
@@ -42,6 +40,7 @@ fun FileScreen(
     initialPath: String = "/",
     onPreview: (FileItem) -> Unit = {},
     onFolderNavigate: (path: String) -> Unit = {},
+    onBack: (() -> Unit)? = null,
     vm: FileViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -70,42 +69,19 @@ fun FileScreen(
         topBar = {
             AppTopBar(
                 title = "文件",
-                subtitle = state.path,
+                subtitle = if (state.isOnline) state.path else "当前离线 · 部分操作不可用",
+                onBack = onBack,
                 actions = {
-                    IconButton(onClick = { uploadLauncher.launch("*/*") }) {
-                        Icon(Icons.Filled.Upload, contentDescription = "上传")
-                    }
                     IconButton(onClick = { vm.onIntent(FileIntent.Load(state.path)) }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "刷新")
+                        Icon(AppIcons.refresh, contentDescription = "刷新")
+                    }
+                    IconButton(onClick = { uploadLauncher.launch("*/*") }) {
+                        Icon(AppIcons.upload, contentDescription = "上传")
                     }
                 },
             )
         },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            SearchField(
-                query = state.query,
-                onQueryChange = { vm.onIntent(FileIntent.Search(it)) },
-            )
-            Spacer(Modifier.height(8.dp))
-            state.error?.let { msg ->
-                StatusBanner(
-                    kind = BannerKind.ERROR,
-                    message = msg,
-                    actionLabel = "重试",
-                    onAction = { vm.onIntent(FileIntent.Load(state.path)) },
-                )
-            }
-            if (!state.isOnline) {
-                StatusBanner(
-                    kind = BannerKind.WARNING,
-                    message = "当前离线，部分操作不可用",
-                )
-            }
+        bottomBar = {
             if (state.isMultiSelectMode) {
                 FileMultiSelectBar(
                     selectionCount = state.selection.size,
@@ -114,10 +90,45 @@ fun FileScreen(
                             .filter { it !in state.selection }
                             .forEach { vm.onIntent(FileIntent.MultiSelectToggle(it)) }
                     },
-                    onDelete = { showDeleteConfirm = true },
+                    onMove = {
+                        scope.launch { snackbar.showSnackbar("移动功能即将推出") }
+                    },
                     onDownload = { vm.onIntent(FileIntent.MultiSelectDownload(state.selection.toList())) },
+                    onDelete = { showDeleteConfirm = true },
                     onClear = { vm.onIntent(FileIntent.MultiSelectClear) },
                 )
+            }
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            state.error?.let { msg ->
+                StatusBanner(
+                    kind = BannerKind.ERROR,
+                    message = msg,
+                    actionLabel = "重试",
+                    onAction = { vm.onIntent(FileIntent.Load(state.path)) },
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+            if (!state.isOnline) {
+                StatusBanner(
+                    kind = BannerKind.WARNING,
+                    message = "离线模式：仅可查看本地缓存",
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+            SearchField(
+                query = state.query,
+                onQueryChange = { vm.onIntent(FileIntent.Search(it)) },
+            )
+            Spacer(Modifier.height(8.dp))
+            if (state.isMultiSelectMode) {
+                FileMultiSelectHint(selectionCount = state.selection.size)
+                Spacer(Modifier.height(8.dp))
             }
             FileListContent(
                 state = state,
