@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Alist Client</string>
+    <string name="tab_music">音乐</string>
 </resources>

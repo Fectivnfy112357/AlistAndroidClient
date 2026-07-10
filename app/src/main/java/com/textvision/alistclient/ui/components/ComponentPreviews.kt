@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +33,7 @@ import com.textvision.alistclient.ui.theme.DarkMode
 private val previewNavItems = listOf(
     BottomNavItem("home", "首页", Icons.Filled.Home, Icons.Outlined.Home),
     BottomNavItem("files", "文件", Icons.Filled.Folder, Icons.Outlined.Folder),
+    BottomNavItem("music", "音乐", Icons.Filled.MusicNote, Icons.Outlined.MusicNote),
     BottomNavItem("transfers", "传输", Icons.Filled.SwapVert, Icons.Outlined.SwapVert),
     BottomNavItem("settings", "设置", Icons.Filled.Settings, Icons.Outlined.Settings),
 )

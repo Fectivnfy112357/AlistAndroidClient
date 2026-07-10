@@ -41,3 +41,9 @@ data class StorageEditDest(val id: Int)
 
 @Serializable
 data object AdminSiteSettingsDest
+
+@Serializable
+data object MusicLibraryDest
+
+@Serializable
+data object MusicPreviewDest

@@ -25,6 +25,8 @@ import com.textvision.alistclient.ui.feature.storage.StorageEditScreen
 import com.textvision.alistclient.ui.feature.transfer.TransferScreen
 import com.textvision.alistclient.ui.feature.preview.PreviewScreen
 import com.textvision.alistclient.ui.feature.settings.SettingsScreen
+import com.textvision.alistclient.ui.feature.music.MusicLibraryScreen
+import com.textvision.alistclient.ui.feature.music.MusicPreviewScreen
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.typeOf
@@ -136,6 +138,15 @@ fun AppNavHost(
                     size = args.size,
                     onBack = { navController.popBackStack() },
                 )
+            }
+            composable<MusicLibraryDest> {
+                MusicLibraryScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenPreview = { navController.navigate(MusicPreviewDest) },
+                )
+            }
+            composable<MusicPreviewDest> {
+                MusicPreviewScreen(onBack = { navController.popBackStack() })
             }
         }
     }
