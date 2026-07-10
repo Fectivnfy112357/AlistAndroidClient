@@ -853,7 +853,6 @@ python -m http.server 8765
 |---|---|---|
 | 原型 | `prototype/alist-android/index.html` | 13 屏可交互 HTML |
 | 本文档 | `prototype/alist-android/DESIGN_HANDOFF.md` | 设计交付文档 |
-| 产品说明 | `.hermes/desktop-attachments/产品与原型说明-4.md` | 原始产品定义 |
 
 ---
 
