@@ -164,8 +164,6 @@ val IndigoBlue80 = Brand800
 val IndigoBlue90 = Brand300
 @Deprecated("Use Brand100", ReplaceWith("Brand100"))
 val IndigoBlue95 = Brand100
-@Deprecated("Use Color.White for onPrimary", ReplaceWith("Color.White"))
-val IndigoBlue20 = Color(0xFF002D75)
 
 @Deprecated("Use InkSoft", ReplaceWith("InkSoft"))
 val Secondary40 = InkSoft
