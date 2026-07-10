@@ -1,49 +1,37 @@
 package com.textvision.alistclient.ui.feature.settings
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.Brightness6
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Storage
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.textvision.alistclient.admin.form.localizedLabel
-import com.textvision.alistclient.network.dto.SettingItem
-import com.textvision.alistclient.ui.components.ActionButton
 import com.textvision.alistclient.ui.components.BannerKind
-import com.textvision.alistclient.ui.components.ButtonVariant
 import com.textvision.alistclient.ui.components.ListItemRow
+import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.components.StatusBanner
+import com.textvision.alistclient.ui.components.UserAvatarCard
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
+import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.DarkMode
 
 @Composable
@@ -60,203 +48,154 @@ fun SettingsScreen(
     LaunchedEffect(Unit) { viewModel.loadAdminData() }
 
     AppScaffold(
-        topBar = { AppTopBar(title = "设置", subtitle = "账号与服务器管理") },
+        topBar = {
+            AppTopBar(title = "设置", subtitle = "管理你的小窝", onBack = null)
+        },
     ) { innerPadding ->
-        LazyColumn(modifier = Modifier.padding(innerPadding)) {
-            item { SectionHeader("主题") }
+        LazyColumn(
+            modifier = Modifier.padding(innerPadding),
+            contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             item {
-                DarkModeSection(
-                    current = uiState.darkMode,
-                    onSelect = viewModel::setDarkMode,
-                )
+                SectionCard(modifier = Modifier.fillMaxWidth()) {
+                    UserAvatarCard(
+                        name = "访客",
+                        role = "VIP",
+                        serverName = "我的云端小屋 · 在线",
+                        status = "VIP",
+                    )
+                }
+            }
+
+            item {
+                SectionCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SectionTitle("外观主题")
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            ThemeCard(
+                                label = "浅色",
+                                icon = AppIcons.sun,
+                                selected = uiState.darkMode == DarkMode.LIGHT,
+                                onClick = { viewModel.setDarkMode(DarkMode.LIGHT) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            ThemeCard(
+                                label = "深色",
+                                icon = AppIcons.moon,
+                                selected = uiState.darkMode == DarkMode.DARK,
+                                onClick = { viewModel.setDarkMode(DarkMode.DARK) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            ThemeCard(
+                                label = "自动",
+                                icon = AppIcons.auto,
+                                selected = uiState.darkMode == DarkMode.SYSTEM,
+                                onClick = { viewModel.setDarkMode(DarkMode.SYSTEM) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
             }
 
             if (uiState.storages.isNotEmpty()) {
-                item { SectionHeader("存储") }
-                items(uiState.storages, key = { it.id ?: 0L }) { storage ->
-                    val id = storage.id ?: return@items
-                    ListItemRow(
-                        leading = {
-                            Icon(
-                                Icons.Outlined.Storage,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        },
-                        title = storage.remark?.takeIf { it.isNotBlank() } ?: storage.mountPath,
-                        subtitle = buildString {
-                            append(storage.driver)
-                            if (storage.disabled) append(" · 已禁用")
-                        },
-                        trailing = {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        onClick = { onStorageClick(id) },
-                    )
+                item {
+                    SectionCard(modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            SectionTitle("存储源")
+                            uiState.storages.take(3).forEachIndexed { index, storage ->
+                                val id = storage.id ?: return@forEachIndexed
+                                if (index > 0) Divider()
+                                StorageSourceRow(
+                                    title = storage.remark?.takeIf { it.isNotBlank() }
+                                        ?: storage.mountPath.substringAfterLast('/').ifBlank { storage.mountPath },
+                                    subtitle = storage.driver,
+                                    driver = storage.driver,
+                                    onClick = { onStorageClick(id) },
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
             if (uiState.quickSettings.isNotEmpty()) {
-                item { SectionHeader("快速设置") }
-                items(uiState.quickSettings, key = { it.key }) { item ->
-                    QuickSettingRow(
-                        item = item,
-                        onEdit = { viewModel.saveQuickSetting(item.key, it) },
-                    )
+                item {
+                    SectionCard(modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            SectionTitle("快速设置")
+                            uiState.quickSettings.take(2).forEachIndexed { index, setting ->
+                                if (index > 0) Divider()
+                                QuickSettingRow(
+                                    item = setting,
+                                    onEdit = { viewModel.saveQuickSetting(setting.key, it) },
+                                )
+                            }
+                            Divider()
+                            PrivacyPasswordRow()
+                        }
+                    }
                 }
             }
 
-            item { SectionHeader("维护") }
             item {
-                ListItemRow(
-                    leading = {
-                        Icon(
-                            Icons.Outlined.CleaningServices,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                SectionCard(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        SectionTitle("维护")
+                        ListItemRow(
+                            leading = {
+                                Icon(Icons.Outlined.CleaningServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            title = "清理临时预览文件",
+                            subtitle = "释放本机预览缓存",
+                            trailing = {
+                                Icon(AppIcons.chevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            onClick = { viewModel.clearPreviewFiles() },
                         )
-                    },
-                    title = "清理临时预览文件",
-                    subtitle = "释放本机预览缓存",
-                    onClick = { viewModel.clearPreviewFiles() },
-                )
-            }
-            item {
-                ListItemRow(
-                    leading = {
-                        Icon(
-                            Icons.Outlined.Settings,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                        Divider()
+                        ListItemRow(
+                            leading = {
+                                Icon(Icons.Outlined.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            title = "完整设置",
+                            subtitle = "所有带表单的设置项",
+                            trailing = {
+                                Icon(AppIcons.chevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            onClick = onAdvancedSettings,
                         )
-                    },
-                    title = "完整设置",
-                    subtitle = "所有带表单的设置项",
-                    onClick = onAdvancedSettings,
-                )
+                    }
+                }
             }
-
-            item { Spacer(Modifier.height(32.dp)) }
-            item {
-                ActionButton(
-                    text = "退出登录",
-                    onClick = viewModel::logout,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    variant = ButtonVariant.OUTLINED,
-                    leadingIcon = Icons.AutoMirrored.Outlined.Logout,
-                )
-            }
-            item { Spacer(Modifier.height(16.dp)) }
 
             uiState.errorMessage?.let { msg ->
                 item {
                     StatusBanner(
                         kind = BannerKind.ERROR,
                         message = msg,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        actionLabel = "重试",
+                        onAction = { viewModel.loadAdminData() },
                     )
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-    )
-}
+            item {
+                Spacer(Modifier.height(8.dp))
+                LogoutButton(onClick = viewModel::logout)
+                Spacer(Modifier.height(8.dp))
+            }
 
-@Composable
-private fun DarkModeSection(
-    current: DarkMode,
-    onSelect: (DarkMode) -> Unit,
-) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        DarkMode.entries.forEach { mode ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSelect(mode) }
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Brightness6,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(Modifier.width(16.dp))
-                RadioButton(selected = current == mode, onClick = { onSelect(mode) })
-                Spacer(Modifier.width(8.dp))
+            item {
                 Text(
-                    text = darkModeLabel(mode),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = "Alist Client · v1.0.0 · made with 💙",
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
 }
-
-private fun darkModeLabel(mode: DarkMode): String = when (mode) {
-    DarkMode.SYSTEM -> "跟随系统"
-    DarkMode.LIGHT -> "浅色"
-    DarkMode.DARK -> "深色"
-}
-
-@Composable
-private fun QuickSettingRow(
-    item: SettingItem,
-    onEdit: (String) -> Unit,
-) {
-    var editing by remember { mutableStateOf(false) }
-    ListItemRow(
-        leading = {
-            Icon(
-                Icons.Outlined.Settings,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        },
-        title = displayLabel(item.key),
-        subtitle = item.value?.takeIf { it.isNotBlank() } ?: "(未设置)",
-        onClick = { editing = true },
-    )
-    if (editing) {
-        var text by remember { mutableStateOf(item.value.orEmpty()) }
-        AlertDialog(
-            onDismissRequest = { editing = false },
-            title = { Text(displayLabel(item.key)) },
-            text = {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = if (item.key == "announcement") 3 else 1,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onEdit(text)
-                    editing = false
-                }) { Text("保存") }
-            },
-            dismissButton = {
-                TextButton(onClick = { editing = false }) { Text("取消") }
-            },
-        )
-    }
-}
-
-private fun displayLabel(key: String): String = localizedLabel(key)
