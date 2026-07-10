@@ -106,11 +106,4 @@ class TransferViewModel @Inject constructor(
     fun cancel(id: String) = manager.cancel(id)
     fun retry(id: String) = manager.retry(id)
     fun delete(id: String) = manager.delete(id)
-
-    /**
-     * Placeholder for "查看" link on a completed task. Real navigation to a file
-     * preview requires resolving the remote path; intentionally a no-op for now
-     * to keep this screen self-contained (see report §Deviations).
-     */
-    fun openCompleted(id: String) = Unit
 }

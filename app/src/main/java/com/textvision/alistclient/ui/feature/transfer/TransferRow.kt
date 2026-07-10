@@ -116,7 +116,6 @@ fun TransferRow(
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
     onDelete: (String) -> Unit,
-    onOpen: (String) -> Unit,
     enabled: Boolean = true,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -274,12 +273,6 @@ fun TransferRow(
                         )
                     }
                     item.status == TransferStatus.Success -> {
-                        ActionLink(
-                            text = "查看",
-                            enabled = true,
-                            color = MaterialTheme.colorScheme.primary,
-                            onClick = { onOpen(item.id) },
-                        )
                         ActionLink(
                             text = "删除",
                             enabled = true,

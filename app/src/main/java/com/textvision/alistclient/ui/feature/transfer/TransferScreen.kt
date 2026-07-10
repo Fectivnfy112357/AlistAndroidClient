@@ -104,7 +104,6 @@ fun TransferScreen(viewModel: TransferViewModel = hiltViewModel()) {
                         onCancel = viewModel::cancel,
                         onRetry = viewModel::retry,
                         onDelete = viewModel::delete,
-                        onOpen = viewModel::openCompleted,
                         emptyTitle = tab.emptyMessage,
                         emptyMessage = "对应类型的传输任务会显示在这里",
                         enabled = state.isOnline,

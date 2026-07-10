@@ -32,7 +32,6 @@ fun TransferListContent(
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
     onDelete: (String) -> Unit,
-    onOpen: (String) -> Unit,
     emptyTitle: String,
     enabled: Boolean = true,
     emptyMessage: String? = null,
@@ -61,7 +60,6 @@ fun TransferListContent(
                 onCancel = onCancel,
                 onRetry = onRetry,
                 onDelete = onDelete,
-                onOpen = onOpen,
                 enabled = enabled,
                 modifier = Modifier.animateItem(
                     fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
@@ -126,7 +124,6 @@ private fun TransferListLightPreview() {
                 onCancel = {},
                 onRetry = {},
                 onDelete = {},
-                onOpen = {},
                 emptyTitle = "暂无传输任务",
                 modifier = Modifier.fillMaxSize(),
             )
@@ -144,7 +141,6 @@ private fun TransferListDarkPreview() {
                 onCancel = {},
                 onRetry = {},
                 onDelete = {},
-                onOpen = {},
                 emptyTitle = "暂无传输任务",
                 modifier = Modifier.fillMaxSize(),
             )
@@ -162,7 +158,6 @@ private fun TransferListEmptyPreview() {
                 onCancel = {},
                 onRetry = {},
                 onDelete = {},
-                onOpen = {},
                 emptyTitle = "暂无传输任务",
                 emptyMessage = "完成的传输任务会显示在这里",
                 modifier = Modifier.fillMaxSize(),
@@ -181,7 +176,6 @@ private fun TransferListLargeFontPreview() {
                 onCancel = {},
                 onRetry = {},
                 onDelete = {},
-                onOpen = {},
                 emptyTitle = "暂无传输任务",
                 modifier = Modifier.fillMaxSize(),
             )
