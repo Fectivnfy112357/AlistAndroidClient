@@ -54,6 +54,8 @@ val StateWarn       = Color(0xFFF4C77A)
 val StateWarnBg     = Color(0xFFFFF1D8)
 val StateSuccess    = CandyMint
 val StateSuccessBg  = CandyMintBg
+val StateWarnFg     = Color(0xFF8B6A2A)
+val StateSuccessFg  = Color(0xFF2D9B7C)
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Dark-only tokens
