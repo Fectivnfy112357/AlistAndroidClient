@@ -64,7 +64,7 @@ class TransferViewModelTest {
     fun selectTab_switches_tab_on_real_vm() = runTest {
         val vm = TransferViewModel(manager, networkMonitor)
 
-        assertEquals(TransferTab.UPLOAD, vm.state.value.tab)
+        assertEquals(TransferTab.ALL, vm.state.value.tab)
 
         vm.selectTab(TransferTab.DOWNLOAD)
         assertEquals(TransferTab.DOWNLOAD, vm.state.value.tab)
@@ -85,8 +85,13 @@ class TransferViewModelTest {
         val vm = TransferViewModel(manager, networkMonitor)
 
         vm.state.test {
-            // UPLOAD tab -> 2 uploads visible
-            assertEquals(2, awaitItem().visible.size)
+            // ALL tab -> 3 visible
+            assertEquals(3, awaitItem().visible.size)
+
+            vm.selectTab(TransferTab.UPLOAD)
+            val upload = awaitItem()
+            assertEquals(2, upload.visible.size)
+            assertEquals(TransferTab.UPLOAD, upload.tab)
 
             vm.selectTab(TransferTab.DOWNLOAD)
             val download = awaitItem()
@@ -94,6 +99,49 @@ class TransferViewModelTest {
             assertEquals("d1", download.visible.first().id)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun visible_filters_failed_tab() = runTest {
+        every { manager.observeTransfers() } returns flowOf(
+            listOf(
+                task("u1", TransferType.Upload, TransferStatus.Uploading),
+                task("u2", TransferType.Upload, TransferStatus.Failed),
+                task("u3", TransferType.Download, TransferStatus.Interrupted),
+                task("d1", TransferType.Download, TransferStatus.Success),
+            )
+        )
+        val vm = TransferViewModel(manager, networkMonitor)
+
+        vm.state.test {
+            // Drain the initial ALL emission
+            assertEquals(4, awaitItem().visible.size)
+
+            // FAILED tab -> 2 (u2 + u3)
+            vm.selectTab(TransferTab.FAILED)
+            val failed = awaitItem()
+            assertEquals(2, failed.visible.size)
+            assertEquals(TransferTab.FAILED, failed.tab)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun tab_counts_expose_badges() = runTest {
+        every { manager.observeTransfers() } returns flowOf(
+            listOf(
+                task("u1", TransferType.Upload, TransferStatus.Uploading),
+                task("u2", TransferType.Upload, TransferStatus.Failed),
+                task("d1", TransferType.Download, TransferStatus.Success),
+            )
+        )
+        val vm = TransferViewModel(manager, networkMonitor)
+
+        val s = vm.state.value
+        assertEquals(3, s.allCount)
+        assertEquals(2, s.uploadCount)
+        assertEquals(1, s.downloadCount)
+        assertEquals(1, s.failedCount)
     }
 
     @Test
@@ -108,9 +156,9 @@ class TransferViewModelTest {
         val vm = TransferViewModel(manager, networkMonitor)
 
         val summary = vm.state.value.summary
-        assertTrue(summary, summary.contains("1 个进行中"))
-        assertTrue(summary, summary.contains("1 个失败"))
-        assertTrue(summary, summary.contains("1 个完成"))
+        assertTrue(summary, summary.contains("1 进行中"))
+        assertTrue(summary, summary.contains("1 失败"))
+        assertTrue(summary, summary.contains("1 完成"))
     }
 
     @Test
