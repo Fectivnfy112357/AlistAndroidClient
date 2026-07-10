@@ -1,169 +1,140 @@
 package com.textvision.alistclient.ui.feature.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.outlined.Cloud
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.network.dto.StorageInfo
-import com.textvision.alistclient.ui.components.ListItemRow
+import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.feature.home.dto.SectionResult
 import com.textvision.alistclient.ui.feature.home.dto.StorageData
+import com.textvision.alistclient.ui.icons.AppIcons
+import com.textvision.alistclient.ui.theme.Brand500
+import com.textvision.alistclient.ui.theme.Brand600
+
+/** Section title row: "存储源" + "管理 →" link. */
+@Composable
+internal fun StorageHeader(onManage: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "存储源",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "管理 →",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.clickable(onClick = onManage),
+        )
+    }
+}
 
 @Composable
-internal fun StorageSection(
+internal fun StorageEmptyOrFailed(
     storageSection: SectionResult<StorageData>,
-    onStorageClick: (String) -> Unit,
     onRetry: () -> Unit,
 ) {
     when (storageSection) {
-        is SectionResult.Ok -> StorageSectionOk(storageSection.data.storages, onStorageClick)
         is SectionResult.Failed -> SectionCard(modifier = Modifier.testTag("home_storage_failed")) {
             SectionFailedHint(storageSection.cause, onRetry)
         }
         SectionResult.Loading -> SectionCard {
             Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-}
-
-@Composable
-private fun StorageSectionOk(storages: List<StorageInfo>, onStorageClick: (String) -> Unit) {
-    val total = storages.size
-    val working = storages.count { it.status == "work" }
-    val abnormal = total - working
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "存储概览",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = "共 $total 个",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.weight(1f))
-            if (working > 0) {
-                Text(
-                    text = "正常 $working",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            if (abnormal > 0) {
-                Spacer(Modifier.size(10.dp))
-                Text(
-                    text = "异常 $abnormal",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
-        if (storages.isEmpty()) {
+        is SectionResult.Ok -> if (storageSection.data.storages.isEmpty()) {
             SectionCard { Text("暂无存储", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        } else {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 1.dp,
-            ) {
-                Column {
-                    storages.forEach { storage ->
-                        StorageRow(storage) { onStorageClick(storage.mountPath) }
-                    }
-                }
-            }
         }
     }
 }
 
+/** Single storage entry — gradient icon square + name + path + status chip / chevron. */
 @Composable
-private fun StorageRow(storage: StorageInfo, onClick: () -> Unit) {
-    val isFailed = storage.status != "work"
-    ListItemRow(
-        modifier = Modifier.testTag("home_storage_card_${storage.mountPath}"),
-        leading = {
+internal fun StorageCard(storage: StorageInfo, onClick: () -> Unit) {
+    val disabled = storage.status != "work"
+    SectionCard(
+        modifier = Modifier
+            .testTag("home_storage_card_${storage.mountPath}")
+            .clickable(onClick = onClick),
+        padding = PaddingValues(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(
-                        if (isFailed) MaterialTheme.colorScheme.errorContainer
-                        else MaterialTheme.colorScheme.primaryContainer,
-                    ),
+                Modifier
+                    .size(44.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(Brush.linearGradient(listOf(Brand500, Brand600))),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = if (isFailed) Icons.Filled.CloudOff else Icons.Outlined.Cloud,
+                    AppIcons.database,
                     contentDescription = null,
-                    tint = if (isFailed) MaterialTheme.colorScheme.onErrorContainer
-                    else MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(20.dp),
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp),
                 )
             }
-        },
-        title = storage.mountPath,
-        subtitle = driverLabel(storage),
-        trailing = { StatusBadge(storage.status) },
-        onClick = onClick,
-    )
-}
-
-@Composable
-private fun StatusBadge(status: String?) {
-    val (container, content, text) = when {
-        status.isNullOrBlank() -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-            "未知",
-        )
-        status == "work" -> Triple(
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.onSecondaryContainer,
-            "正常",
-        )
-        else -> Triple(
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.onErrorContainer,
-            "异常",
-        )
-    }
-    Surface(shape = MaterialTheme.shapes.small, color = container) {
-        Text(
-            text = text,
-            color = content,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
-        )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = storage.mountPath,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = driverLabel(storage),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            if (disabled) {
+                Chip("已禁用", kind = ChipKind.GRAY)
+            } else {
+                Box(
+                    Modifier.size(28.dp).clip(CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        AppIcons.chevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -171,5 +142,6 @@ private fun driverLabel(storage: StorageInfo): String = when (storage.driver.low
     "local" -> "本机存储 · Local"
     "aliyundrive" -> "阿里云盘 · Aliyundrive"
     "quark" -> "夸克网盘 · Quark"
-    else -> storage.driver
+    "baidunetdisk", "baidu" -> "百度网盘 · Baidu"
+    else -> storage.driver.ifBlank { storage.mountPath }
 }
