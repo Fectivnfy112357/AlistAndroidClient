@@ -1,203 +1,267 @@
 package com.textvision.alistclient.ui.theme
 
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Brand: Indigo Blue #1F6FEB
+// Brand: Sky Blue
 // ══════════════════════════════════════════════════════════════════════════════
-val IndigoBlue10 = Color(0xFF001A41)
-val IndigoBlue20 = Color(0xFF002D75)
-val IndigoBlue30 = Color(0xFF00429B)
-val IndigoBlue40 = Color(0xFF1F6FEB)   // primary light
-val IndigoBlue80 = Color(0xFFA9C7FF)   // primary dark
-val IndigoBlue90 = Color(0xFFD8E4FE)
-val IndigoBlue95 = Color(0xFFECF1FF)
-val IndigoBlue99 = Color(0xFFF8F9FF)
+val Brand50  = Color(0xFFF4F9FF)
+val Brand100 = Color(0xFFE7F2FF)
+val Brand200 = Color(0xFFD7E9FF)
+val Brand300 = Color(0xFFCDE5FF)
+val Brand400 = Color(0xFFBFE0FF)
+val Brand500 = Color(0xFF6FB6FF)
+val Brand600 = Color(0xFF4A98E8)
+val Brand700 = Color(0xFF2D7AD0)
+val Brand800 = Color(0xFF9DC9FF)
+val Brand900 = Color(0xFFD7E9FF)
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Secondary: Slate Blue (muted neutral accent)
+// Candy (sage / coral / butter / lilac accents)
 // ══════════════════════════════════════════════════════════════════════════════
-val Secondary10 = Color(0xFF151C2C)
-val Secondary20 = Color(0xFF2A3142)
-val Secondary30 = Color(0xFF414759)
-val Secondary40 = Color(0xFF5A6478)    // secondary light
-val Secondary80 = Color(0xFFC1C4CF)   // secondary dark
-val Secondary90 = Color(0xFFDEE3F2)
-val Secondary95 = Color(0xFFECF1FF)
-val Secondary99 = Color(0xFFF8F9FF)
+val CandyMint       = Color(0xFF9BE3C8)
+val CandyMintBg     = Color(0xFFDAF6EC)
+val CandyPink       = Color(0xFFFFC4D6)
+val CandyPinkBg     = Color(0xFFFFE4ED)
+val CandyLemon      = Color(0xFFFFE89B)
+val CandyLemonBg    = Color(0xFFFFF4CC)
+val CandyLilac      = Color(0xFFD8C7FF)
+val CandyLilacBg    = Color(0xFFECE2FF)
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Tertiary: Amber (gold accent for emphasis)
+// Ink (text hierarchy)
 // ══════════════════════════════════════════════════════════════════════════════
-val Tertiary10 = Color(0xFF271900)
-val Tertiary20 = Color(0xFF422D00)
-val Tertiary30 = Color(0xFF5C4200)
-val Tertiary40 = Color(0xFF7C5800)     // tertiary light
-val Tertiary80 = Color(0xFFFFD280)    // tertiary dark
-val Tertiary90 = Color(0xFFFFDFA1)
-val Tertiary95 = Color(0xFFFFF0C0)
-val Tertiary99 = Color(0xFFFFF9EC)
+val Ink         = Color(0xFF1F3A5F)
+val InkSoft     = Color(0xFF6B8AB5)
+val InkMute     = Color(0xFFA6BBDB)
+val LineColor   = Color(0xFF7EA7E0)
+val LineAlpha   = 0.18f
+val Surface     = Color(0xFFFFFFFF)
+val SurfaceAlpha78 = 0.78f
+val SurfaceAlpha92 = 0.92f
+val BgStart     = Brand50
+val BgEnd       = Brand100
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Error: Red (M3 standard)
+// Semantic states (desaturated)
 // ══════════════════════════════════════════════════════════════════════════════
-val Error10 = Color(0xFF410002)
-val Error20 = Color(0xFF690005)
-val Error30 = Color(0xFF93000A)
-val Error40 = Color(0xFFBA1A1A)        // error light
-val Error80 = Color(0xFFFFB4AB)       // error dark
-val Error90 = Color(0xFFFFDAD6)
-val Error95 = Color(0xFFFFEDEA)
-val Error99 = Color(0xFFFFF9F9)
+val StateError      = Color(0xFFF49AA1)
+val StateErrorBg    = Color(0xFFFFE5E8)
+val StateWarn       = Color(0xFFF4C77A)
+val StateWarnBg     = Color(0xFFFFF1D8)
+val StateSuccess    = CandyMint
+val StateSuccessBg  = CandyMintBg
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Neutral (grays for text and surfaces)
+// Dark-only tokens
 // ══════════════════════════════════════════════════════════════════════════════
-val Neutral10 = Color(0xFF1B1B1F)      // on-surface light
-val Neutral20 = Color(0xFF2F3033)
-val Neutral30 = Color(0xFF47474C)
-val Neutral40 = Color(0xFF5F5F66)      // on-surface-variant light
-val Neutral50 = Color(0xFF777482)      // on-secondary-container light / secondary text
-val Neutral60 = Color(0xFF918F9A)      // on-tertiary-container light / tertiary text
-val Neutral80 = Color(0xFFC8C6D1)      // on-surface dark
-val Neutral90 = Color(0xFFE3E2E6)     // on-surface-variant dark
-val Neutral95 = Color(0xFFF1EFF7)
-val Neutral99 = Color(0xFFFCFBFF)
+val DarkBg          = Color(0xFF0F2444)
+val DarkSurface     = Color(0xFF1A2D52)
+val DarkSurfaceHigh = Color(0xFF243E6A)
+val DarkPrimaryContainer = Color(0xFF2D4F7C)
+val DarkSecondaryContainer = Color(0xFF1B5A45)
+val DarkTertiaryContainer  = Color(0xFF7C2E48)
+val DarkErrorColor  = Color(0xFFF8B4B8)
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Surface Containers (light mode — on white background)
-// ══════════════════════════════════════════════════════════════════════════════
-val SurfaceContainerLowest = Color(0xFFFFFFFF)
-val SurfaceContainerLow    = Color(0xFFF8F4FB)
-val SurfaceContainer       = Color(0xFFF2EFF4)
-val SurfaceContainerHigh   = Color(0xFFECE9EE)
-val SurfaceContainerHighest= Color(0xFFE6E3E9)
-
-// ══════════════════════════════════════════════════════════════════════════════
-// Surface Containers (dark mode — on dark background)
-// ══════════════════════════════════════════════════════════════════════════════
-val SurfaceContainerLowestDark = Color(0xFF1F1F23)
-val SurfaceContainerLowDark    = Color(0xFF242428)
-val SurfaceContainerDark       = Color(0xFF29292D)
-val SurfaceContainerHighDark   = Color(0xFF333338)
-val SurfaceContainerHighestDark= Color(0xFF3E3E44)
-
-// ══════════════════════════════════════════════════════════════════════════════
-// Outline
-// ══════════════════════════════════════════════════════════════════════════════
-val Outline       = Color(0xFF74777F)   // light
-val OutlineDark   = Color(0xFF8E9099)   // dark
-val OutlineVariant       = Color(0xFFC4C6D0)  // light
-val OutlineVariantDark   = Color(0xFF44474F)  // dark
 
 // ══════════════════════════════════════════════════════════════════════════════
 // M3 Light ColorScheme
 // ══════════════════════════════════════════════════════════════════════════════
-object LightColorScheme {
-    val primary               = IndigoBlue40
-    val onPrimary             = Color(0xFFFFFFFF)
-    val primaryContainer      = IndigoBlue90
-    val onPrimaryContainer    = IndigoBlue10
-
-    val secondary             = Secondary40
-    val onSecondary           = Color(0xFFFFFFFF)
-    val secondaryContainer    = Secondary90
-    val onSecondaryContainer  = Secondary10
-
-    val tertiary              = Tertiary40
-    val onTertiary            = Color(0xFFFFFFFF)
-    val tertiaryContainer     = Tertiary90
-    val onTertiaryContainer   = Tertiary10
-
-    val error                 = Error40
-    val onError               = Color(0xFFFFFFFF)
-    val errorContainer        = Error90
-    val onErrorContainer      = Error10
-
-    val background            = Color(0xFFFEFBFF)
-    val onBackground          = Neutral10
-    val surface               = Color(0xFFFEFBFF)
-    val onSurface             = Neutral10
-    val surfaceVariant        = Color(0xFFE1E2EC)
-    val onSurfaceVariant      = Neutral40
-
-    val surfaceContainerLowest    = SurfaceContainerLowest
-    val surfaceContainerLow       = SurfaceContainerLow
-    val surfaceContainer          = SurfaceContainer
-    val surfaceContainerHigh      = SurfaceContainerHigh
-    val surfaceContainerHighest   = SurfaceContainerHighest
-
-    val outline               = Outline
-    val outlineVariant        = OutlineVariant
-}
+val LightScheme: ColorScheme = lightColorScheme(
+    primary               = Brand500,
+    onPrimary             = Color(0xFFFFFFFF),
+    primaryContainer      = Brand300,
+    onPrimaryContainer    = Ink,
+    secondary             = CandyMint,
+    onSecondary           = Color(0xFF1F5A45),
+    secondaryContainer    = CandyMintBg,
+    onSecondaryContainer  = Color(0xFF1B5A45),
+    tertiary              = CandyPink,
+    onTertiary            = Color(0xFF7C2E48),
+    tertiaryContainer     = CandyPinkBg,
+    onTertiaryContainer   = Color(0xFF7C2E48),
+    error                 = StateError,
+    onError               = Color(0xFFFFFFFF),
+    errorContainer        = StateErrorBg,
+    onErrorContainer      = Color(0xFFB8505C),
+    background            = BgStart,
+    onBackground          = Ink,
+    surface               = Color(0xFFFFFFFF),
+    onSurface             = Ink,
+    surfaceVariant        = Color(0xFFE1EFFF),
+    onSurfaceVariant      = InkSoft,
+    surfaceContainerLowest   = Color(0xFFFFFFFF),
+    surfaceContainerLow      = Color(0xFFFBFDFF),
+    surfaceContainer         = Surface.copy(alpha = SurfaceAlpha78),
+    surfaceContainerHigh     = Surface.copy(alpha = SurfaceAlpha92),
+    surfaceContainerHighest  = Color(0xFFFFFFFF),
+    outline               = LineColor.copy(alpha = LineAlpha),
+    outlineVariant        = LineColor.copy(alpha = LineAlpha),
+    scrim                 = Color(0xFF1F3A5F).copy(alpha = 0.35f),
+)
 
 // ══════════════════════════════════════════════════════════════════════════════
 // M3 Dark ColorScheme
 // ══════════════════════════════════════════════════════════════════════════════
-object DarkColorScheme {
-    val primary               = IndigoBlue80
-    val onPrimary             = IndigoBlue20
-    val primaryContainer      = IndigoBlue20
-    val onPrimaryContainer    = IndigoBlue90
+val DarkScheme: ColorScheme = darkColorScheme(
+    primary               = Brand800,
+    onPrimary             = Ink,
+    primaryContainer      = DarkPrimaryContainer,
+    onPrimaryContainer    = Brand100,
+    secondary             = CandyMint,
+    onSecondary           = Color(0xFF1B5A45),
+    secondaryContainer    = DarkSecondaryContainer,
+    onSecondaryContainer  = Color(0xFFDAF6EC),
+    tertiary              = CandyPink,
+    onTertiary            = Color(0xFF7C2E48),
+    tertiaryContainer     = DarkTertiaryContainer,
+    onTertiaryContainer   = Color(0xFFFFE4ED),
+    error                 = DarkErrorColor,
+    onError               = Color(0xFF5C1F23),
+    errorContainer        = Color(0xFF5C1F23),
+    onErrorContainer      = Color(0xFFFFE5E8),
+    background            = DarkBg,
+    onBackground          = Brand100,
+    surface               = DarkBg,
+    onSurface             = Brand100,
+    surfaceVariant        = DarkPrimaryContainer,
+    onSurfaceVariant      = InkMute,
+    surfaceContainerLowest   = Color(0xFF0A1B33),
+    surfaceContainerLow      = Color(0xFF13213F),
+    surfaceContainer         = DarkSurface,
+    surfaceContainerHigh     = DarkSurfaceHigh,
+    surfaceContainerHighest  = Color(0xFF2E4A7E),
+    outline               = InkMute.copy(alpha = LineAlpha),
+    outlineVariant        = InkMute.copy(alpha = LineAlpha * 0.6f),
+)
 
-    val secondary             = Secondary80
-    val onSecondary           = Secondary20
-    val secondaryContainer    = Secondary30
-    val onSecondaryContainer  = Secondary90
 
-    val tertiary              = Tertiary80
-    val onTertiary            = Tertiary20
-    val tertiaryContainer     = Tertiary30
-    val onTertiaryContainer   = Tertiary90
+// ══════════════════════════════════════════════════════════════════════════════
+// Legacy aliases (preserve compile)
+// ══════════════════════════════════════════════════════════════════════════════
+@Deprecated("Use Brand500", ReplaceWith("Brand500"))
+val IndigoBlue40 = Brand500
+@Deprecated("Use Brand800", ReplaceWith("Brand800"))
+val IndigoBlue80 = Brand800
+@Deprecated("Use Brand300", ReplaceWith("Brand300"))
+val IndigoBlue90 = Brand300
+@Deprecated("Use Brand100", ReplaceWith("Brand100"))
+val IndigoBlue95 = Brand100
+@Deprecated("Use Color.White for onPrimary", ReplaceWith("Color.White"))
+val IndigoBlue20 = Color(0xFF002D75)
 
-    val error                 = Error80
-    val onError               = Error20
-    val errorContainer        = Error30
-    val onErrorContainer      = Error90
+@Deprecated("Use InkSoft", ReplaceWith("InkSoft"))
+val Secondary40 = InkSoft
+@Deprecated("Use InkMute", ReplaceWith("InkMute"))
+val Secondary80 = InkMute
+@Deprecated("Use CandyPink", ReplaceWith("CandyPink"))
+val Tertiary40 = CandyPink
 
-    val background            = Color(0xFF1B1B1F)
-    val onBackground          = Neutral90
-    val surface               = Color(0xFF1B1B1F)
-    val onSurface             = Neutral90
-    val surfaceVariant        = Color(0xFF44474F)
-    val onSurfaceVariant      = Neutral80
+@Deprecated("Use StateError", ReplaceWith("StateError"))
+val Error40 = StateError
+@Deprecated("Use DarkErrorColor", ReplaceWith("DarkErrorColor"))
+val Error80 = DarkErrorColor
 
-    val surfaceContainerLowest    = SurfaceContainerLowestDark
-    val surfaceContainerLow       = SurfaceContainerLowDark
-    val surfaceContainer          = SurfaceContainerDark
-    val surfaceContainerHigh      = SurfaceContainerHighDark
-    val surfaceContainerHighest   = SurfaceContainerHighestDark
+@Deprecated("Use Ink", ReplaceWith("Ink"))
+val Neutral10 = Ink
+@Deprecated("Use InkSoft", ReplaceWith("InkSoft"))
+val Neutral50 = InkSoft
+@Deprecated("Use InkMute", ReplaceWith("InkMute"))
+val Neutral80 = InkMute
 
-    val outline               = OutlineDark
-    val outlineVariant        = OutlineVariantDark
+@Deprecated("Use Surface.copy(alpha=0.78f)", ReplaceWith("Surface"))
+val SurfaceContainer       = Surface.copy(alpha = 0.78f)
+@Deprecated("Use DarkSurface", ReplaceWith("DarkSurface"))
+val SurfaceContainerDark   = DarkSurface
+@Deprecated("Use DarkSurfaceHigh", ReplaceWith("DarkSurfaceHigh"))
+val SurfaceContainerHighDark = DarkSurfaceHigh
+
+@Deprecated("Use MaterialTheme.colorScheme.outline", ReplaceWith(""))
+val Outline = LineColor.copy(alpha = LineAlpha)
+@Deprecated("Use MaterialTheme.colorScheme.outlineVariant", ReplaceWith(""))
+val OutlineVariant = LineColor.copy(alpha = LineAlpha)
+
+@Deprecated("Use tertiaryContainer", ReplaceWith(""))
+val FolderTint = CandyPinkBg
+@Deprecated("Use secondaryContainer", ReplaceWith(""))
+val ImageTint = CandyMintBg
+
+@Deprecated("Use AlistBlue was Brand500", ReplaceWith("Brand500"))
+val AlistBlue = Brand500
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Legacy object aliases (Theme.kt consumes the old object API)
+// DEVIATION: brief specified top-level vals named LightColors/DarkColors, but
+// Theme.kt (sibling file in same package) declares private val LightColors/
+// DarkColors — same-name top-level declarations conflict. Renamed to
+// LightScheme/DarkScheme to preserve Theme.kt unchanged. Task 6 (Theme.kt
+// rewrite) will migrate to the final names.
+// ══════════════════════════════════════════════════════════════════════════════
+@Deprecated("Use LightScheme", ReplaceWith("LightScheme"))
+object LightColorScheme {
+    val primary               get() = LightScheme.primary
+    val onPrimary             get() = LightScheme.onPrimary
+    val primaryContainer      get() = LightScheme.primaryContainer
+    val onPrimaryContainer    get() = LightScheme.onPrimaryContainer
+    val secondary             get() = LightScheme.secondary
+    val onSecondary           get() = LightScheme.onSecondary
+    val secondaryContainer    get() = LightScheme.secondaryContainer
+    val onSecondaryContainer  get() = LightScheme.onSecondaryContainer
+    val tertiary              get() = LightScheme.tertiary
+    val onTertiary            get() = LightScheme.onTertiary
+    val tertiaryContainer     get() = LightScheme.tertiaryContainer
+    val onTertiaryContainer   get() = LightScheme.onTertiaryContainer
+    val error                 get() = LightScheme.error
+    val onError               get() = LightScheme.onError
+    val errorContainer        get() = LightScheme.errorContainer
+    val onErrorContainer      get() = LightScheme.onErrorContainer
+    val background            get() = LightScheme.background
+    val onBackground          get() = LightScheme.onBackground
+    val surface               get() = LightScheme.surface
+    val onSurface             get() = LightScheme.onSurface
+    val surfaceVariant        get() = LightScheme.surfaceVariant
+    val onSurfaceVariant      get() = LightScheme.onSurfaceVariant
+    val surfaceContainerLowest   get() = LightScheme.surfaceContainerLowest
+    val surfaceContainerLow      get() = LightScheme.surfaceContainerLow
+    val surfaceContainer         get() = LightScheme.surfaceContainer
+    val surfaceContainerHigh     get() = LightScheme.surfaceContainerHigh
+    val surfaceContainerHighest  get() = LightScheme.surfaceContainerHighest
+    val outline               get() = LightScheme.outline
+    val outlineVariant        get() = LightScheme.outlineVariant
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Legacy aliases — preserve for existing code compatibility
-// ══════════════════════════════════════════════════════════════════════════════
-@Deprecated("Use LightColorScheme.primary / IndigoBlue40", ReplaceWith("IndigoBlue40"))
-val AlistBlue = IndigoBlue40
-
-@Deprecated("Use tertiaryContainer")
-val FolderTint = Tertiary90
-
-@Deprecated("Use onTertiaryContainer")
-val FolderIconTint = Tertiary30
-
-@Deprecated("Use secondaryContainer")
-val ImageTint = Secondary90
-
-@Deprecated("Use onSecondaryContainer")
-val ImageIconTint = Secondary30
-
-@Deprecated("Use SurfaceContainerHigh")
-val TextTint = Color(0xFFE8F8FF)
-
-@Deprecated("Use onSurface")
-val TextIconTint = Neutral10
-
-@Deprecated("Use SurfaceContainerHigh")
-val GenericFileTint = Color(0xFFEFF2F8)
-
-@Deprecated("Use Neutral50")
-val GenericFileIconTint = Color(0xFF667085)
+@Deprecated("Use DarkScheme", ReplaceWith("DarkScheme"))
+object DarkColorScheme {
+    val primary               get() = DarkScheme.primary
+    val onPrimary             get() = DarkScheme.onPrimary
+    val primaryContainer      get() = DarkScheme.primaryContainer
+    val onPrimaryContainer    get() = DarkScheme.onPrimaryContainer
+    val secondary             get() = DarkScheme.secondary
+    val onSecondary           get() = DarkScheme.onSecondary
+    val secondaryContainer    get() = DarkScheme.secondaryContainer
+    val onSecondaryContainer  get() = DarkScheme.onSecondaryContainer
+    val tertiary              get() = DarkScheme.tertiary
+    val onTertiary            get() = DarkScheme.onTertiary
+    val tertiaryContainer     get() = DarkScheme.tertiaryContainer
+    val onTertiaryContainer   get() = DarkScheme.onTertiaryContainer
+    val error                 get() = DarkScheme.error
+    val onError               get() = DarkScheme.onError
+    val errorContainer        get() = DarkScheme.errorContainer
+    val onErrorContainer      get() = DarkScheme.onErrorContainer
+    val background            get() = DarkScheme.background
+    val onBackground          get() = DarkScheme.onBackground
+    val surface               get() = DarkScheme.surface
+    val onSurface             get() = DarkScheme.onSurface
+    val surfaceVariant        get() = DarkScheme.surfaceVariant
+    val onSurfaceVariant      get() = DarkScheme.onSurfaceVariant
+    val surfaceContainerLowest   get() = DarkScheme.surfaceContainerLowest
+    val surfaceContainerLow      get() = DarkScheme.surfaceContainerLow
+    val surfaceContainer         get() = DarkScheme.surfaceContainer
+    val surfaceContainerHigh     get() = DarkScheme.surfaceContainerHigh
+    val surfaceContainerHighest  get() = DarkScheme.surfaceContainerHighest
+    val outline               get() = DarkScheme.outline
+    val outlineVariant        get() = DarkScheme.outlineVariant
+}
