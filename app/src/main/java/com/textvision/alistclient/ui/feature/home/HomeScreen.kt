@@ -35,8 +35,6 @@ import com.textvision.alistclient.ui.feature.home.dto.TaskBucket
 import com.textvision.alistclient.ui.feature.home.dto.TaskData
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
-import com.textvision.alistclient.ui.foundation.CloudDecor
-import com.textvision.alistclient.ui.foundation.SkyBlueBackground
 import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.AlistTheme
 import com.textvision.alistclient.ui.theme.DarkMode
@@ -76,10 +74,6 @@ internal fun HomeScreenContent(
         ?.data?.publicSection
         ?.let { (it as? SectionResult.Ok)?.data?.siteTitle }
     AppScaffold(
-        background = {
-            SkyBlueBackground()
-            CloudDecor()
-        },
         topBar = {
             AppTopBar(
                 title = "早上好 ✨",

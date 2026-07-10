@@ -42,6 +42,8 @@ val CandyLilacBg    = Color(0xFFECE2FF)
 val MusicPink       = Color(0xFFFFA1BD)
 val MusicMagenta    = Color(0xFFC46683)
 val MusicViolet     = Color(0xFF7C5BC7)
+/** Mid lilac stop of the pink→lilac→violet music hero gradient. Added in cleanup. */
+val MusicLilac      = Color(0xFFB57BD6)
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Ink (text hierarchy)
@@ -164,8 +166,6 @@ val IndigoBlue80 = Brand800
 val IndigoBlue90 = Brand300
 @Deprecated("Use Brand100", ReplaceWith("Brand100"))
 val IndigoBlue95 = Brand100
-@Deprecated("Use Color.White for onPrimary", ReplaceWith("Color.White"))
-val IndigoBlue20 = Color(0xFF002D75)
 
 @Deprecated("Use InkSoft", ReplaceWith("InkSoft"))
 val Secondary40 = InkSoft

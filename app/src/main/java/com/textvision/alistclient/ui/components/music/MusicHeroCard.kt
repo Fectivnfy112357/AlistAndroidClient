@@ -28,10 +28,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.Corner
+import com.textvision.alistclient.ui.theme.MusicLilac
+import com.textvision.alistclient.ui.theme.MusicPink
+import com.textvision.alistclient.ui.theme.MusicViolet
 
 /** Pink → purple → violet artistic gradient for the music hero banner. */
 private val HeroGradient = Brush.linearGradient(
-    listOf(Color(0xFFFFA1BD), Color(0xFFB57BD6), Color(0xFF7C5BC7)),
+    listOf(MusicPink, MusicLilac, MusicViolet),
 )
 
 /**
@@ -104,7 +107,7 @@ private fun RoundControl(
     filled: Boolean = false,
 ) {
     val bg = if (filled) Color.White else Color.White.copy(alpha = 0.22f)
-    val tint = if (filled) Color(0xFF7C5BC7) else Color.White
+    val tint = if (filled) MusicViolet else Color.White
     Surface(
         onClick = onClick,
         shape = CircleShape,

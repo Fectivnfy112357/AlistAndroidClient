@@ -23,6 +23,7 @@ import com.textvision.alistclient.ui.theme.CandyLilac
 import com.textvision.alistclient.ui.theme.CandyMint
 import com.textvision.alistclient.ui.theme.CandyPink
 import com.textvision.alistclient.ui.theme.InkMute
+import com.textvision.alistclient.ui.theme.StateWarn
 
 /** Corner/position of a DecoBadge relative to its parent Box. */
 enum class DecoPosition(val alignment: Alignment) {
@@ -46,7 +47,7 @@ enum class DecoColor(val tint: Color) {
     LEMON(CandyLemon),
     LILAC(CandyLilac),
     BLUE(Brand500),
-    ORANGE(Color(0xFFF4C77A)),
+    ORANGE(StateWarn),
     MUTE(InkMute),
 }
 

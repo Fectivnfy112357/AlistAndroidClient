@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -25,6 +24,8 @@ import com.textvision.alistclient.ui.components.DecoSize
 import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.CandyLilac
 import com.textvision.alistclient.ui.theme.CandyPink
+import com.textvision.alistclient.ui.theme.MusicPink
+import com.textvision.alistclient.ui.theme.MusicViolet
 
 /** Album cover size preset. */
 enum class AlbumCardSize(val cover: Dp) {
@@ -105,7 +106,7 @@ private fun AlbumCardLargePreview() {
         AlbumCard(
             name = "午夜电波",
             artist = "霓虹计划",
-            gradient = Brush.linearGradient(listOf(Color(0xFFFFA1BD), Color(0xFF7C5BC7))),
+            gradient = Brush.linearGradient(listOf(MusicPink, MusicViolet)),
             size = AlbumCardSize.LARGE,
             modifier = Modifier.padding(16.dp),
         )

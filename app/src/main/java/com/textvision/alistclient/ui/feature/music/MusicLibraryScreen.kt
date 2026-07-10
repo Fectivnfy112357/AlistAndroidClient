@@ -44,8 +44,8 @@ import com.textvision.alistclient.ui.components.music.ArtistCard
 import com.textvision.alistclient.ui.components.music.MiniPlayer
 import com.textvision.alistclient.ui.components.music.MusicHeroCard
 import com.textvision.alistclient.ui.components.music.SongRow
-import com.textvision.alistclient.ui.feature.home.ChipKind
-import com.textvision.alistclient.ui.feature.home.Chip
+import com.textvision.alistclient.ui.components.ChipKind
+import com.textvision.alistclient.ui.components.Chip
 import com.textvision.alistclient.ui.foundation.AppTopBar
 import com.textvision.alistclient.ui.foundation.CloudDecor
 import com.textvision.alistclient.ui.foundation.SkyBlueBackground
