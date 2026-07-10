@@ -61,25 +61,27 @@
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/music/SongRow.kt` | Compact row (cover + name + artist + duration) |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/music/MiniPlayer.kt` | Bottom docked player (cover + name + wave + play) |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/auth/LoginScreen.kt` | Sky-blue gradient bg + 3 inputs + cloud logo + login btn |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt` | Hero + 3 metrics + task card + storage list |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt` | 3 metrics + task card + storage list (no Hero server card) |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeSections.kt` | Updated section list using new metrics cards |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeStorageSection.kt` | Storage list rows |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileScreen.kt` | FileRow + multi-select actionbar + offline banner |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileListContent.kt` | Updated file-row layout |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileMultiSelectBar.kt` | Bottom action bar with select-all/copy/move/delete |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferScreen.kt` | Segmented + task-row + progress |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferScreen.kt` | 4-segmented (All/Upload/Download/Failed) + task-row + progress |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferListContent.kt` | Task-row list |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferRow.kt` | Card layout with icon+name+progress |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferRow.kt` | Card layout with icon+name+progress; failed row adds retry/delete links |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferProgress.kt` | Gradle gradient bar |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/settings/SettingsScreen.kt` | Theme picker 3 cards + settings rows |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewScreen.kt` | TopBar refresh (token migration) |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/settings/SettingsScreen.kt` | UserAvatarCard at top + theme picker 3 cards + storage list + quick settings |
+| **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/KeyValueRow.kt` | KeyValueRow for PreviewScreen detail grid |
+| **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/UserAvatarCard.kt` | UserAvatarCard for SettingsScreen top |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewScreen.kt` | TopBar refresh + 3 outlined action buttons + KeyValueRow detail grid |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewImage.kt` | Token migration |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewText.kt` | Token migration |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewAudio.kt` | Token migration |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewFallback.kt` | Token migration |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/picker/MoveCopyTargetPickerScreen.kt` | FileRow + path bar |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/storage/StorageEditScreen.kt` | Cookie field card + form |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/admin/AdminSiteSettingsScreen.kt` | Settings rows |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/picker/MoveCopyTargetPickerScreen.kt` | Breadcrumb + new-folder button + target preview card + file rows with radio |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/storage/StorageEditScreen.kt` | Header card + 5 form fields + cookie card + enable toggle + save btn |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/admin/AdminSiteSettingsScreen.kt` | Settings rows with section headers |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/feature/music/MusicLibraryScreen.kt` | 5 sections placeholder + empty state |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/feature/music/MusicPreviewScreen.kt` | Empty state with "coming soon" |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/navigation/AppDestination.kt` | + `MusicLibraryDest`, `MusicPreviewDest` |
@@ -1815,12 +1817,12 @@ git commit -m "feat(ui): add music placeholder components (CoverLetter/MiniPlaye
 
 ---
 
-### Task 19: Refresh HomeScreen.kt — Hero + Metrics + Storage list
+### Task 19: Refresh HomeScreen.kt — Metrics + Storage list (no Hero card)
 
 **Files:**
 - Modify: `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt` (full rewrite)
 
-- [ ] **Step 1: Rewrite** to follow prototype Screen02 layout:
+- [ ] **Step 1: Rewrite** to follow prototype Screen02 layout (matches img_1.png):
 
 ```kotlin
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1848,11 +1850,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             modifier = Modifier.padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                SectionCard(padding = PaddingValues(18.dp)) {
-                    HeroServerCard(serverName = state.serverName, online = state.online)
-                }
-            }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MetricCard("用户", state.userCount.toString(), AppIcons.user, modifier = Modifier.weight(1f))
@@ -1903,10 +1900,10 @@ Expected: BUILD SUCCESSFUL
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/ui/feature/home/
-git commit -m "refactor(ui): HomeScreen with Hero + Metrics + Storage sections"
+git commit -m "refactor(ui): HomeScreen with Metrics + Storage (no Hero card)"
 ```
 
-(Full code listing for HeroServerCard / MetricCard / StorageCard / Chip omitted for brevity — follow prototype Screen02.)
+(Full code listing for MetricCard / StorageCard / Chip omitted for brevity — follow prototype Screen02 / img_1.png. No HeroServerCard.)
 
 ---
 
@@ -2002,11 +1999,11 @@ git commit -m "refactor(ui): FileScreen multi-select with offline banner"
 **Files:**
 - Modify: 4 files under `feature/transfer/`
 
-- [ ] **Step 1: Rewrite** to follow prototype Screen05:
-  - AppTopBar (no back)
-  - Segmented control (全部/进行中/已完成)
+- [ ] **Step 1: Rewrite** to follow prototype Screen05 / img_5.png:
+  - AppTopBar (no back); subtitle shows running/done counts
+  - **4-segmented** switcher: 全部 / 上传·N / 下载·N / 失败; each segment shows live count badge
   - LazyColumn of `TaskRow` cards with icon + name + status + `TransferProgress` (5dp height gradient bar) + size/speed/time
-  - Failed state: bar turns red
+  - **Failed state**: bar turns red, below bar show "重试 / 删除" inline link buttons (ActionButton variant=TEXT)
 
 - [ ] **Step 2: Build & commit**
 
@@ -2017,15 +2014,81 @@ git commit -m "refactor(ui): TransferScreen segmented + task cards"
 
 ---
 
-### Task 23: Refresh SettingsScreen.kt — Theme picker 3 cards + Settings rows
+### Task 23: Refresh SettingsScreen.kt — UserAvatarCard + Theme picker 3 cards + Settings rows
 
 **Files:**
 - Modify: `app/src/main/java/com/textvision/alistclient/ui/feature/settings/SettingsScreen.kt`
+- Create: `app/src/main/java/com/textvision/alistclient/ui/components/UserAvatarCard.kt` (new shared component)
 
-- [ ] **Step 1: Rewrite** to follow prototype Screen06:
-  - AppTopBar (no back)
-  - Theme picker: 3-column row of cards (sun/moon/auto) — each card has icon + swatch + label, active state has primary border + bg
-  - Settings rows with leading icon (mint/pink/lilac/lemon) + name + description + chevron
+- [ ] **Step 1: Create UserAvatarCard.kt**
+
+```kotlin
+package com.textvision.alistclient.ui.components
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.dp
+import com.textvision.alistclient.ui.components.music.CoverLetter
+
+/**
+ * User identity card for SettingsScreen top — 48dp circular avatar + name + role + server + status chip.
+ */
+@Composable
+fun UserAvatarCard(
+    name: String,
+    role: String,
+    serverName: String,
+    status: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CoverLetter(
+            name = name,
+            gradient = Brush.linearGradient(
+                listOf(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.tertiary,
+                ),
+            ),
+            size = 48.dp,
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface)
+            Text("$role · $serverName",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (status != null) {
+            StatusChip(status, kind = ChipKind.MINT)
+        }
+    }
+}
+```
+
+(Use existing `StatusChip` / `ChipKind.MINT` from the components package — adjust as needed.)
+
+- [ ] **Step 2: Rewrite** to follow prototype Screen06 / img_6.png:
+  - AppTopBar (no back); subtitle shows current server
+  - **UserAvatarCard** at top (full width)
+  - **外观主题** section label + 3-card theme picker (sun/moon/auto)
+  - **存储源** section label + storage list (reuse Home's storage row)
+  - **快速设置** section label + grouped setting rows
 
 - [ ] **Step 2: Build & commit**
 
@@ -2041,15 +2104,93 @@ git commit -m "refactor(ui): SettingsScreen theme picker (3 cards) + grouped row
 **Files:**
 - Modify: 3 files under `feature/storage/`, `feature/admin/`, `feature/picker/`
 
-- [ ] **Step 1: Rewrite each** following prototype Screen07/08/09 layouts.
+- [ ] **Step 1: StorageEdit** — Follow prototype Screen07 / img_7.png:
+  - AppTopBar (back + 标题 "编辑存储" + 副标题 存储名)
+  - **存储头卡** (SectionCard): mint 云 icon + 存储名 + 挂载路径 + 右侧 mint "已启用" chip
+  - **驱动参数** section: 备注 / 挂载路径 OutlinedTextField
+  - **Cookie** mint 浅色卡 (圆点 + "已设置 · N 天前更新" + outlined "重新获取" 按钮)
+  - **根目录路径** + **排序方式** OutlinedTextField
+  - **启用存储** Switch (with helper text)
+  - Sticky bottom: 48dp FILLED "保存修改" 主按钮
 
-- [ ] **Step 2: Build & commit**
+- [ ] **Step 2: AdminSiteSettings** — Follow prototype Screen08 / img_8.png:
+  - Section labels (站点 / 预览 / 安全)
+  - OutlinedTextField inputs for 站点标题 / 站点公告 / 站点图标
+  - Switch rows for 隐藏公告 / 启用预览 / 自动播放视频 / 强制代理
+  - Each section is a `SectionCard`
+
+- [ ] **Step 3: MoveCopyPicker** — Follow prototype Screen09 / img_9.png:
+  - AppTopBar (back + 标题 "选择目标" + 副标题 操作名)
+  - **面包屑 Row** (below TopBar): folder icon + path chip chain + 右侧 outlined "新建" pill 按钮
+  - **目标预览卡** (when target selected): folder icon + 名称 + 右侧 outlined "✓ 创建" 按钮 (active state)
+  - **可移动到的位置** section label
+  - LazyColumn of `FileTypeIcon` folder rows: leading icon + name + secondary meta ("N 项 · X.X MB") + trailing 22×22 radio circle (selected = primary filled)
+
+- [ ] **Step 4: Build & commit**
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/ui/feature/storage/ \
         app/src/main/java/com/textvision/alistclient/ui/feature/admin/ \
         app/src/main/java/com/textvision/alistclient/ui/feature/picker/
-git commit -m "refactor(ui): StorageEdit/AdminSiteSettings/MoveCopyPicker"
+git commit -m "refactor(ui): StorageEdit header+form, AdminSiteSettings sections, PickTarget breadcrumb+radio"
+```
+
+---
+
+### Task 24b: Add KeyValueRow component
+
+**Files:**
+- Create: `app/src/main/java/com/textvision/alistclient/ui/components/KeyValueRow.kt`
+
+- [ ] **Step 1: Create** — 1-line row, label left / value right, 14dp vertical spacing, used in PreviewScreen detail grid.
+
+```kotlin
+package com.textvision.alistclient.ui.components
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
+/**
+ * One row in a 2-column key-value list — label left, value right.
+ * 14dp vertical padding, divider omitted.
+ */
+@Composable
+fun KeyValueRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+```
+
+- [ ] **Step 2: Build & commit**
+
+```bash
+git add app/src/main/java/com/textvision/alistclient/ui/components/KeyValueRow.kt
+git commit -m "feat(ui): add KeyValueRow component for detail grids"
 ```
 
 ---
@@ -2059,7 +2200,12 @@ git commit -m "refactor(ui): StorageEdit/AdminSiteSettings/MoveCopyPicker"
 **Files:**
 - Modify: 5 files under `feature/preview/`
 
-- [ ] **Step 1: Token migration only** — replace `TopAppBar` with `AppTopBar`; replace hardcoded `FolderTint` with `MaterialTheme.colorScheme.tertiaryContainer`.
+- [ ] **Step 1: Rewrite PreviewScreen.kt** following prototype Screen04 / img_3.png:
+  - AppTopBar (back + 标题 + 副标题 路径 + 分享 icon-btn + 下载 icon-btn in actions)
+  - Existing PreviewImage/PreviewText/PreviewAudio/PreviewFallback content stays (token-migrated)
+  - **Below preview body**, add:
+    - Row of 3 ActionButton(variant=OUTLINED): 分享 / 复制直链 / 其他应用 (icons: share / link / external), 18dp corner, 36dp height, weight 1f each
+    - **详细信息 SectionCard** with 4 KeyValueRow: 类型 / 尺寸 / 修改时间 / 位置
 
 - [ ] **Step 2: Build & commit**
 

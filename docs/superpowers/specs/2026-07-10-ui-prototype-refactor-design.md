@@ -423,10 +423,12 @@ fun AlistTheme(
 | 组件 | 文件 | API 关键点 | 视觉关键点 |
 |---|---|---|---|
 | **AppScaffold** | `foundation/Scaffold.kt` | 包装 M3 Scaffold，提供 `topBar` / `bottomBar` slot | 屏幕背景渐变（SkyBlue 165°） |
-| **AppTopBar** | `foundation/AppBars.kt` | `title, subtitle?, onBack?, actions` | 半透明白底圆按钮、subtle 副标题 + 在线点 |
-| **AppBottomBar** | `foundation/AppBars.kt` | `currentRoute, onNavigate` | 5 Tab（首页/文件/**音乐**/传输/设置），激活态圆角胶囊背景 |
-| **SectionCard** | `components/SectionCard.kt` | `Modifier, content` | 玻璃白 `surface.copy(0.78)` + backdrop-blur(14) + 22dp 圆角 + 4dp shadow |
+| **AppTopBar** | `foundation/AppBars.kt` | `title, subtitle?, onBack?, actions` | 顶栏背景 `surface.copy(0.92f)`，back 与 action 是 36dp 圆形 tonal icon-btn，title Fredoka 18 600，subtitle 11 600 + 6×6 在线点（ink 灰） |
+| **AppBottomBar** | `foundation/AppBars.kt` | `currentRoute, onNavigate` | 5 Tab（首页/文件/**音乐**/传输/设置），激活态圆角胶囊背景 + tinted icon；glass-white 背景 + 8dp 顶部 shadow |
+| **SectionCard** | `components/SectionCard.kt` | `Modifier, content` | 玻璃白 `surface.copy(0.78)` + 22dp 圆角 + 4dp shadow |
 | **ListItemRow** | `components/ListItemRow.kt` | `leading, title, subtitle?, trailing, onClick?` | 高度 48-64dp、14dp 圆角、ripple |
+| **KeyValueRow** | `components/KeyValueRow.kt` | `label: String, value: String` | 一行 label 左 / value 右；label `onSurfaceVariant` labelMedium，value `onSurface` bodyMedium；14dp 垂直间距；用于预览屏的"详细信息"网格 |
+| **UserAvatarCard** | `components/UserAvatarCard.kt` | `name: String, role: String, serverName: String, status: String?` | 48dp 圆形渐变头像（CoverLetter 占位）+ 用户名（Fredoka titleMedium）+ 角色 + 服务器 + 右侧 mint chip；用于设置屏顶部 |
 | **FileTypeIcon** | `components/FileTypeIcon.kt` | `mimeType, size=40.dp` | 按原型 §4.2.6 表重映射：folder→tertiaryContainer(CandyPinkBg)、image→secondaryContainer(CandyMintBg)、video→primaryContainer(Brand300)、audio→secondaryContainer、text→surfaceContainerHigh、pdf→errorContainer、archive→tertiaryContainer、code→surfaceContainerHigh、其他→surfaceContainerHigh |
 | **StatusBanner** | `components/StatusBanner.kt` | `kind(INFO/WARN/ERROR/SUCCESS), message, actionLabel?, onAction?` | 4 种背景色按原型 §4.2.4，18dp 圆角 |
 | **SearchField** | `components/SearchField.kt` | `value, onValueChange, placeholder?` | 40dp 高度、chip 圆角、半透明白底 |
@@ -507,10 +509,10 @@ fun AlistTheme(
 
 布局（按原型 Screen02_Home）：
 - 顶栏：标题 "早上好 ✨" + 副标题 "已连接 · 我的 Alist" + refresh/search icon-btn
-- Hero 卡（18dp padding，相对位置有装饰圆）：42×42 蓝渐变方形 + "我的云端小屋" Fredoka 16 + "当前服务器 · v3.41.0" + 右侧 mint 绿点 "在线" chip
 - 3 指标行（grid 3 列）：用户/角色/在线，每张 16dp 圆角，icon 28×28 + label + numeral
 - 后台任务卡：进行中数字 + 4 个 chip（上传/解压/复制/离线下载/对象迁移）
 - 存储源列表：4 张 `storage-card`（阿里云/夸克/百度/本地），每张 44×44 渐变方 + 名称 + 路径 + 右侧 chevron 或 chip
+- **顶部不要 Hero 服务器卡**（截图确认 AppTopBar 副标题已足够承载服务器信息）
 
 #### 5.2.3 屏 03 文件浏览（重写）
 
@@ -525,35 +527,47 @@ fun AlistTheme(
 
 #### 5.2.4 屏 04 文件预览（改外观）
 
-复用 `PreviewViewModel` / `PreviewRouter` / `PreviewImage` / `PreviewText` / `PreviewAudio` / `PreviewFallback` 现有实现，**不重写预览主体**。仅替换外观：
-- 顶部 `TopBar` 替换为新 `AppTopBar`（back 圆按钮 + 标题 + more icon-btn）
+复用 `PreviewViewModel` / `PreviewRouter` / `PreviewImage` / `PreviewText` / `PreviewAudio` / `PreviewFallback` 现有实现。改造外观：
+- 顶部 `TopBar` 替换为新 `AppTopBar`（back 圆按钮 + 标题 + 副标题 + 分享 / 下载 icon-btn）
 - `FileTypeIcon` 走新映射
 - 主题色自动随 token 改变
 - 错误态/加载态走新 `ErrorState` / `LoadingState`
+- **预览主体下方**追加：
+  - **3 outlined 按钮行**：分享 / 复制直链 / 其他应用 — `ActionButton(variant = OUTLINED)` + `AppIcons.share / link / external`，18dp 圆角，36dp 高度
+  - **详细信息网格卡**：`SectionCard` 包裹 `Column` of `KeyValueRow`（label 在左、`onSurfaceVariant`；value 在右、`onSurface`），字段：类型 / 尺寸 / 修改时间 / 位置。KeyValueRow 是新共享组件，14dp 垂直间距
 
 #### 5.2.5 屏 05 传输（重写）
 
 布局（按原型 Screen05_Transfer）：
-- 顶栏：标题 "传输" + 副标题 "下载 · 上传"
-- segmented 切换器：全部/进行中/已完成
+- 顶栏：标题 "传输" + 副标题（运行时展示当前进行中 / 已完成 计数）
+- segmented 切换器：**4 段** — 全部 / 上传（带上传计数 badge） / 下载（带下载计数 badge） / 失败
 - 任务卡：每张 `task-row` 16dp 圆角 + 32×32 icon（上传粉/下载薄荷） + 名称 + 状态 + 进度条（5dp 高度，粉/蓝/薄荷渐变）+ 文件大小/速度/时间
-- 失败态：进度条变红
+- 失败态：进度条变红，进度条下方挂 "重试 / 删除" 链接按钮
 
 #### 5.2.6 屏 06 设置（重写）
 
 布局（按原型 Screen06_Settings）：
 - 顶栏：标题 "设置" + 副标题当前服务器
+- **用户卡**（顶部，紧贴顶栏）：渐变头像（48×48 圆形 + 用户名首字）+ 用户名 + 角色 + 服务器名 + 右侧 mint "VIP"/"在线" chip
+- **外观主题** 段落标题（labelMedium）
 - 主题选择器 3 张卡：sun（浅蓝白 swatch）/ moon（深蓝 swatch）/ auto（渐变 swatch），激活态主色描边
-- 设置行：36×36 渐变方（蓝/薄荷/粉/紫罗兰/黄） + 名称 + 描述 + chevron
+- **存储源** 段落标题 + 列表（与首页复用同一组件）
+- 设置行（快速设置）：36×36 渐变方（蓝/薄荷/粉/紫罗兰/黄） + 名称 + 描述 + chevron
 - 关于/退出登录：底部
 
 #### 5.2.7 屏 07 存储编辑（重写）
 
 布局（按原型 Screen07_StorageEdit）：
-- 顶栏：back + 标题 "存储源" + 副标题
-- Cookie 字段卡（蓝渐变背景 + 圆点 + 标签 + "获取" 按钮）
-- 表单字段：14dp 圆角输入
-- 底部 "保存" 主按钮
+- 顶栏：back + 标题 "编辑存储" + 副标题（存储名）
+- **存储头卡**：`SectionCard` 包裹：mint 云渐变 icon + 存储名 + 挂载路径 + 右侧 mint "已启用" chip
+- **驱动参数** 段落标题 + 表单字段：
+  - 备注（OutlinedTextField，14dp 圆角）
+  - 挂载路径（OutlinedTextField）
+  - Cookie：mint 浅色字段卡（圆点 + "已设置 · N 天前更新" + "重新获取" outlined 小按钮）
+  - 根目录路径（OutlinedTextField）
+  - 排序方式（OutlinedTextField，下拉选择感）
+- **启用存储** toggle（开关 + "禁用后文件将不再显示" 描述）
+- 底部 sticky "保存修改" 主按钮（48dp，蓝渐变）
 
 #### 5.2.8 屏 08 完整设置（重写）
 
@@ -562,10 +576,11 @@ fun AlistTheme(
 #### 5.2.9 屏 09 移动/复制选择目标（重写）
 
 布局（按原型 Screen09_PickTarget）：
-- 顶栏：back + 标题 "选择目标" + "确认" 按钮
-- 文件行（FileTypeIcon + 文件名）
-- 当前路径面包屑
-- 空文件夹空态
+- 顶栏：back + 标题 "选择目标" + 副标题（操作名）
+- **面包屑**（位于顶栏下方）：文件夹 icon + 当前路径 chip 链（"根目录 / 父目录 / 当前目录"）+ 右侧 "新建" pill 按钮
+- **目标预览卡**：当用户选中目标目录时显示 — 文件夹 icon + 名称 + 右侧 "✓ 创建" outlined 按钮（选中态）
+- **可移动到的位置** 段落标题
+- 文件行（FileTypeIcon + 文件名 + 次级元数据如 "N 项 · X.X MB"）+ 右侧 22×22 radio circle（选中态蓝渐变实心）
 
 #### 5.2.10 屏 10 状态合集（demo）
 
@@ -706,10 +721,13 @@ composable<MusicPreviewDest> { MusicPreviewScreen(onBack = { ... }) }
 ### 10.3 体验验收
 
 - [ ] 登录页云朵装饰 + 糖果圆点
-- [ ] 首页 Hero 卡 + 3 指标行 + 存储列表
-- [ ] 文件页多选 actionbar + 离线横幅
-- [ ] 传输页 segmented 切换 + 任务卡
-- [ ] 设置页主题 3 卡选择
+- [ ] 首页 3 指标行 + 任务卡 + 存储列表（**无 Hero 服务器卡**）
+- [ ] 文件页多选 actionbar + 离线横幅 + 选中态 `primaryContainer` 背景
+- [ ] 预览页 3 outlined 按钮（分享 / 复制直链 / 其他应用）+ 详细信息网格卡
+- [ ] 传输页 4 段 segmented（全部 / 上传 / 下载 / 失败）+ 任务卡 + 失败态链接
+- [ ] 设置页用户头像卡 + 主题 3 卡 + 存储列表 + 快速设置行
+- [ ] 存储编辑页头卡 + 5 字段表单 + cookie 卡片 + 启用 toggle + 保存主按钮
+- [ ] 选择目标页面包屑 + 目标预览卡 + 文件行 + radio circle
 - [ ] 音乐 Tab 点击进入音乐库（5 section + 空态文案）
 - [ ] 长按进入多选（移动端习惯）
 - [ ] 下拉刷新支持（保留现有实现）
