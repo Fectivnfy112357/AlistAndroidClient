@@ -1,27 +1,19 @@
 package com.textvision.alistclient.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.Article
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.textvision.alistclient.ui.icons.AppIcons
 
 enum class FileCategory { FOLDER, IMAGE, VIDEO, AUDIO, TEXT, CODE, ARCHIVE, PDF, DOCUMENT, OTHER }
 
@@ -89,30 +81,30 @@ fun FileTypeIcon(
     size: Dp = 40.dp,
 ) {
     val (icon, containerColor, contentColor) = when (category) {
-        FileCategory.FOLDER -> Triple(Icons.Filled.Folder, MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer)
-        FileCategory.IMAGE -> Triple(Icons.Filled.Image, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
-        FileCategory.VIDEO -> Triple(Icons.Filled.Movie, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
-        FileCategory.AUDIO -> Triple(Icons.Filled.MusicNote, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
-        FileCategory.TEXT -> Triple(Icons.Filled.Description, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
-        FileCategory.CODE -> Triple(Icons.Filled.Code, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
-        FileCategory.ARCHIVE -> Triple(Icons.Filled.Archive, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
-        FileCategory.PDF -> Triple(Icons.Filled.PictureAsPdf, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
-        FileCategory.DOCUMENT -> Triple(Icons.Filled.Article, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
-        FileCategory.OTHER -> Triple(Icons.Filled.InsertDriveFile, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
+        FileCategory.FOLDER -> Triple(AppIcons.folder, MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer)
+        FileCategory.IMAGE -> Triple(AppIcons.image, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+        FileCategory.VIDEO -> Triple(AppIcons.video, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
+        FileCategory.AUDIO -> Triple(AppIcons.audio, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+        FileCategory.TEXT -> Triple(AppIcons.doc, MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface)
+        FileCategory.CODE -> Triple(AppIcons.doc, MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface)
+        FileCategory.ARCHIVE -> Triple(AppIcons.archive, MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer)
+        FileCategory.PDF -> Triple(Icons.Outlined.PictureAsPdf, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
+        FileCategory.DOCUMENT -> Triple(AppIcons.doc, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+        FileCategory.OTHER -> Triple(AppIcons.file, MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface)
     }
 
-    Surface(
-        modifier = modifier.size(size),
-        shape = RoundedCornerShape(12.dp),
-        color = containerColor,
-        contentColor = contentColor,
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(MaterialTheme.shapes.small)
+            .background(containerColor),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(size * 0.55f),
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(size * 0.5f),
+        )
     }
 }
