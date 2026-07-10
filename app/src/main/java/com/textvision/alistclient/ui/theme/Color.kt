@@ -42,6 +42,8 @@ val CandyLilacBg    = Color(0xFFECE2FF)
 val MusicPink       = Color(0xFFFFA1BD)
 val MusicMagenta    = Color(0xFFC46683)
 val MusicViolet     = Color(0xFF7C5BC7)
+/** Mid lilac stop of the pink→lilac→violet music hero gradient. Added in cleanup. */
+val MusicLilac      = Color(0xFFB57BD6)
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Ink (text hierarchy)
