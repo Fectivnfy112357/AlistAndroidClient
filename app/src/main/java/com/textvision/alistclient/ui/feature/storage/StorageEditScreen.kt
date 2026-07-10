@@ -59,7 +59,7 @@ fun StorageEditScreen(
     }
 
     AppScaffold(
-        topBar = { AppTopBar(title = "编辑存储", onNavigateUp = onBack) },
+        topBar = { AppTopBar(title = "编辑存储", onBack = onBack) },
     ) { innerPadding ->
         Column(
             modifier = Modifier

@@ -67,7 +67,7 @@ private fun AppScaffoldDarkPreview() {
 @Composable
 private fun AppTopBarPreview() {
     AlistTheme() {
-        AppTopBar(title = "文件", subtitle = "/root/documents", onNavigateUp = {})
+        AppTopBar(title = "文件", subtitle = "/root/documents", onBack = {})
     }
 }
 

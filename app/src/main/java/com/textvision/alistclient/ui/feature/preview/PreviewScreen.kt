@@ -65,7 +65,7 @@ fun PreviewScreen(
             AppTopBar(
                 title = "文件预览",
                 subtitle = name,
-                onNavigateUp = onBack,
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = onDownload) {
                         Icon(Icons.Outlined.Download, contentDescription = "下载")

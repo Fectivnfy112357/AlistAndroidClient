@@ -43,7 +43,7 @@ fun AdminSiteSettingsScreen(
     }
 
     AppScaffold(
-        topBar = { AppTopBar(title = "完整设置", onNavigateUp = onBack) },
+        topBar = { AppTopBar(title = "完整设置", onBack = onBack) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
