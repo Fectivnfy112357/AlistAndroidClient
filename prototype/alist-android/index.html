@@ -1,0 +1,3385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alist 安卓客户端 · UI 原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+   * Design Tokens · 浅蓝白 + 糖果点缀
+   * ============================================================ */
+  :root {
+    /* —— 主蓝白系 —— */
+    --bg-start: #F4F9FF;
+    --bg-end:   #E7F2FF;
+    --surface:  rgba(255, 255, 255, 0.78);
+    --surface-solid: #FFFFFF;
+    --ink:      #1F3A5F;        /* 深海军蓝主文字 */
+    --ink-soft: #6B8AB5;        /* 次级文字 */
+    --ink-mute: #A6BBDB;        /* 辅助文字 */
+    --line:     rgba(126, 167, 224, 0.18);
+
+    /* —— 品牌蓝 —— */
+    --brand:        #6FB6FF;      /* 主蓝 */
+    --brand-deep:   #4A98E8;      /* 按下/强调 */
+    --brand-soft:   #CDE5FF;      /* 浅蓝填充 */
+
+    /* —— 糖果点缀（克制使用）—— */
+    --candy-mint:   #9BE3C8;      /* 薄荷糖 */
+    --candy-pink:   #FFC4D6;      /* 樱花粉 */
+    --candy-lemon:  #FFE89B;      /* 奶黄糖 */
+    --candy-lilac:  #D8C7FF;      /* 紫罗兰糖 */
+
+    /* —— 语义状态（去饱和、温柔）—— */
+    --state-error:  #F49AA1;      /* 不用大红 */
+    --state-error-bg: #FFE5E8;
+    --state-warn:   #F4C77A;
+    --state-warn-bg: #FFF1D8;
+
+    /* —— 圆角 —— */
+    --r-card:  22px;
+    --r-btn:   18px;
+    --r-chip:  999px;
+    --r-input: 14px;
+    --r-mini:  10px;
+
+    /* —— 阴影（柔和、有空气感）—— */
+    --shadow-soft: 0 6px 24px rgba(74, 152, 232, 0.10);
+    --shadow-card: 0 4px 18px rgba(31, 58, 95, 0.06);
+    --shadow-pop:  0 8px 28px rgba(74, 152, 232, 0.18);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* SVG 全局默认：仅锁 flex 行为，不强行设尺寸（避免大尺寸 viewBox SVG 被压扁）。
+   * 容易撑爆的场景（按钮内 / check 圆圈 / 提示卡）用 .b-ico 包裹器。*/
+  svg { display: inline-block; flex-shrink: 0; max-width: 100%; }
+  /* 兜底：flex/inline-flex 容器里的裸 SVG 锁 1em，防止被撑满容器 */
+  button svg, a svg, [style*="display:flex"] > svg, [style*="display: inline-flex"] > svg {
+    width: 1em; height: 1em;
+  }
+  /* 队列 / 大控制按钮里的 SVG 显式放大 */
+  .ctrl-btn svg { width: 24px; height: 24px; }
+  .ctrl-btn-sm svg { width: 18px; height: 18px; }
+  /* 大尺寸装饰插画（受全局 button svg 兜底影响，加 class 强制尺寸） */
+  .illus-xl { width: 180px !important; height: 180px !important; }
+  .illus-md { width: 96px !important; height: 96px !important; }
+
+  /* 音乐播放器控制按钮（圆形幽灵按钮） */
+  .ctrl-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .ctrl-btn:active { background: rgba(31, 58, 95, 0.06); }
+  .ctrl-btn-sm {
+    width: 40px; height: 40px;
+  }
+  .ctrl-btn-pill {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    height: 32px;
+    padding: 0 12px;
+    display: flex; align-items: center; gap: 6px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  html, body {
+    font-family: 'Noto Sans SC', 'Fredoka', system-ui, sans-serif;
+    background: linear-gradient(180deg, #FBFDFF 0%, #E8F2FF 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* —— 字体策略：标题用 Fredoka（圆润+优雅），正文 Noto Sans SC —— */
+  .display, h1, h2, h3, .title, .num { font-family: 'Fredoka', 'Noto Sans SC', sans-serif; font-weight: 600; letter-spacing: -0.01em; }
+
+  /* ============================================================
+   * Layout
+   * ============================================================ */
+  .stage {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 36px 24px 80px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .hero h1 {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4A98E8 0%, #9C7CE8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p { color: var(--ink-soft); font-size: 14px; margin-top: 6px; }
+
+  /* 屏导航 */
+  .screen-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 36px;
+    padding: 12px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(12px);
+    border-radius: var(--r-card);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-card);
+  }
+  .nav-chip {
+    padding: 8px 16px;
+    border-radius: var(--r-chip);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .nav-chip:hover { background: rgba(111, 182, 255, 0.10); color: var(--ink); }
+  .nav-chip.active {
+    background: linear-gradient(135deg, #BFE0FF 0%, #D7E9FF 100%);
+    color: var(--brand-deep);
+    font-weight: 600;
+  }
+
+  /* 手机墙 */
+  .phone-wall {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .phone-name {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: center;
+  }
+  .phone-name .num {
+    display: inline-block;
+    width: 22px; height: 22px;
+    line-height: 22px;
+    border-radius: 50%;
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+    font-size: 12px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .phone-sub { font-size: 11px; color: var(--ink-mute); font-family: 'Noto Sans SC', sans-serif; font-weight: 400; margin-top: 2px; }
+
+  /* ============================================================
+   * Phone Frame · Android 412×915 → 360×760 显示
+   * ============================================================ */
+  .phone {
+    width: 360px;
+    background: #1A1F2E;
+    border-radius: 44px;
+    padding: 11px;
+    box-shadow: 0 24px 64px rgba(31, 58, 95, 0.22), 0 0 0 1.5px rgba(255,255,255,0.04) inset;
+    position: relative;
+  }
+  /* 顶部小孔摄像头 */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px; height: 24px;
+    background: #0E1118;
+    border-radius: 14px;
+    z-index: 10;
+  }
+  .phone-screen {
+    border-radius: 34px;
+    overflow: hidden;
+    height: 760px;
+    position: relative;
+    background: var(--bg-start);
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+  }
+
+  /* —— 状态栏 —— */
+  .statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 24px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .statusbar .right { display: flex; gap: 6px; align-items: center; }
+  .statusbar svg { width: 14px; height: 14px; }
+
+  /* —— 顶栏 —— */
+  .appbar {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px 12px;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .appbar .back {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .appbar .back svg { width: 16px; height: 16px; }
+  .appbar .titles { flex: 1; min-width: 0; }
+  .appbar .title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .appbar .subtitle {
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .appbar .subtitle .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--candy-mint);
+    display: inline-block;
+  }
+  .appbar .subtitle.offline .dot { background: var(--state-warn); }
+  .appbar .actions { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .icon-btn svg { width: 16px; height: 16px; }
+  .icon-btn.brand {
+    background: linear-gradient(135deg, #6FB6FF 0%, #4A98E8 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(74, 152, 232, 0.35);
+  }
+
+  /* —— 滚动区 —— */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    scrollbar-width: thin;
+  }
+  .scroll::-webkit-scrollbar { width: 0; }
+
+  /* —— 底部导航 —— */
+  .bottombar {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 8px 14px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .tab {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    padding: 6px 4px;
+    border-radius: 14px;
+    cursor: pointer;
+    color: var(--ink-mute);
+    transition: color 0.2s;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .tab svg { width: 22px; height: 22px; }
+  .tab.active { color: var(--brand-deep); }
+  .tab.active .ico-wrap {
+    background: linear-gradient(135deg, #CDE5FF, #BFE0FF);
+    padding: 4px 14px;
+    border-radius: var(--r-chip);
+    margin: -4px -10px 0;
+  }
+  .tab .ico-wrap { padding: 4px 14px; display: inline-flex; }
+
+  /* ============================================================
+   * Components
+   * ============================================================ */
+  /* —— 玻璃白卡片 —— */
+  .card {
+    background: var(--surface);
+    backdrop-filter: blur(14px);
+    border-radius: var(--r-card);
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: var(--shadow-card);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card.solid { background: var(--surface-solid); backdrop-filter: none; }
+  .card-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* —— 状态横幅 —— */
+  .banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--r-btn);
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .banner.warn { background: var(--state-warn-bg); color: #8B6A2A; }
+  .banner.error { background: var(--state-error-bg); color: #B8505C; }
+  .banner.info {
+    background: linear-gradient(90deg, #E0EEFF, #DCEAFE);
+    color: var(--brand-deep);
+  }
+  .banner svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .banner .grow { flex: 1; }
+  .banner .btn-link {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+  }
+
+  /* —— 输入框 —— */
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .input {
+    width: 100%;
+    height: 44px;
+    border-radius: var(--r-input);
+    background: rgba(255,255,255,0.7);
+    border: 1.5px solid var(--line);
+    padding: 0 14px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    display: flex;
+    align-items: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .input:focus { border-color: var(--brand); background: white; }
+  .input.with-icon { padding-left: 40px; position: relative; }
+  .input.with-icon .ico {
+    position: absolute;
+    left: 14px;
+    color: var(--ink-mute);
+  }
+  .input .ico svg { width: 16px; height: 16px; }
+  .input .placeholder { color: var(--ink-mute); }
+  .input .value { color: var(--ink); font-weight: 500; }
+
+  /* —— 主按钮 —— */
+  .btn-primary {
+    width: 100%;
+    height: 48px;
+    border-radius: var(--r-btn);
+    background: linear-gradient(135deg, #6FB6FF 0%, #4A98E8 100%);
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(74, 152, 232, 0.35);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+    border-radius: var(--r-btn) var(--r-btn) 0 0;
+    pointer-events: none;
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-ghost {
+    width: 100%;
+    height: 44px;
+    border-radius: var(--r-btn);
+    background: rgba(255,255,255,0.7);
+    color: var(--brand-deep);
+    border: 1.5px solid var(--brand-soft);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  /* —— .b-ico 通用：图标放在文字旁的 inline 容器 —— */
+  .b-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px; height: 16px;
+    font-size: 16px;
+    line-height: 0;
+    flex-shrink: 0;
+  }
+  /* —— icon + 文字 按钮（修 SVG 撑满容器）—— */
+  .btn-icon-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    height: 38px;
+  }
+  button.btn-icon-text .b-ico {
+    width: 18px; height: 18px;
+    font-size: 18px;
+  }
+  .multi-hint {
+    background: var(--brand-soft);
+    border-radius: 14px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: var(--brand-deep);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .multi-hint .b-ico {
+    width: 16px; height: 16px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* —— Tag/Chip —— */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--r-chip);
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+  }
+  .chip.mint { background: #DAF6EC; color: #2D9B7C; }
+  .chip.pink { background: #FFE4ED; color: #C46683; }
+  .chip.lemon { background: #FFF4CC; color: #9C7A1F; }
+  .chip.lilac { background: #ECE2FF; color: #7C5BC7; }
+  .chip.gray { background: #EAF0F8; color: var(--ink-soft); }
+  .chip .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* —— 文件行 —— */
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: transparent;
+    transition: background 0.15s;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .file-row:hover { background: rgba(255,255,255,0.5); }
+  .file-row .ico {
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .file-row .ico.folder { background: linear-gradient(135deg, #BFE0FF, #D7E9FF); color: var(--brand-deep); }
+  .file-row .ico.image  { background: linear-gradient(135deg, #FFE4ED, #FFD1DD); color: #C46683; }
+  .file-row .ico.video  { background: linear-gradient(135deg, #ECE2FF, #DDD0FF); color: #7C5BC7; }
+  .file-row .ico.audio  { background: linear-gradient(135deg, #DAF6EC, #C2EFE0); color: #2D9B7C; }
+  .file-row .ico.doc    { background: linear-gradient(135deg, #FFF4CC, #FFE89B); color: #9C7A1F; }
+  .file-row .ico.archive{ background: linear-gradient(135deg, #E8EFF8, #D7E1F0); color: var(--ink-soft); }
+  .file-row .ico svg { width: 20px; height: 20px; }
+  .file-row .meta { flex: 1; min-width: 0; }
+  .file-row .name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-row .sub {
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-top: 2px;
+  }
+  .file-row .more {
+    color: var(--ink-mute);
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .file-row .more svg { width: 16px; height: 16px; }
+
+  /* —— 底部操作条（多选模式）—— */
+  .actionbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px 14px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .actionbar .count {
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 0 6px;
+  }
+  .actionbar .spacer { flex: 1; }
+  .action-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .action-btn.danger { color: var(--state-error); }
+  .action-btn.primary { color: var(--brand-deep); }
+  .action-btn svg { width: 18px; height: 18px; }
+
+  /* —— 任务行（传输页）—— */
+  .task-row {
+    background: var(--surface-solid);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .task-row .head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .task-row .head .ico {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: var(--brand-soft); color: var(--brand-deep);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .task-row .head .ico.down { background: #DAF6EC; color: #2D9B7C; }
+  .task-row .head .ico.up { background: #FFE4ED; color: #C46683; }
+  .task-row .head .ico svg { width: 16px; height: 16px; }
+  .task-row .head .name {
+    flex: 1; font-size: 12px; font-weight: 500; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .task-row .head .status { font-size: 10px; font-weight: 600; }
+  .task-row .progress {
+    height: 5px;
+    background: rgba(126, 167, 224, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .task-row .progress .bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand), var(--candy-mint));
+    border-radius: 999px;
+  }
+  .task-row .progress.failed .bar { background: var(--state-error); }
+  .task-row .foot {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--ink-mute);
+  }
+
+  /* —— 标签切换器（Segmented）—— */
+  .segmented {
+    display: flex;
+    background: rgba(255,255,255,0.6);
+    border-radius: var(--r-chip);
+    padding: 4px;
+    gap: 2px;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+  }
+  .seg {
+    flex: 1;
+    text-align: center;
+    padding: 7px 8px;
+    border-radius: var(--r-chip);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+  }
+  .seg.active {
+    background: linear-gradient(135deg, #FFFFFF, #F4F9FF);
+    color: var(--brand-deep);
+    box-shadow: 0 2px 8px rgba(74, 152, 232, 0.12);
+  }
+
+  /* —— 开关 —— */
+  .switch {
+    width: 40px; height: 22px;
+    border-radius: 999px;
+    background: var(--line);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+  }
+  .switch.on { background: linear-gradient(135deg, var(--brand), var(--candy-mint)); }
+  .switch.on::after { transform: translateX(18px); }
+
+  /* —— 设置行 —— */
+  .set-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .set-row:last-child { border-bottom: none; }
+  .set-row .ico {
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #BFE0FF, #D7E9FF);
+    color: var(--brand-deep);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .set-row .ico.mint { background: linear-gradient(135deg, #DAF6EC, #C2EFE0); color: #2D9B7C; }
+  .set-row .ico.pink { background: linear-gradient(135deg, #FFE4ED, #FFD1DD); color: #C46683; }
+  .set-row .ico.lilac { background: linear-gradient(135deg, #ECE2FF, #DDD0FF); color: #7C5BC7; }
+  .set-row .ico.lemon { background: linear-gradient(135deg, #FFF4CC, #FFE89B); color: #9C7A1F; }
+  .set-row .ico svg { width: 18px; height: 18px; }
+  .set-row .meta { flex: 1; min-width: 0; }
+  .set-row .name { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .set-row .desc { font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+  .set-row .trail { color: var(--ink-mute); display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .set-row .trail svg { width: 14px; height: 14px; }
+
+  /* —— 空态 / 加载 / 错误 —— */
+  .empty {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--ink-mute);
+  }
+  .empty .illus {
+    width: 96px; height: 96px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .empty .title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .empty .desc { font-size: 12px; line-height: 1.5; max-width: 200px; }
+
+  .skeleton {
+    background: linear-gradient(90deg, #EAF2FC 0%, #D7E5F5 50%, #EAF2FC 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite linear;
+    border-radius: 8px;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* —— 存储卡（首页）—— */
+  .storage-card {
+    background: var(--surface-solid);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .storage-card:hover { transform: translateY(-1px); }
+  .storage-card .ico {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #BFE0FF, #D7E9FF);
+    color: var(--brand-deep);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .storage-card .ico svg { width: 22px; height: 22px; }
+  .storage-card .meta { flex: 1; }
+  .storage-card .name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .storage-card .path { font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+  .storage-card .trail {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-mute);
+  }
+  .storage-card .trail svg { width: 16px; height: 16px; }
+
+  /* —— 指标卡（首页）—— */
+  .metric {
+    background: var(--surface-solid);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    text-align: left;
+  }
+  .metric .label { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+  .metric .value {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-top: 2px;
+    line-height: 1;
+  }
+  .metric .value small { font-size: 13px; color: var(--ink-mute); font-weight: 500; }
+  .metric .ico {
+    width: 28px; height: 28px;
+    border-radius: 10px;
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .metric .ico.mint { background: #DAF6EC; color: #2D9B7C; }
+  .metric .ico.pink { background: #FFE4ED; color: #C46683; }
+  .metric .ico svg { width: 16px; height: 16px; }
+
+  .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  /* —— 对话框 —— */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(31, 58, 95, 0.35);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .modal {
+    background: white;
+    width: 100%;
+    border-radius: 24px 24px 0 0;
+    padding: 20px 18px 24px;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+  }
+  .modal .drag {
+    width: 36px; height: 4px;
+    background: #E0E8F2;
+    border-radius: 2px;
+    margin: 0 auto 14px;
+  }
+  .modal h3 {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .modal p { font-size: 12px; color: var(--ink-soft); text-align: center; line-height: 1.6; margin-bottom: 16px; }
+  .modal .actions { display: flex; gap: 8px; }
+  .modal .actions button { flex: 1; }
+
+  /* —— Cookie 输入（存储编辑页）—— */
+  .cookie-field {
+    background: var(--brand-soft);
+    border-radius: var(--r-input);
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .cookie-field .dots { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-deep); }
+  .cookie-field .label { font-size: 11px; color: var(--brand-deep); font-weight: 600; flex: 1; }
+  .cookie-field .btn-cookie {
+    background: white;
+    color: var(--brand-deep);
+    border: 1px solid var(--brand);
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .cookie-field .btn-cookie svg { width: 12px; height: 12px; }
+
+  /* —— 主题选择（设置页）—— */
+  .theme-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .theme-card {
+    padding: 12px 8px;
+    border-radius: 14px;
+    border: 2px solid var(--line);
+    background: rgba(255,255,255,0.5);
+    text-align: center;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    transition: all 0.2s;
+  }
+  .theme-card.active {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+  }
+  .theme-card .swatch {
+    width: 100%;
+    height: 32px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    display: flex; overflow: hidden;
+  }
+  .theme-card .swatch span { flex: 1; }
+  /* 主题卡图标：固定 28px，不再被撑爆 */
+  .theme-card svg { width: 28px; height: 28px; }
+  .theme-card .ico-name {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+
+  /* —— 装饰：气泡/糖果 —— */
+  .deco-clouds {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 280px;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .deco-clouds svg { width: 100%; height: 100%; }
+
+  /* —— 工具类 —— */
+  .row { display: flex; align-items: center; }
+  .between { justify-content: space-between; }
+  .gap-8 { gap: 8px; } .gap-10 { gap: 10px; } .gap-12 { gap: 12px; } .gap-16 { gap: 16px; }
+  .mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; } .mt-16 { margin-top: 16px; }
+  .mb-8 { margin-bottom: 8px; } .mb-12 { margin-bottom: 12px; } .mb-16 { margin-bottom: 16px; }
+  .w-full { width: 100%; }
+  .text-center { text-align: center; }
+  .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* —— 进度按钮内的 spinner —— */
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* —— 错误态的 retry 按钮 —— */
+  .btn-retry {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 14px;
+    border-radius: var(--r-chip);
+    background: var(--state-error);
+    color: white;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .btn-retry svg { width: 12px; height: 12px; }
+
+  /* —— 搜索框 —— */
+  .search {
+    height: 40px;
+    border-radius: var(--r-chip);
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--line);
+    display: flex; align-items: center;
+    padding: 0 14px;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .search svg { width: 14px; height: 14px; color: var(--ink-mute); flex-shrink: 0; }
+  .search input {
+    flex: 1;
+    border: none; background: transparent; outline: none;
+    font-family: inherit; font-size: 12px; color: var(--ink);
+  }
+  .search input::placeholder { color: var(--ink-mute); }
+
+  /* —— 选择态（多选）—— */
+  .check {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: white;
+  }
+  .check.on {
+    background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+    border-color: var(--brand);
+    color: white;
+  }
+  .check svg { width: 12px; height: 12px; }
+  .file-row.selected { background: var(--brand-soft); }
+
+  /* —— Avatar 云朵 logo —— */
+  .logo-cloud {
+    width: 76px; height: 76px;
+    margin: 0 auto 16px;
+    display: block;
+  }
+
+  /* ============================================================
+   * Music · 音乐专用组件
+   * ============================================================ */
+  /* 专辑封面（用渐变 + 几何装饰代替真实图片） */
+  .album-art {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(31, 58, 95, 0.18), 0 0 0 1px rgba(255,255,255,0.4) inset;
+  }
+  .album-art::after {
+    /* 顶部高光，让封面有"光泽" */
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 45%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.3), transparent);
+    border-radius: 24px 24px 60% 60%;
+    pointer-events: none;
+  }
+
+  /* 播放器大圆按钮 */
+  .play-btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6FB6FF 0%, #4A98E8 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(74, 152, 232, 0.45), 0 0 0 6px rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .play-btn::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+    pointer-events: none;
+  }
+  .play-btn svg { width: 28px; height: 28px; position: relative; z-index: 1; }
+
+  .play-btn-sm {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6FB6FF 0%, #4A98E8 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(74, 152, 232, 0.35);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .play-btn-sm svg { width: 18px; height: 18px; }
+  /* Hero 横幅 / Mini Player 里的圆形按钮统一样式 */
+  .music-circle-btn {
+    background: rgba(255,255,255,0.25);
+    border: none;
+    color: white;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .music-circle-btn svg { width: 16px; height: 16px; }
+
+  /* 进度条（音乐播放器专用，更细） */
+  .seekbar {
+    position: relative;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(126, 167, 224, 0.18);
+  }
+  .seekbar .played {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 38%;
+    background: linear-gradient(90deg, #6FB6FF 0%, #9BE3C8 100%);
+    border-radius: 999px;
+  }
+  .seekbar .played::after {
+    content: '';
+    position: absolute;
+    right: -7px; top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 6px rgba(31, 58, 95, 0.25);
+    border: 2px solid var(--brand);
+  }
+  .seekbar .played::before {
+    content: '';
+    position: absolute;
+    right: -18px; top: 50%;
+    transform: translateY(-50%);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--brand);
+    opacity: 0.12;
+  }
+
+  /* 等宽波形（音乐库播放中状态） */
+  .wave {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+  }
+  .wave span {
+    display: inline-block;
+    width: 2.5px;
+    background: var(--brand-deep);
+    border-radius: 2px;
+    animation: wave-bounce 1.2s ease-in-out infinite;
+  }
+  .wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .wave span:nth-child(2) { height: 10px; animation-delay: 0.1s; }
+  .wave span:nth-child(3) { height: 7px; animation-delay: 0.2s; }
+  .wave span:nth-child(4) { height: 12px; animation-delay: 0.3s; }
+  .wave.paused span { animation: none; opacity: 0.4; }
+  @keyframes wave-bounce {
+    0%, 100% { transform: scaleY(0.5); }
+    50% { transform: scaleY(1.2); }
+  }
+
+  /* 音乐库：横幅卡（最近播放） */
+  .music-hero {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    height: 180px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: white;
+    cursor: pointer;
+  }
+  .music-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #FFA1BD 0%, #C46683 50%, #7C5BC7 100%);
+    z-index: 0;
+  }
+  .music-hero::after {
+    content: '';
+    position: absolute;
+    right: -30px; top: -30px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+    z-index: 0;
+  }
+  .music-hero > * { position: relative; z-index: 1; }
+
+  /* 圆形艺人头像 */
+  .artist-avatar {
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(31, 58, 95, 0.1);
+  }
+  .artist-avatar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.5) inset;
+  }
+
+  /* 歌曲行（音乐库紧凑模式） */
+  .song-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .song-row:hover { background: rgba(255,255,255,0.5); }
+  .song-row.playing { background: var(--brand-soft); }
+  .song-row .num {
+    width: 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-mute);
+    font-weight: 500;
+  }
+  .song-row .num .wave { margin: 0 auto; }
+  .song-row .num.deco {
+    width: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .song-row .num.deco svg { width: 14px; height: 14px; }
+  .song-row .cover {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .song-row .cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 50%);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .song-row .meta { flex: 1; min-width: 0; }
+  .song-row .name {
+    font-size: 13px; font-weight: 500; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .song-row.playing .name { color: var(--brand-deep); }
+  .song-row .artist { font-size: 11px; color: var(--ink-mute); margin-top: 1px; }
+  .song-row .dur { font-size: 11px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+  .song-row .more {
+    width: 24px; height: 24px;
+    color: var(--ink-mute);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .song-row .more svg { width: 16px; height: 16px; }
+
+  /* —— 封面首字（歌名/专辑/艺人首字符居中显示） —— */
+  .cover-letter {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Fredoka', 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 2px rgba(31, 58, 95, 0.15);
+    line-height: 1;
+    user-select: none;
+    pointer-events: none;
+    z-index: 1;
+  }
+  /* 歌曲行封面（42×42）：22px */
+  .song-row .cover .cover-letter { font-size: 22px; }
+  /* 专辑卡（105×105）：48px */
+  .album-card .cover .cover-letter { font-size: 48px; }
+  /* 网格专辑卡（140px 高）：56px */
+  .album-card .cover .cover-letter { font-size: 56px; }
+  /* Mini Player 封面（38×38）：16px */
+  .mini-player .cover .cover-letter { font-size: 16px; }
+
+  /* —— 横向滚动卡片 —— */
+  .scroll-x {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 4px 2px 12px;
+    margin: 0 -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    scrollbar-width: none;
+  }
+  .scroll-x::-webkit-scrollbar { display: none; }
+  .scroll-x > * { scroll-snap-align: start; flex-shrink: 0; }
+
+  /* section 标题统一间距 */
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 18px 0 10px;
+  }
+  .section-head .title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-head .title .accent {
+    display: inline-block;
+    width: 4px; height: 14px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--brand), var(--candy-mint));
+  }
+  .section-head .more {
+    font-size: 11px;
+    color: var(--brand-deep);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* 艺人卡（圆形 + 名字 + 歌曲数） */
+  .artist-card {
+    width: 100px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .artist-card .ring {
+    width: 84px; height: 84px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .artist-card .ring::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px white, 0 0 0 4px var(--line);
+  }
+  .artist-card .name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .artist-card .count {
+    font-size: 10px;
+    color: var(--ink-mute);
+    margin-top: 1px;
+  }
+
+  /* 专辑卡（方形 2:2 + 名字） */
+  .album-card {
+    width: 105px;
+    cursor: pointer;
+  }
+  .album-card .cover {
+    width: 105px; height: 105px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(31, 58, 95, 0.08);
+  }
+  .album-card .cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .album-card .name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-top: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .album-card .meta {
+    font-size: 10px;
+    color: var(--ink-mute);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Mini Player · 全局迷你播放器（底部 Tab 上方） */
+  .mini-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .mini-player .cover {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .mini-player .cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent 60%);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .mini-player .meta { flex: 1; min-width: 0; }
+  .mini-player .name {
+    font-size: 12px; font-weight: 600; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mini-player .artist {
+    font-size: 10px; color: var(--ink-mute);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mini-player .wave { flex-shrink: 0; }
+  .mini-player .ctl {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mini-player .ctl svg { width: 14px; height: 14px; }
+
+  /* ============================================================
+   * 资源库 · 屏 13 专用样式
+   * ============================================================ */
+  .asset-row {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .asset-row:last-child { border-bottom: none; }
+  .asset-row .asset-info { flex: 1; min-width: 0; }
+  .asset-row .asset-name {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .asset-row .asset-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .asset-row .asset-use {
+    font-size: 10px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .asset-row .asset-impl {
+    font-size: 11px;
+    color: var(--ink-mute);
+    line-height: 1.5;
+  }
+  /* 预览盒子（统一基础尺寸） */
+  .asset-preview {
+    width: 64px; height: 64px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    background: rgba(255,255,255,0.5);
+  }
+  /* 居中首字（资源库版） */
+  .cover-letter-box {
+    background: linear-gradient(135deg,#FFA1BD,#7C5BC7);
+    color: rgba(255,255,255,0.92);
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+  }
+  .cover-letter-box span { font-size: 26px; line-height: 1; }
+  /* 头像/艺人圆 */
+  .avatar-circle {
+    background: linear-gradient(135deg,#9BE3C8,#6FB6FF);
+    color: white;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 24px;
+  }
+  .artist-circle {
+    background: linear-gradient(135deg,#6FB6FF,#4A98E8);
+    color: white;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 24px;
+    border-radius: 50%;
+  }
+  /* 错误图标盒子 */
+  .asset-err-ico {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--state-error-bg);
+    color: var(--state-error);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .asset-err-ico svg { width: 20px; height: 20px; }
+  /* icon 网格 */
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 4px;
+    width: 64px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--line);
+  }
+  .icon-grid .icon-cell {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; aspect-ratio: 1;
+    color: var(--ink);
+    background: white;
+    border-radius: 4px;
+  }
+  .icon-grid .icon-cell.c-deco { color: var(--brand-deep); }
+  .icon-grid .icon-cell svg { width: 12px; height: 12px; }
+  /* 顶部云朵背景预览（资源库用，加 .asset- 前缀避免冲突） */
+  .asset-preview.bg-clouds {
+    background: linear-gradient(135deg,#F4F9FF,#E0EEFF,#D5E6FF);
+    position: relative;
+  }
+  .asset-preview.bg-clouds::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 8px;
+    width: 36px; height: 16px;
+    background: radial-gradient(ellipse, white 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+  }
+  .asset-preview.bg-clouds::after {
+    content: '';
+    position: absolute;
+    bottom: 8px; right: 8px;
+    width: 18px; height: 18px;
+    background: radial-gradient(circle, rgba(255,196,214,0.8) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  /* ============================================================
+   * 封面装饰徽章 · deco badge
+   * 把 deco icon 放进封面里（歌曲封面/专辑封面/Mini Player 都用）
+   * ============================================================ */
+  .deco-badge {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 6px rgba(31, 58, 95, 0.15);
+    color: var(--brand-deep);
+    z-index: 2;
+  }
+  .deco-badge svg { width: 60%; height: 60%; }
+
+  /* 徽章尺寸变体 */
+  .deco-badge.sm { width: 18px; height: 18px; }
+  .deco-badge.md { width: 22px; height: 22px; }
+  .deco-badge.lg { width: 36px; height: 36px; }
+
+  /* 位置变体 */
+  .deco-badge.tl { top: 4px; left: 4px; }
+  .deco-badge.tr { top: 4px; right: 4px; }
+  .deco-badge.br { bottom: 4px; right: 4px; }
+  .deco-badge.center {
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* 不同 icon 用不同糖果色调（白色徽章 + 彩色 icon） */
+  .deco-badge.c-pink   { color: #C46683; }
+  .deco-badge.c-mint   { color: #2D9B7C; }
+  .deco-badge.c-lemon  { color: #C49A1F; }
+  .deco-badge.c-lilac  { color: #7C5BC7; }
+  .deco-badge.c-blue   { color: #4A98E8; }
+  .deco-badge.c-orange { color: #E89A4A; }
+  .deco-badge.c-mute   { color: var(--ink-soft); }
+
+  /* 大封面中央图标：去掉白底，直接用半透明圆 + 彩色 icon */
+  .deco-center-lg {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 56px; height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(6px);
+    z-index: 2;
+  }
+  .deco-center-lg svg { width: 60%; height: 60%; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="hero">
+    <h1>Alist · 安卓客户端原型</h1>
+    <p>浅蓝白 × 糖果点缀 × 弹弹字体 · 10 屏完整可交互预览</p>
+  </div>
+
+  <!-- 屏导航 -->
+  <div class="screen-nav" id="nav"></div>
+
+  <!-- 手机墙 -->
+  <div class="phone-wall" id="wall"></div>
+</div>
+
+<script>
+/* ============================================================
+   * Icons (inline SVG, 一套统一 stroke)
+   * ============================================================ */
+const I = {
+  arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  more:  '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="M6 10l6 6 6-6"/><path d="M4 20h16"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>',
+  image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>',
+  video:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>',
+  audio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  doc:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+  archive:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2V11z"/></svg>',
+  file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',
+  transfer:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4M3 8l4-4 4 4M17 8v12M21 16l-4 4-4-4"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',
+  database:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
+  sparkle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 16l-1.8-4.8L6 9.4l4.2-1.8L12 3z"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.86l-7.79 14a2 2 0 0 0 1.74 3h15.6a2 2 0 0 0 1.74-3l-7.79-14a2 2 0 0 0-3.48 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17"/></svg>',
+  offline:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',
+  chevR:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+  auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+  // —— 音乐相关图标 ——
+  skipPrev:'<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="19 4 9 12 19 20 19 4"/><rect x="5" y="4" width="2" height="16" rx="1"/></svg>',
+  skipNext:'<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><rect x="17" y="4" width="2" height="16" rx="1"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  heartFill:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  repeat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+  shuffle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>',
+  queue:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  musicNote:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  filter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
+  sort:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="13" y2="6"/><line x1="3" y1="12" x2="11" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/><polyline points="17 8 21 12 17 16"/><line x1="14" y1="12" x2="21" y2="12"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>',
+  // —— 音乐库随机装饰小图标（在歌曲行序号位使用）——
+  decoNote: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  decoStar: '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/></svg>',
+  decoHeart: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.23l-1.06-1.06C5.4 14.91 2 11.79 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.29-3.4 6.41-8.94 11.67L12 21.23z"/></svg>',
+  decoDisc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>',
+  decoFlame: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4.5 4 8a4 4 0 1 1-8 0c0-1.5 1-3 1-3s-3 1.5-3 5a6 6 0 0 0 12 0c0-5-6-10-6-10z"/></svg>',
+  decoWave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M6 8v8M10 5v14M14 8v8M18 10v4M22 12h-2"/></svg>',
+  decoSpark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></svg>',
+  decoHead: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-7h3z"/><path d="M3 19a2 2 0 0 0 2 2h1v-7H3z"/></svg>',
+  cookie:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10c0-.46-.04-.92-.1-1.36A5.4 5.4 0 0 1 16.5 8 5.4 5.4 0 0 1 12 3.5 5.4 5.4 0 0 1 8.5 2.1 10 10 0 0 0 12 2z"/><circle cx="8.5" cy="8.5" r=".8" fill="currentColor"/><circle cx="15" cy="13" r=".8" fill="currentColor"/><circle cx="10" cy="14" r=".8" fill="currentColor"/></svg>',
+  server:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="6" rx="2"/><rect x="2" y="15" width="20" height="6" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>',
+  broom:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.36 2.72l1.42 1.42-9.19 9.19M14 7l3 3"/><path d="M5 22l4-9 5 5-9 4z"/></svg>',
+};
+
+/* ============================================================
+   * 装饰：云朵气泡背景（屏幕顶部装饰）
+   * ============================================================ */
+function clouds() {
+  return `
+  <div class="deco-clouds">
+    <svg viewBox="0 0 360 280" preserveAspectRatio="none">
+      <defs>
+        <radialGradient id="g1" cx="20%" cy="0%" r="60%">
+          <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="g2" cx="80%" cy="0%" r="60%">
+          <stop offset="0%" stop-color="#D8E9FF" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#D8E9FF" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="60" cy="20" rx="140" ry="60" fill="url(#g1)"/>
+      <ellipse cx="300" cy="30" rx="120" ry="50" fill="url(#g2)"/>
+      <!-- 糖果气泡点缀 -->
+      <circle cx="40" cy="80" r="4" fill="#FFC4D6" opacity="0.7"/>
+      <circle cx="320" cy="110" r="3" fill="#9BE3C8" opacity="0.8"/>
+      <circle cx="290" cy="180" r="2.5" fill="#D8C7FF" opacity="0.6"/>
+      <circle cx="55" cy="200" r="2.5" fill="#FFE89B" opacity="0.7"/>
+    </svg>
+  </div>`;
+}
+
+/* —— 状态栏 —— */
+function statusbar(online = true) {
+  return `
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="right">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h2M7 8v8M12 5v14M17 8v8M22 12h-2"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span style="margin-left:4px">${online ? '87' : '—'}</span>
+      <svg viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="20" height="10" rx="2"/><rect x="3" y="4" width="14" height="6" rx="1" fill="currentColor" opacity=".3"/><rect x="22" y="5" width="2" height="4" fill="currentColor"/></svg>
+    </div>
+  </div>`;
+}
+
+/* —— 底部导航 —— */
+function bottombar(active) {
+  const tabs = [
+    { id: 'home',  ico: I.home,     label: '首页' },
+    { id: 'files', ico: I.file,     label: '文件' },
+    { id: 'music', ico: I.musicNote,label: '音乐' },
+    { id: 'trans', ico: I.transfer, label: '传输' },
+    { id: 'set',   ico: I.settings, label: '设置' },
+  ];
+  return `
+  <div class="bottombar">
+    ${tabs.map(t => `
+      <button class="tab ${t.id===active?'active':''}">
+        <span class="ico-wrap">${t.ico}</span>
+        <span>${t.label}</span>
+      </button>
+    `).join('')}
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 1 · 登录
+   * ============================================================ */
+function Screen01_Login() {
+  return `
+  <div class="phone">
+    <div class="phone-screen" style="background:linear-gradient(165deg,#F4F9FF 0%,#E0EEFF 55%,#D5E6FF 100%);">
+      ${clouds()}
+      <div style="position:relative; z-index:1; display:flex; flex-direction:column; height:100%;">
+        ${statusbar()}
+
+        <!-- 中部品牌 -->
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding:0 28px;">
+          <div class="text-center">
+            <!-- 云朵 logo（弹弹糖果） -->
+            <svg class="logo-cloud" viewBox="0 0 80 80">
+              <defs>
+                <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#9DC9FF"/>
+                  <stop offset="100%" stop-color="#5A9BE8"/>
+                </linearGradient>
+                <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FFC4D6"/>
+                  <stop offset="100%" stop-color="#FFA1BD"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="40" cy="44" rx="32" ry="22" fill="url(#lg1)"/>
+              <circle cx="26" cy="36" r="14" fill="url(#lg1)"/>
+              <circle cx="52" cy="34" r="16" fill="url(#lg1)"/>
+              <circle cx="40" cy="30" r="12" fill="url(#lg1)"/>
+              <!-- 高光 -->
+              <ellipse cx="22" cy="32" rx="6" ry="3" fill="white" opacity="0.5"/>
+              <!-- 糖果点缀 -->
+              <circle cx="58" cy="50" r="3.5" fill="#9BE3C8"/>
+              <circle cx="14" cy="52" r="2.5" fill="#FFE89B"/>
+              <circle cx="46" cy="60" r="2" fill="#D8C7FF"/>
+            </svg>
+            <h2 class="display" style="font-size:24px; color:var(--ink); margin-bottom:4px;">登录 Alist</h2>
+            <p style="font-size:12px; color:var(--ink-soft);">连接你的私有云盘 · 安全又可爱</p>
+          </div>
+
+          <div style="margin-top:36px;">
+            <div class="field">
+              <label>服务器地址</label>
+              <div class="input with-icon">
+                <span class="ico">${I.server}</span>
+                <span class="value">http://192.168.1.10:5244</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>用户名</label>
+              <div class="input with-icon">
+                <span class="ico">${I.user}</span>
+                <span class="placeholder">请输入用户名</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>密码</label>
+              <div class="input with-icon">
+                <span class="ico">${I.shield}</span>
+                <span class="value">•••••••••••</span>
+              </div>
+            </div>
+
+            <button class="btn-primary mt-12">
+              登录 Alist
+            </button>
+
+            <p class="text-center" style="font-size:11px; color:var(--ink-mute); margin-top:14px;">
+              新用户？<span style="color:var(--brand-deep); font-weight:600;">了解 Alist →</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- 底部小气泡装饰 -->
+        <div style="position:absolute; bottom:24px; left:0; right:0; display:flex; justify-content:center; gap:6px; opacity:0.6;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#FFC4D6;"></span>
+          <span style="width:6px;height:6px;border-radius:50%;background:#9BE3C8;"></span>
+          <span style="width:6px;height:6px;border-radius:50%;background:#D8C7FF;"></span>
+        </div>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">01</span>登录页</div>
+    <div class="phone-sub">居中卡片 · 玻璃白输入 · 蓝色渐变按钮</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 2 · 首页（仪表盘）
+   * ============================================================ */
+function Screen02_Home() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div style="background:linear-gradient(180deg,#E7F2FF 0%,#F4F9FF 240px); padding:0 0 8px;">
+        <div class="appbar">
+          <div class="titles">
+            <div class="title">早上好 ✨</div>
+            <div class="subtitle"><span class="dot"></span>已连接 · 我的 Alist</div>
+          </div>
+          <div class="actions">
+            <div class="icon-btn">${I.refresh}</div>
+            <div class="icon-btn brand">${I.search}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 服务器 Hero -->
+        <div class="card solid" style="padding:18px; position:relative; overflow:hidden;">
+          <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,#CDE5FF,#BFE0FF); opacity:0.6;"></div>
+          <div style="position:relative;">
+            <div class="row gap-10">
+              <div style="width:42px; height:42px; border-radius:14px; background:linear-gradient(135deg,#6FB6FF,#4A98E8); display:flex; align-items:center; justify-content:center; color:white;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div class="display" style="font-size:16px; color:var(--ink);">我的云端小屋</div>
+                <div style="font-size:11px; color:var(--ink-soft); margin-top:2px;">当前服务器 · v3.41.0</div>
+              </div>
+              <span class="chip mint"><span class="dot"></span>在线</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-12"></div>
+
+        <!-- 指标卡 -->
+        <div class="metric-row">
+          <div class="metric">
+            <div class="ico">${I.user}</div>
+            <div class="label">用户</div>
+            <div class="value">12</div>
+          </div>
+          <div class="metric">
+            <div class="ico mint">${I.shield}</div>
+            <div class="label">角色</div>
+            <div class="value">3</div>
+          </div>
+          <div class="metric">
+            <div class="ico pink">${I.sparkle}</div>
+            <div class="label">在线</div>
+            <div class="value">5</div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <div class="card-title" style="margin-bottom:10px;">后台任务</div>
+        <div class="card solid">
+          <div class="row between mb-8">
+            <span style="font-size:13px; color:var(--ink); font-weight:600;">进行中</span>
+            <span class="display" style="font-size:18px; color:var(--brand-deep);">2</span>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <span class="chip"><span class="dot"></span>上传 · 1</span>
+            <span class="chip mint"><span class="dot"></span>解压 · 1</span>
+            <span class="chip gray">复制</span>
+            <span class="chip gray">离线下载</span>
+            <span class="chip gray">对象迁移</span>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <div class="row between mb-12">
+          <div class="card-title" style="margin:0;">存储源</div>
+          <span style="font-size:11px; color:var(--brand-deep); font-weight:600;">管理 →</span>
+        </div>
+
+        <div class="storage-card">
+          <div class="ico" style="background:linear-gradient(135deg,#BFE0FF,#D7E9FF); color:var(--brand-deep);">${I.database}</div>
+          <div class="meta">
+            <div class="name">阿里云盘</div>
+            <div class="path">/aliyun · 已挂载</div>
+          </div>
+          <div class="trail">${I.chevR}</div>
+        </div>
+        <div class="storage-card">
+          <div class="ico" style="background:linear-gradient(135deg,#DAF6EC,#C2EFE0); color:#2D9B7C;">${I.cloud}</div>
+          <div class="meta">
+            <div class="name">夸克网盘</div>
+            <div class="path">/quark · 已挂载</div>
+          </div>
+          <div class="trail">${I.chevR}</div>
+        </div>
+        <div class="storage-card">
+          <div class="ico" style="background:linear-gradient(135deg,#ECE2FF,#DDD0FF); color:#7C5BC7;">${I.database}</div>
+          <div class="meta">
+            <div class="name">百度网盘</div>
+            <div class="path">/baidu · 已禁用</div>
+          </div>
+          <span class="chip gray">已禁用</span>
+        </div>
+        <div class="storage-card">
+          <div class="ico" style="background:linear-gradient(135deg,#FFE4ED,#FFD1DD); color:#C46683;">${I.archive}</div>
+          <div class="meta">
+            <div class="name">本地存储</div>
+            <div class="path">/local · 本机文件</div>
+          </div>
+          <div class="trail">${I.chevR}</div>
+        </div>
+      </div>
+
+      ${bottombar('home')}
+    </div>
+    <div class="phone-name"><span class="num">02</span>首页 · 仪表盘</div>
+    <div class="phone-sub">Hero 卡片 · 指标行 · 存储列表</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 3 · 文件浏览（多选模式 + 离线横幅）
+   * ============================================================ */
+function Screen03_Files() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar(true)}
+      <div class="appbar">
+        <div class="back">${I.arrow}</div>
+        <div class="titles">
+          <div class="title">文件</div>
+          <div class="subtitle offline"><span class="dot"></span>当前离线 · 部分操作不可用</div>
+        </div>
+        <div class="actions">
+          <div class="icon-btn">${I.refresh}</div>
+          <div class="icon-btn brand">${I.upload}</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 离线横幅 -->
+        <div class="banner warn">
+          ${I.offline}
+          <span class="grow">离线模式：仅可查看本地缓存</span>
+        </div>
+
+        <!-- 搜索 -->
+        <div class="search">
+          ${I.search}
+          <input placeholder="按名称筛选…" value="旅行" />
+        </div>
+
+        <!-- 多选已选 -->
+        <div class="multi-hint">
+          <span class="b-ico">${I.check}</span>
+          <span>已选 2 项 · 点击 <b>移动</b> 选择目标目录</span>
+        </div>
+
+        <!-- 文件列表 -->
+        <div class="file-row selected">
+          <div class="check on">${I.check}</div>
+          <div class="ico image">${I.image}</div>
+          <div class="meta">
+            <div class="name">旅行日记 · 京都樱花.jpg</div>
+            <div class="sub">3.2 MB · 今天 14:21</div>
+          </div>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="file-row selected">
+          <div class="check on">${I.check}</div>
+          <div class="ico folder">${I.folder}</div>
+          <div class="meta">
+            <div class="name">2024 春季合集</div>
+            <div class="sub">12 项 · 87 MB</div>
+          </div>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="file-row">
+          <div class="check"></div>
+          <div class="ico video">${I.video}</div>
+          <div class="meta">
+            <div class="name">vlog_04.mp4</div>
+            <div class="sub">128 MB · 昨天</div>
+          </div>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="file-row">
+          <div class="check"></div>
+          <div class="ico doc">${I.doc}</div>
+          <div class="meta">
+            <div class="name">攻略笔记.pdf</div>
+            <div class="sub">1.8 MB · 上周</div>
+          </div>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="file-row">
+          <div class="check"></div>
+          <div class="ico audio">${I.audio}</div>
+          <div class="meta">
+            <div class="name">晚安白噪音.mp3</div>
+            <div class="sub">8.4 MB · 2024-04</div>
+          </div>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="file-row">
+          <div class="check"></div>
+          <div class="ico archive">${I.archive}</div>
+          <div class="meta">
+            <div class="name">raw照片.zip</div>
+            <div class="sub">256 MB · 2024-03</div>
+          </div>
+          <div class="more">${I.more}</div>
+        </div>
+      </div>
+
+      <!-- 多选操作条 -->
+      <div class="actionbar">
+        <span class="count">已选 2</span>
+        <button class="action-btn">
+          <span class="b-ico" style="width:28px;height:28px;background:var(--brand-soft);border-radius:50%;">${I.check}</span>
+          全选
+        </button>
+        <div class="spacer"></div>
+        <button class="action-btn primary">
+          <span class="b-ico">${I.copy}</span><span>移动</span>
+        </button>
+        <button class="action-btn">
+          <span class="b-ico">${I.download}</span><span>下载</span>
+        </button>
+        <button class="action-btn danger">
+          <span class="b-ico">${I.trash}</span><span>删除</span>
+        </button>
+        <button class="action-btn">
+          <span style="font-size:16px;font-weight:600;">×</span><span>取消</span>
+        </button>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">03</span>文件页 · 多选态</div>
+    <div class="phone-sub">离线横幅 · 行内菜单 · 底部操作条</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 4 · 文件预览（图片 + 文本 + 音频 + 兜底 四态合一展示）
+   * ============================================================ */
+function Screen04_Preview() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="back">${I.arrow}</div>
+        <div class="titles">
+          <div class="title">文件预览</div>
+          <div class="subtitle"><span class="dot"></span>旅行日记 · 京都樱花.jpg</div>
+        </div>
+        <div class="actions">
+          <div class="icon-btn">${I.share}</div>
+          <div class="icon-btn brand">${I.download}</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 图片预览（示例：以渐变 + 樱花图标代表） -->
+        <div style="border-radius:18px; overflow:hidden; height:340px; position:relative; background:linear-gradient(135deg,#FFD1DD 0%,#FFE4ED 50%,#FFC4D6 100%); display:flex; align-items:center; justify-content:center;">
+          <svg viewBox="0 0 200 200" width="180" height="180" class="illus-xl">
+            <!-- 山 -->
+            <path d="M0 140 L40 100 L70 120 L110 80 L150 110 L200 90 L200 200 L0 200 Z" fill="#9DC9FF" opacity="0.6"/>
+            <path d="M0 160 L50 130 L100 150 L160 120 L200 145 L200 200 L0 200 Z" fill="#4A98E8" opacity="0.5"/>
+            <!-- 樱花树（粉色，跟蓝色山区分） -->
+            <rect x="95" y="120" width="10" height="40" fill="#5A4A3F"/>
+            <circle cx="100" cy="115" r="32" fill="#FFC4D6"/>
+            <circle cx="82" cy="118" r="22" fill="#FFE4ED"/>
+            <circle cx="118" cy="118" r="22" fill="#FFE4ED"/>
+            <circle cx="100" cy="98" r="20" fill="white" opacity="0.85"/>
+            <!-- 飘落花瓣 -->
+            <circle cx="40" cy="60" r="4" fill="#FFC4D6"/>
+            <circle cx="160" cy="50" r="5" fill="#FFE4ED"/>
+            <circle cx="60" cy="40" r="3" fill="white" opacity="0.8"/>
+            <circle cx="170" cy="80" r="4" fill="#FFC4D6"/>
+          </svg>
+          <!-- 图片信息 -->
+          <div style="position:absolute; bottom:0; left:0; right:0; padding:14px; background:linear-gradient(180deg,transparent,rgba(0,0,0,0.45)); color:white;">
+            <div style="font-size:11px; opacity:0.85;">2024 · 京都 · 哲学之道</div>
+            <div style="font-size:10px; opacity:0.7; margin-top:2px;">4032 × 3024 · 3.2 MB</div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+
+        <!-- 操作组 -->
+        <div class="row gap-8 mb-16">
+          <button class="btn-ghost btn-icon-text">
+            <span class="b-ico">${I.share}</span> 分享
+          </button>
+          <button class="btn-ghost btn-icon-text">
+            <span class="b-ico">${I.link}</span> 复制直链
+          </button>
+          <button class="btn-ghost btn-icon-text">
+            <span class="b-ico">${I.ext}</span> 其他应用
+          </button>
+        </div>
+
+        <!-- 元数据 -->
+        <div class="card solid" style="padding:14px;">
+          <div class="card-title">详细信息</div>
+          <div class="row between" style="padding:6px 0; font-size:12px;">
+            <span style="color:var(--ink-soft);">类型</span><span>JPEG 图像</span>
+          </div>
+          <div class="row between" style="padding:6px 0; font-size:12px;">
+            <span style="color:var(--ink-soft);">尺寸</span><span>4032 × 3024</span>
+          </div>
+          <div class="row between" style="padding:6px 0; font-size:12px;">
+            <span style="color:var(--ink-soft);">修改时间</span><span>2024-04-12 14:21</span>
+          </div>
+          <div class="row between" style="padding:6px 0; font-size:12px;">
+            <span style="color:var(--ink-soft);">位置</span><span>/阿里云盘/2024春季合集</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">04</span>文件预览 · 图片</div>
+    <div class="phone-sub">沉浸式预览 · 分享/直链/另存</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 5 · 传输页
+   * ============================================================ */
+function Screen05_Transfer() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="titles">
+          <div class="title">传输</div>
+          <div class="subtitle">2 进行中 · 1 已完成</div>
+        </div>
+        <div class="actions">
+          <div class="icon-btn">${I.refresh}</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- Segmented -->
+        <div class="segmented">
+          <button class="seg active">全部</button>
+          <button class="seg">上传 <span style="color:var(--candy-pink);">·2</span></button>
+          <button class="seg">下载 <span style="color:var(--candy-mint);">·1</span></button>
+          <button class="seg">失败</button>
+        </div>
+
+        <!-- 进行中：上传 -->
+        <div class="task-row">
+          <div class="head">
+            <div class="ico up">${I.upload}</div>
+            <div class="name truncate">RAW_京都樱花_原片.zip</div>
+            <span class="status" style="color:var(--brand-deep);">上传中</span>
+          </div>
+          <div class="progress"><div class="bar" style="width:62%;"></div></div>
+          <div class="foot">
+            <span>62% · 158 MB / 256 MB</span>
+            <span style="color:var(--brand-deep); font-weight:600;">取消</span>
+          </div>
+        </div>
+
+        <!-- 进行中：下载 -->
+        <div class="task-row">
+          <div class="head">
+            <div class="ico down">${I.download}</div>
+            <div class="name truncate">电影 · 春之雪 (1080p).mp4</div>
+            <span class="status" style="color:#2D9B7C;">下载中</span>
+          </div>
+          <div class="progress"><div class="bar" style="width:24%;"></div></div>
+          <div class="foot">
+            <span>24% · 380 MB / 1.6 GB</span>
+            <span style="color:var(--brand-deep); font-weight:600;">取消</span>
+          </div>
+        </div>
+
+        <!-- 失败 -->
+        <div class="task-row">
+          <div class="head">
+            <div class="ico" style="background:var(--state-error-bg); color:var(--state-error);">${I.alert}</div>
+            <div class="name truncate">旧版备份.zip</div>
+            <span class="status" style="color:var(--state-error);">失败</span>
+          </div>
+          <div class="progress failed"><div class="bar" style="width:8%;"></div></div>
+          <div class="foot">
+            <span>网络中断 · 仅完成 8%</span>
+            <span style="color:var(--brand-deep); font-weight:600;">重试 · 删除</span>
+          </div>
+        </div>
+
+        <!-- 已完成 -->
+        <div class="task-row" style="opacity:0.75;">
+          <div class="head">
+            <div class="ico" style="background:var(--brand-soft); color:var(--brand-deep);">${I.check}</div>
+            <div class="name truncate">设计稿 v3.pdf</div>
+            <span class="status" style="color:var(--ink-soft);">已完成</span>
+          </div>
+          <div class="progress"><div class="bar" style="width:100%;"></div></div>
+          <div class="foot">
+            <span>2.1 MB · 5 分钟前</span>
+            <span style="color:var(--ink-mute);">查看</span>
+          </div>
+        </div>
+      </div>
+
+      ${bottombar('trans')}
+    </div>
+    <div class="phone-name"><span class="num">05</span>传输页</div>
+    <div class="phone-sub">分段切换 · 任务行 · 进度可视化</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 6 · 设置页
+   * ============================================================ */
+function Screen06_Settings() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="titles">
+          <div class="title">设置</div>
+          <div class="subtitle"><span class="dot"></span>管理你的小窝</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 用户小卡 -->
+        <div class="card solid" style="display:flex; align-items:center; gap:12px; padding:14px;">
+          <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#9BE3C8,#6FB6FF); display:flex; align-items:center; justify-content:center; color:white; font-family:Fredoka; font-weight:700; font-size:18px;">
+            柚
+          </div>
+          <div style="flex:1;">
+            <div class="display" style="font-size:15px;">柚子 · admin</div>
+            <div style="font-size:11px; color:var(--ink-soft); margin-top:2px;">我的云端小屋 · 在线</div>
+          </div>
+          <span class="chip mint"><span class="dot"></span>VIP</span>
+        </div>
+
+        <div class="mt-16"></div>
+        <div class="card-title">外观主题</div>
+        <div class="card solid">
+          <div class="theme-pick">
+            <div class="theme-card active">
+              <div class="swatch"><span style="background:#F4F9FF"></span><span style="background:#FFFFFF"></span><span style="background:#E7F2FF"></span></div>
+              <div class="ico-name">${I.sun} 浅色</div>
+            </div>
+            <div class="theme-card">
+              <div class="swatch"><span style="background:#1F3A5F"></span><span style="background:#2D4F7C"></span><span style="background:#0F2444"></span></div>
+              <div class="ico-name">${I.moon} 深色</div>
+            </div>
+            <div class="theme-card">
+              <div class="swatch"><span style="background:#F4F9FF"></span><span style="background:linear-gradient(135deg,#F4F9FF,#1F3A5F)"></span><span style="background:#1F3A5F"></span></div>
+              <div class="ico-name">${I.auto} 跟随</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <div class="card-title">存储源</div>
+        <div class="card solid" style="padding:6px 14px;">
+          <div class="set-row">
+            <div class="ico">${I.database}</div>
+            <div class="meta">
+              <div class="name">阿里云盘</div>
+              <div class="desc">/aliyun · Aliyundrive</div>
+            </div>
+            <div class="trail">${I.chevR}</div>
+          </div>
+          <div class="set-row">
+            <div class="ico mint">${I.cloud}</div>
+            <div class="meta">
+              <div class="name">夸克网盘</div>
+              <div class="desc">/quark · Quark</div>
+            </div>
+            <div class="trail">${I.chevR}</div>
+          </div>
+          <div class="set-row">
+            <div class="ico lilac">${I.database}</div>
+            <div class="meta">
+              <div class="name">百度网盘</div>
+              <div class="desc">/baidu · 已禁用</div>
+            </div>
+            <div class="trail">${I.chevR}</div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <div class="card-title">快速设置</div>
+        <div class="card solid" style="padding:6px 14px;">
+          <div class="set-row">
+            <div class="ico pink">${I.sparkle}</div>
+            <div class="meta">
+              <div class="name">站点公告</div>
+              <div class="desc">欢迎来到我的云端小屋 ✨</div>
+            </div>
+            <div class="trail">${I.chevR}</div>
+          </div>
+          <div class="set-row">
+            <div class="ico lemon">${I.shield}</div>
+            <div class="meta">
+              <div class="name">隐私与密码</div>
+              <div class="desc">指纹解锁 · 自动登录</div>
+            </div>
+            <div class="switch on"></div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <div class="card-title">维护</div>
+        <div class="card solid" style="padding:6px 14px;">
+          <div class="set-row">
+            <div class="ico mint">${I.broom}</div>
+            <div class="meta">
+              <div class="name">清理临时预览文件</div>
+              <div class="desc">已使用 234 MB</div>
+            </div>
+            <div class="trail">${I.chevR}</div>
+          </div>
+          <div class="set-row">
+            <div class="ico">${I.settings}</div>
+            <div class="meta">
+              <div class="name">完整设置</div>
+              <div class="desc">全部站点设置项</div>
+            </div>
+            <div class="trail">${I.chevR}</div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <button class="btn-ghost btn-icon-text" style="color:var(--state-error); border-color:var(--state-error-bg);">
+          <span class="b-ico">${I.logout}</span> <span>退出登录</span>
+        </button>
+
+        <div class="text-center mt-16" style="font-size:10px; color:var(--ink-mute);">
+          Alist Client · v1.0.0 · made with 💙
+        </div>
+      </div>
+
+      ${bottombar('set')}
+    </div>
+    <div class="phone-name"><span class="num">06</span>设置页</div>
+    <div class="phone-sub">主题卡 · 分组列表 · 描边退登</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 7 · 存储编辑（含 Cookie 抓取按钮）
+   * ============================================================ */
+function Screen07_StorageEdit() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="back">${I.arrow}</div>
+        <div class="titles">
+          <div class="title">编辑存储</div>
+          <div class="subtitle"><span class="dot"></span>夸克网盘</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 信息卡 -->
+        <div class="card solid" style="background:linear-gradient(135deg,#DAF6EC,#C2EFE0); border:none;">
+          <div class="row gap-12">
+            <div style="width:44px; height:44px; border-radius:14px; background:white; display:flex; align-items:center; justify-content:center; color:#2D9B7C;">${I.cloud}</div>
+            <div style="flex:1;">
+              <div class="display" style="font-size:15px; color:#1B5A45;">夸克网盘</div>
+              <div style="font-size:11px; color:#2D9B7C; margin-top:2px;">挂载路径 · /quark</div>
+            </div>
+            <span class="chip mint"><span class="dot"></span>已启用</span>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+
+        <!-- 驱动参数 -->
+        <div class="card solid">
+          <div class="card-title">驱动参数</div>
+
+          <div class="field">
+            <label>备注</label>
+            <div class="input">
+              <span class="value">我的夸克网盘</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>挂载路径</label>
+            <div class="input">
+              <span class="value">/quark</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Cookie</label>
+            <div class="cookie-field">
+              <span class="dots"></span>
+              <span class="label">已设置 · 30 天前更新</span>
+              <button class="btn-cookie">${I.cookie} 重新获取</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>根目录路径</label>
+            <div class="input">
+              <span class="value">/我的资源/</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>排序方式</label>
+            <div class="input">
+              <span class="value">按修改时间倒序</span>
+              <span style="margin-left:auto; color:var(--ink-mute);">${I.chevR}</span>
+            </div>
+          </div>
+
+          <div class="row between" style="padding:10px 0;">
+            <div>
+              <div style="font-size:13px; font-weight:500;">启用存储</div>
+              <div style="font-size:11px; color:var(--ink-mute); margin-top:2px;">禁用后文件将不再显示</div>
+            </div>
+            <div class="switch on"></div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <button class="btn-primary">保存修改</button>
+
+        <div class="text-center mt-12" style="font-size:10px; color:var(--ink-mute);">
+          保存成功后将自动返回
+        </div>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">07</span>存储编辑</div>
+    <div class="phone-sub">驱动参数表单 · Cookie 抓取</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 8 · 完整设置页（分组表单）
+   * ============================================================ */
+function Screen08_FullSettings() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="back">${I.arrow}</div>
+        <div class="titles">
+          <div class="title">完整设置</div>
+          <div class="subtitle"><span class="dot"></span>12 项 · 3 组</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 站点 -->
+        <div class="card-title">站点</div>
+        <div class="card solid">
+          <div class="field">
+            <label>站点标题</label>
+            <div class="input"><span class="value">我的云端小屋</span></div>
+          </div>
+          <div class="field">
+            <label>站点公告</label>
+            <div class="input"><span class="value">欢迎来到我的云端小屋 ✨</span></div>
+          </div>
+          <div class="field">
+            <label>站点图标</label>
+            <div class="input"><span class="placeholder">未设置</span></div>
+          </div>
+          <div class="row between" style="padding:6px 0;">
+            <div>
+              <div style="font-size:13px; font-weight:500;">隐藏公告</div>
+              <div style="font-size:11px; color:var(--ink-mute); margin-top:2px;">登录后不可见</div>
+            </div>
+            <div class="switch"></div>
+          </div>
+        </div>
+
+        <!-- 预览 -->
+        <div class="card-title mt-16">预览</div>
+        <div class="card solid">
+          <div class="row between" style="padding:6px 0;">
+            <div>
+              <div style="font-size:13px; font-weight:500;">启用预览</div>
+              <div style="font-size:11px; color:var(--ink-mute); margin-top:2px;">允许在线查看文件</div>
+            </div>
+            <div class="switch on"></div>
+          </div>
+          <div class="row between" style="padding:6px 0;">
+            <div>
+              <div style="font-size:13px; font-weight:500;">自动播放视频</div>
+              <div style="font-size:11px; color:var(--ink-mute); margin-top:2px;">打开页面即播放</div>
+            </div>
+            <div class="switch"></div>
+          </div>
+          <div class="row between" style="padding:6px 0;">
+            <div>
+              <div style="font-size:13px; font-weight:500;">强制代理</div>
+              <div style="font-size:11px; color:var(--ink-mute); margin-top:2px;">通过服务器中转预览</div>
+            </div>
+            <div class="switch on"></div>
+          </div>
+        </div>
+
+        <!-- 安全 -->
+        <div class="card-title mt-16">安全</div>
+        <div class="card solid">
+          <div class="field">
+            <label>Token 有效期</label>
+            <div class="input"><span class="value">48 小时</span><span style="margin-left:auto; color:var(--ink-mute);">${I.chevR}</span></div>
+          </div>
+          <div class="row between" style="padding:6px 0;">
+            <div>
+              <div style="font-size:13px; font-weight:500;">签名直链</div>
+              <div style="font-size:11px; color:var(--ink-mute); margin-top:2px;">防止直链被盗用</div>
+            </div>
+            <div class="switch on"></div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+        <button class="btn-primary">保存全部</button>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">08</span>完整设置</div>
+    <div class="phone-sub">分组表单 · 动态渲染</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 9 · 移动/复制选择目标目录
+   * ============================================================ */
+function Screen09_PickTarget() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="back">${I.arrow}</div>
+        <div class="titles">
+          <div class="title">选择目标</div>
+          <div class="subtitle"><span class="dot"></span>移动 2 项到…</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 当前路径 -->
+        <div class="row gap-6 mb-12" style="font-size:11px; color:var(--ink-soft); flex-wrap:wrap;">
+          <span style="background:white; padding:4px 10px; border-radius:999px; border:1px solid var(--line);">🏠 根目录</span>
+          <span style="color:var(--ink-mute);">/</span>
+          <span style="background:white; padding:4px 10px; border-radius:999px; border:1px solid var(--line);">📁 2024 春季合集</span>
+          <span style="color:var(--ink-mute);">/</span>
+          <span style="background:var(--brand-soft); padding:4px 10px; border-radius:999px; color:var(--brand-deep); font-weight:600;">+ 新建</span>
+        </div>
+
+        <!-- 新建文件夹输入 -->
+        <div class="card solid mb-12" style="display:flex; align-items:center; gap:8px; padding:10px 12px; border:1.5px dashed var(--brand); background:var(--brand-soft);">
+          <span style="font-size:14px;">📁</span>
+          <input style="flex:1; border:none; background:transparent; outline:none; font-family:inherit; font-size:13px; color:var(--ink);" value="樱花合集_v2" />
+          <span style="color:var(--brand-deep); font-size:11px; font-weight:600;">✓ 创建</span>
+        </div>
+
+        <div class="card-title">可移动到的位置</div>
+        <div class="file-row">
+          <div class="ico folder">${I.folder}</div>
+          <div class="meta">
+            <div class="name">备份目录</div>
+            <div class="sub">8 项 · 1.2 GB</div>
+          </div>
+          <div style="width:24px;height:24px;border-radius:50%;border:2px solid var(--line);"></div>
+        </div>
+        <div class="file-row">
+          <div class="ico folder">${I.folder}</div>
+          <div class="meta">
+            <div class="name">工作文档</div>
+            <div class="sub">23 项</div>
+          </div>
+          <div style="width:24px;height:24px;border-radius:50%;border:2px solid var(--line);"></div>
+        </div>
+        <div class="file-row" style="background:var(--brand-soft);">
+          <div class="ico folder">${I.folder}</div>
+          <div class="meta">
+            <div class="name">2024 春季合集</div>
+            <div class="sub">12 项 · 当前目录</div>
+          </div>
+          <div class="check on">${I.check}</div>
+        </div>
+        <div class="file-row">
+          <div class="ico folder">${I.folder}</div>
+          <div class="meta">
+            <div class="name">家庭相册</div>
+            <div class="sub">56 项</div>
+          </div>
+          <div style="width:24px;height:24px;border-radius:50%;border:2px solid var(--line);"></div>
+        </div>
+        <div class="file-row">
+          <div class="ico folder">${I.folder}</div>
+          <div class="meta">
+            <div class="name">下载缓存</div>
+            <div class="sub">4 项 · 340 MB</div>
+          </div>
+          <div style="width:24px;height:24px;border-radius:50%;border:2px solid var(--line);"></div>
+        </div>
+      </div>
+
+      <div style="padding:12px 16px 16px; background:white; border-top:1px solid var(--line);">
+        <button class="btn-primary">
+          确认移动到 · 2024 春季合集
+        </button>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">09</span>选择目标目录</div>
+    <div class="phone-sub">面包屑 · 新建 · 单选确认</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 10 · 状态合集（空态 / 加载 / 错误 / 离线）
+   * ============================================================ */
+function Screen10_States() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar(false)}
+      <div class="appbar">
+        <div class="back">${I.arrow}</div>
+        <div class="titles">
+          <div class="title">传输</div>
+          <div class="subtitle offline"><span class="dot"></span>离线 · 任务已暂停</div>
+        </div>
+      </div>
+
+      <!-- 离线横幅 -->
+      <div style="padding:0 16px;">
+        <div class="banner warn">
+          ${I.offline}
+          <span class="grow">离线模式：传输操作已暂停</span>
+          <button class="btn-link">重试</button>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 空态：失败 tab -->
+        <div class="empty">
+          <div class="illus">
+            <svg viewBox="0 0 96 96" width="96" height="96">
+              <defs>
+                <linearGradient id="ec1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#D7E9FF"/>
+                  <stop offset="100%" stop-color="#BFE0FF"/>
+                </linearGradient>
+              </defs>
+              <circle cx="48" cy="48" r="36" fill="url(#ec1)" opacity="0.6"/>
+              <ellipse cx="48" cy="56" rx="22" ry="14" fill="#FFFFFF"/>
+              <rect x="36" y="38" width="24" height="20" rx="3" fill="#FFFFFF" stroke="#6FB6FF" stroke-width="2"/>
+              <line x1="36" y1="44" x2="60" y2="44" stroke="#6FB6FF" stroke-width="2"/>
+              <circle cx="42" cy="51" r="1.5" fill="#6FB6FF"/>
+              <circle cx="48" cy="51" r="1.5" fill="#6FB6FF"/>
+              <circle cx="54" cy="51" r="1.5" fill="#6FB6FF"/>
+              <!-- 糖果 -->
+              <circle cx="20" cy="30" r="3" fill="#FFC4D6"/>
+              <circle cx="78" cy="34" r="2.5" fill="#9BE3C8"/>
+              <circle cx="22" cy="74" r="2" fill="#FFE89B"/>
+            </svg>
+          </div>
+          <div class="title">这里空空如也 ✨</div>
+          <div class="desc">失败的传输任务会出现在这里<br/>小窝正在安静等待你回来</div>
+        </div>
+
+        <div class="mt-16"></div>
+
+        <!-- 错误态：加载失败 -->
+        <div class="card solid">
+          <div class="row gap-12" style="padding:8px 0;">
+            <div style="width:40px; height:40px; border-radius:12px; background:var(--state-error-bg); color:var(--state-error); display:flex; align-items:center; justify-content:center;">
+              ${I.alert}
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:13px; font-weight:600;">加载失败</div>
+              <div style="font-size:11px; color:var(--ink-soft); margin-top:2px;">网络异常，请检查后重试</div>
+            </div>
+            <button class="btn-retry">
+              ↻ 重试
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+
+        <!-- 加载骨架 -->
+        <div class="card solid">
+          <div class="card-title">加载中…</div>
+          <div class="row gap-12 mb-12">
+            <div class="skeleton" style="width:40px; height:40px; border-radius:12px;"></div>
+            <div style="flex:1;">
+              <div class="skeleton" style="width:60%; height:12px; margin-bottom:6px;"></div>
+              <div class="skeleton" style="width:40%; height:10px;"></div>
+            </div>
+          </div>
+          <div class="row gap-12 mb-12">
+            <div class="skeleton" style="width:40px; height:40px; border-radius:12px;"></div>
+            <div style="flex:1;">
+              <div class="skeleton" style="width:70%; height:12px; margin-bottom:6px;"></div>
+              <div class="skeleton" style="width:35%; height:10px;"></div>
+            </div>
+          </div>
+          <div class="row gap-12">
+            <div class="skeleton" style="width:40px; height:40px; border-radius:12px;"></div>
+            <div style="flex:1;">
+              <div class="skeleton" style="width:55%; height:12px; margin-bottom:6px;"></div>
+              <div class="skeleton" style="width:45%; height:10px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-16"></div>
+
+        <!-- 删除确认 modal（截图风格）-->
+        <div class="card solid" style="position:relative; padding:0; overflow:hidden; height:200px;">
+          <div style="position:absolute; inset:0; background:rgba(31,58,95,0.35); backdrop-filter:blur(4px); display:flex; align-items:flex-end;">
+            <div class="modal" style="position:relative; box-shadow:none;">
+              <div class="drag"></div>
+              <h3>确认删除 2 项？</h3>
+              <p>删除后将无法恢复，请谨慎操作<br/>🗑️ 小窝会帮你再想想…</p>
+              <div class="actions">
+                <button class="btn-ghost" style="flex:1;">再想想</button>
+                <button class="btn-primary" style="flex:1; height:44px; font-size:13px;">确认删除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">10</span>状态合集</div>
+    <div class="phone-sub">空态 · 错误 · 加载骨架 · 确认弹窗</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 11 · 音乐预览（沉浸式播放器）
+   * ============================================================ */
+function Screen11_MusicPreview() {
+  return `
+  <div class="phone">
+    <div class="phone-screen" style="background:linear-gradient(165deg,#E0EAFF 0%,#D7E9FF 55%,#CDE5FF 100%);">
+      ${clouds()}
+      <div style="position:relative; z-index:1; display:flex; flex-direction:column; height:100%;">
+        ${statusbar()}
+
+        <div class="appbar">
+          <div class="back">${I.arrow}</div>
+          <div class="titles">
+            <div class="title">正在播放</div>
+            <div class="subtitle"><span class="dot"></span>来自「音乐库」</div>
+          </div>
+          <div class="actions">
+            <div class="icon-btn">${I.heart}</div>
+            <div class="icon-btn">${I.more}</div>
+          </div>
+        </div>
+
+        <div class="scroll" style="display:flex; flex-direction:column; padding:0 20px 16px;">
+          <!-- 专辑封面（占视觉中心 60%） -->
+          <div class="album-art" style="height:300px; margin-top:8px; background:linear-gradient(135deg,#FFA1BD 0%,#C46683 50%,#7C5BC7 100%);">
+            <svg viewBox="0 0 200 200" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+              <!-- 几何装饰 -->
+              <circle cx="50" cy="50" r="60" fill="#FFFFFF" opacity="0.18"/>
+              <circle cx="160" cy="160" r="80" fill="#FFFFFF" opacity="0.12"/>
+              <circle cx="100" cy="100" r="40" fill="#FFFFFF" opacity="0.2"/>
+              <circle cx="100" cy="100" r="22" fill="#FFFFFF" opacity="0.5"/>
+              <!-- 音符点缀 -->
+              <g opacity="0.6">
+                <circle cx="30" cy="120" r="4" fill="white"/>
+                <rect x="32" y="80" width="2" height="40" fill="white"/>
+                <circle cx="170" cy="60" r="4" fill="white"/>
+                <rect x="172" y="20" width="2" height="40" fill="white"/>
+              </g>
+              <!-- 居中唱片孔 -->
+              <circle cx="100" cy="100" r="6" fill="#C46683"/>
+            </svg>
+          </div>
+
+          <!-- 歌曲信息 -->
+          <div style="text-align:center; margin-top:24px;">
+            <h2 class="display" style="font-size:20px; color:var(--ink); margin-bottom:4px;">春之声 · 第三乐章</h2>
+            <div style="font-size:12px; color:var(--ink-soft);">坂本龍一 · async</div>
+            <div style="display:inline-flex; gap:6px; margin-top:8px;">
+              <span class="chip lilac">HIRES</span>
+              <span class="chip mint">FLAC · 24bit</span>
+            </div>
+          </div>
+
+          <!-- 进度条 -->
+          <div style="margin-top:24px;">
+            <div class="seekbar">
+              <div class="played"></div>
+            </div>
+            <div class="row between" style="margin-top:6px; font-size:11px; color:var(--ink-soft); font-variant-numeric:tabular-nums;">
+              <span>1:24</span>
+              <span>3:42</span>
+            </div>
+          </div>
+
+          <!-- 控制按钮 -->
+          <div class="row between" style="margin-top:20px; padding:0 8px;">
+            <button class="ctrl-btn ctrl-btn-sm" style="color:var(--ink-mute);">${I.shuffle}</button>
+            <button class="ctrl-btn" style="color:var(--ink);">${I.skipPrev}</button>
+            <!-- 大圆形播放按钮（暂停态） -->
+            <button class="play-btn">
+              ${I.play}
+            </button>
+            <button class="ctrl-btn" style="color:var(--ink);">${I.skipNext}</button>
+            <button class="ctrl-btn ctrl-btn-sm" style="color:var(--brand-deep);">${I.repeat}</button>
+          </div>
+
+          <!-- 副操作：队列 + 音量 -->
+          <div class="row between" style="margin-top:18px; padding:0 4px;">
+            <button class="ctrl-btn-pill">
+              <span class="b-ico">${I.queue}</span><span style="font-size:11px; white-space:nowrap;">队列</span>
+            </button>
+            <div class="row gap-8">
+              <button class="ctrl-btn ctrl-btn-sm" style="color:var(--ink-mute);">${I.mic}</button>
+              <button class="ctrl-btn ctrl-btn-sm" style="color:var(--ink-mute);">${I.download}</button>
+            </div>
+          </div>
+
+          <!-- 歌词预览 -->
+          <div class="card solid mt-16" style="padding:14px 16px; background:rgba(255,255,255,0.6);">
+            <div class="row between mb-8">
+              <span style="font-size:11px; color:var(--ink-soft); font-weight:600;">歌词</span>
+              <span style="font-size:10px; color:var(--ink-mute);">展开 ↓</span>
+            </div>
+            <div style="font-size:12px; line-height:1.7;">
+              <div style="color:var(--ink-mute);">微风拂过山间的清晨</div>
+              <div style="color:var(--ink); font-weight:600;">落叶在光里慢慢旋转 ✨</div>
+              <div style="color:var(--ink-mute);">时间像河水一样安静</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">11</span>音乐预览</div>
+    <div class="phone-sub">沉浸式封面 · 进度条 · 大圆播放</div>
+  </div>`;
+}
+
+/* ============================================================
+   * 屏 12 · 音乐库（横幅 + 横滑 + 网格 + 列表）
+   * ============================================================ */
+function Screen12_MusicLibrary() {
+  return `
+  <div class="phone">
+    <div class="phone-screen">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="back">${I.arrow}</div>
+        <div class="titles">
+          <div class="title">音乐库</div>
+          <div class="subtitle"><span class="dot"></span>328 首 · 12 位艺人</div>
+        </div>
+        <div class="actions">
+          <div class="icon-btn">${I.sort}</div>
+          <div class="icon-btn brand">${I.search}</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- 筛选 chips -->
+        <div class="scroll-x" style="padding-top:0; padding-bottom:8px;">
+          <button class="chip" style="background:var(--brand-soft);color:var(--brand-deep);padding:6px 14px;border:none;">全部 · 328</button>
+          <button class="chip gray" style="padding:6px 14px;">最近添加 · 24</button>
+          <button class="chip gray" style="padding:6px 14px;">最爱 · 56</button>
+          <button class="chip gray" style="padding:6px 14px;">下载 · 89</button>
+        </div>
+
+        <!-- 最近播放 hero -->
+        <div class="music-hero">
+          <div class="row between">
+            <span style="font-size:10px; opacity:0.85; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">刚刚播放</span>
+            <span class="wave"><span></span><span></span><span></span><span></span></span>
+          </div>
+          <div>
+            <div class="display" style="font-size:22px; line-height:1.2; margin-bottom:4px;">春之声 · 第三乐章</div>
+            <div style="font-size:11px; opacity:0.85; margin-bottom:12px;">坂本龍一 · async · 3:42</div>
+            <div class="row gap-8">
+              <button class="play-btn-sm">${I.play}</button>
+              <button class="music-circle-btn">${I.heartFill}</button>
+              <button class="music-circle-btn">${I.queue}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 最近添加（横滑卡片） -->
+        <div class="section-head">
+          <div class="title"><span class="accent"></span>最近添加</div>
+          <span class="more">查看全部 →</span>
+        </div>
+        <div class="scroll-x">
+          <div class="album-card">
+            <div class="cover" style="background:linear-gradient(135deg,#9BE3C8 0%,#6FB6FF 100%);">
+              <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+                <circle cx="30" cy="30" r="22" fill="white" opacity="0.4"/>
+                <circle cx="70" cy="70" r="30" fill="white" opacity="0.25"/>
+                <circle cx="50" cy="50" r="10" fill="white" opacity="0.5"/>
+              </svg>
+              <span class="deco-badge md br c-mint">${I.decoWave}</span>
+            </div>
+            <div class="name">夏日协奏</div>
+            <div class="meta">久石让</div>
+          </div>
+          <div class="album-card">
+            <div class="cover" style="background:linear-gradient(135deg,#FFE89B 0%,#FFC4D6 100%);">
+              <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+                <path d="M0 70 Q25 50 50 70 T100 70 L100 100 L0 100 Z" fill="white" opacity="0.35"/>
+                <circle cx="50" cy="35" r="18" fill="white" opacity="0.5"/>
+              </svg>
+              <span class="deco-badge md br c-pink">${I.decoHeart}</span>
+            </div>
+            <div class="name">清晨微风</div>
+            <div class="meta">Joe Hisaishi</div>
+          </div>
+          <div class="album-card">
+            <div class="cover" style="background:linear-gradient(135deg,#D8C7FF 0%,#9DC9FF 100%);">
+              <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+                <polygon points="50,15 85,80 15,80" fill="white" opacity="0.35"/>
+                <circle cx="50" cy="55" r="10" fill="white" opacity="0.6"/>
+              </svg>
+              <span class="deco-badge md br c-lilac">${I.decoStar}</span>
+            </div>
+            <div class="name">夜半钢琴</div>
+            <div class="meta">坂本龍一</div>
+          </div>
+          <div class="album-card">
+            <div class="cover" style="background:linear-gradient(135deg,#FFC4D6 0%,#D8C7FF 100%);">
+              <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+                <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="2" opacity="0.5"/>
+                <circle cx="50" cy="50" r="22" fill="none" stroke="white" stroke-width="2" opacity="0.7"/>
+                <circle cx="50" cy="50" r="10" fill="white" opacity="0.6"/>
+              </svg>
+              <span class="deco-badge md br c-blue">${I.decoDisc}</span>
+            </div>
+            <div class="name">樱花飞舞</div>
+            <div class="meta">Yiruma</div>
+          </div>
+        </div>
+
+        <!-- 艺人（横滑圆形） -->
+        <div class="section-head">
+          <div class="title"><span class="accent"></span>艺人</div>
+          <span class="more">全部 12 位 →</span>
+        </div>
+        <div class="scroll-x">
+          <div class="artist-card">
+            <div class="ring artist-avatar" style="background:linear-gradient(135deg,#6FB6FF,#4A98E8);display:flex;align-items:center;justify-content:center;color:white;font-family:Fredoka;font-weight:600;font-size:24px;">久</div>
+            <div class="name">久石让</div>
+            <div class="count">42 首</div>
+          </div>
+          <div class="artist-card">
+            <div class="ring artist-avatar" style="background:linear-gradient(135deg,#FFC4D6,#C46683);display:flex;align-items:center;justify-content:center;color:white;font-family:Fredoka;font-weight:600;font-size:24px;">坂</div>
+            <div class="name">坂本龍一</div>
+            <div class="count">28 首</div>
+          </div>
+          <div class="artist-card">
+            <div class="ring artist-avatar" style="background:linear-gradient(135deg,#9BE3C8,#2D9B7C);display:flex;align-items:center;justify-content:center;color:white;font-family:Fredoka;font-weight:600;font-size:24px;">Y</div>
+            <div class="name">Yiruma</div>
+            <div class="count">19 首</div>
+          </div>
+          <div class="artist-card">
+            <div class="ring artist-avatar" style="background:linear-gradient(135deg,#D8C7FF,#7C5BC7);display:flex;align-items:center;justify-content:center;color:white;font-family:Fredoka;font-weight:600;font-size:24px;">H</div>
+            <div class="name">Hisaishi</div>
+            <div class="count">15 首</div>
+          </div>
+        </div>
+
+        <!-- 专辑（2 列网格） -->
+        <div class="section-head">
+          <div class="title"><span class="accent"></span>专辑</div>
+          <span class="more">更多 →</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="album-card" style="width:100%;">
+            <div class="cover" style="width:100%; height:140px; background:linear-gradient(135deg,#6FB6FF,#9BE3C8);">
+              <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+                <rect x="20" y="20" width="60" height="60" rx="8" fill="white" opacity="0.35"/>
+                <circle cx="50" cy="50" r="14" fill="white" opacity="0.6"/>
+              </svg>
+              <span class="deco-badge lg br c-mint">${I.decoWave}</span>
+            </div>
+            <div class="name">千与千寻 OST</div>
+            <div class="meta">久石让 · 2001</div>
+          </div>
+          <div class="album-card" style="width:100%;">
+            <div class="cover" style="width:100%; height:140px; background:linear-gradient(135deg,#FFC4D6,#7C5BC7);">
+              <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+                <path d="M0 50 Q25 20 50 50 T100 50" fill="none" stroke="white" stroke-width="3" opacity="0.6"/>
+                <path d="M0 70 Q25 40 50 70 T100 70" fill="none" stroke="white" stroke-width="2" opacity="0.4"/>
+              </svg>
+              <span class="deco-badge lg br c-lilac">${I.decoDisc}</span>
+            </div>
+            <div class="name">async</div>
+            <div class="meta">坂本龍一 · 2017</div>
+          </div>
+        </div>
+
+        <!-- 全部歌曲（紧凑列表） -->
+        <div class="section-head">
+          <div class="title"><span class="accent"></span>全部歌曲</div>
+          <button class="action-btn primary" style="padding:4px 8px;">
+            <span class="b-ico">${I.shuffle}</span><span style="font-size:10px;">随机播放</span>
+          </button>
+        </div>
+
+        <div class="song-row playing">
+          <div class="cover" style="background:linear-gradient(135deg,#FFA1BD,#7C5BC7);">
+            <span class="cover-letter">${coverChar('春之声 · 第三乐章')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">春之声 · 第三乐章</div>
+            <div class="artist">坂本龍一</div>
+          </div>
+          <span class="dur">3:42</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#9BE3C8,#6FB6FF);">
+            <span class="cover-letter">${coverChar('Summer')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">Summer</div>
+            <div class="artist">久石让</div>
+          </div>
+          <span class="dur">4:15</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#FFE89B,#FFC4D6);">
+            <span class="cover-letter">${coverChar('River Flows in You')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">River Flows in You</div>
+            <div class="artist">Yiruma</div>
+          </div>
+          <span class="dur">3:18</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#D8C7FF,#9DC9FF);">
+            <span class="cover-letter">${coverChar('Merry-Go-Round of Life')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">Merry-Go-Round of Life</div>
+            <div class="artist">久石让</div>
+          </div>
+          <span class="dur">2:58</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#9BE3C8,#FFE89B);">
+            <span class="cover-letter">${coverChar("One Summer's Day")}</span>
+          </div>
+          <div class="meta">
+            <div class="name">One Summer's Day</div>
+            <div class="artist">久石让</div>
+          </div>
+          <span class="dur">4:05</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#9DC9FF,#FFC4D6);">
+            <span class="cover-letter">${coverChar('Ponyo')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">Ponyo · 崖の上のポニョ</div>
+            <div class="artist">久石让</div>
+          </div>
+          <span class="dur">3:24</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#FFA1BD,#FFE89B);">
+            <span class="cover-letter">${coverChar('Bibo no Aozora')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">Bibo no Aozora</div>
+            <div class="artist">坂本龍一 · 情熱大陸</div>
+          </div>
+          <span class="dur">5:12</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#D8C7FF,#9BE3C8);">
+            <span class="cover-letter">${coverChar('Kiss the Rain')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">Kiss the Rain</div>
+            <div class="artist">Yiruma</div>
+          </div>
+          <span class="dur">4:32</span>
+          <div class="more">${I.more}</div>
+        </div>
+        <div class="song-row">
+          <div class="cover" style="background:linear-gradient(135deg,#9BE3C8,#6FB6FF);">
+            <span class="cover-letter">${coverChar('Aqua')}</span>
+          </div>
+          <div class="meta">
+            <div class="name">Aqua</div>
+            <div class="artist">Joe Hisaishi</div>
+          </div>
+          <span class="dur">3:55</span>
+          <div class="more">${I.more}</div>
+        </div>
+      </div>
+
+      <!-- Mini Player · 演示全局迷你播放器 -->
+      <div class="mini-player">
+        <div class="cover" style="background:linear-gradient(135deg,#FFA1BD,#7C5BC7);">
+          <span class="cover-letter">${coverChar('春之声 · 第三乐章')}</span>
+        </div>
+        <div class="meta">
+          <div class="name">春之声 · 第三乐章</div>
+          <div class="artist">坂本龍一</div>
+        </div>
+        <div class="wave"><span></span><span></span><span></span><span></span></div>
+        <button class="ctl">${I.pause}</button>
+      </div>
+
+      ${bottombar('music')}
+    </div>
+    <div class="phone-name"><span class="num">12</span>音乐库</div>
+    <div class="phone-sub">Hero 横幅 · 横滑 · 网格 · 紧凑列表 · Mini Player</div>
+  </div>`;
+}
+
+const nav = document.getElementById('nav');
+const wall = document.getElementById('wall');
+
+/* —— 封面首字：取歌名/专辑名的第一个有效字符 —— */
+function Screen13_AssetLibrary() {
+  /* 资源分组：每项 = 名称 / 尺寸 / 用途 / 实现方式 / 预览 */
+  const groups = [
+    {
+      title: '专辑封面',
+      desc: '音乐相关屏用的封面占位',
+      items: [
+        { name: '方形专辑卡（横滑）', size: '105 × 105', use: '屏 12 · 最近添加', impl: 'CSS 渐变 + SVG 几何装饰；<br>或：远程封面图（缩略图服务）', preview: 'swatch', gradient: 'linear-gradient(135deg,#9BE3C8,#6FB6FF)' },
+        { name: '方形专辑卡（网格）', size: '宽100% × 140', use: '屏 12 · 专辑网格', impl: '同上，可换更大尺寸封面图', preview: 'swatch', gradient: 'linear-gradient(135deg,#6FB6FF,#9BE3C8)' },
+        { name: '歌曲行封面（紧凑）', size: '42 × 42', use: '屏 12 · 全部歌曲 + Mini Player', impl: 'CSS 渐变 + 居中首字 (Fredoka)；<br>可换：歌曲首字符 / 圆形头像 / Lottie', preview: 'letter', letter: '春', gradient: 'linear-gradient(135deg,#FFA1BD,#7C5BC7)' },
+        { name: 'Hero 横幅封面', size: '高度 300px', use: '屏 11 · 音乐预览', impl: 'CSS 渐变 + SVG 大装饰；<br>或：专辑大封面图 + 圆形裁切', preview: 'swatch', gradient: 'linear-gradient(135deg,#FFA1BD,#7C5BC7)', large: true },
+        { name: 'Mini Player 封面', size: '38 × 38', use: '底部 Mini Player', impl: '同上，缩略图 + 居中首字', preview: 'letter', letter: '春', gradient: 'linear-gradient(135deg,#FFA1BD,#7C5BC7)', small: true },
+      ]
+    },
+    {
+      title: '状态插画',
+      desc: '空态/加载/错误用的整图',
+      items: [
+        { name: '「这里空空如也」插画', size: '96 × 96', use: '屏 10 · 空态', impl: 'SVG（蓝渐变底 + 文件盒 + 糖果点缀）；<br>开发：复用此 SVG，或换 Lottie 动画', preview: 'illus-empty' },
+        { name: '「加载失败」插画', size: '40 × 40 icon', use: '屏 10 · 加载失败', impl: 'iconfont 警示图标 + 浅红圆底', preview: 'illus-error' },
+        { name: '樱花山预览图', size: '340 × 340', use: '屏 04 · 文件预览占位', impl: 'SVG 几何山水 + 樱花；<br>生产环境换：真实照片/缩略图', preview: 'illus-sakura' },
+      ]
+    },
+    {
+      title: '头像 & Logo',
+      desc: '用户/品牌/装饰用的图像',
+      items: [
+        { name: '登录页云朵 Logo', size: '76 × 76', use: '屏 01 · 登录页', impl: 'SVG 渐变云朵 + 糖果点；<br>生产环境：Alist 官方 logo', preview: 'logo-cloud' },
+        { name: '用户头像（圆形首字）', size: '48 × 48', use: '屏 06 · 设置页用户卡', impl: 'CSS 渐变 + 居中首字 (Fredoka)；<br>可换：Gravatar / 用户上传头像', preview: 'avatar' },
+        { name: '艺人头像（圆形首字）', size: '84 × 84', use: '屏 12 · 艺人横滑', impl: '同上，加白色描边环；<br>可换：艺人真实头像', preview: 'artist', letter: '久' },
+      ]
+    },
+    {
+      title: 'UI 图标',
+      desc: '原型里的所有 inline SVG icon（共计 30+ 个）',
+      items: [
+        { name: 'iconfont / Iconify 替换', size: '16-28 px', use: '全屏（顶栏/底栏/卡片/按钮）', impl: '推荐 Material Symbols / Lucide / Phosphor；<br>保留本套 stroke-width: 2.2、圆头线帽风格', preview: 'icon-sample' },
+        { name: 'deco 装饰图标', size: '14-22 px', use: '屏 12 · 专辑卡徽章', impl: '保留为 SVG（爱豆/星星/唱片/音符等）；<br>不参与主题切换，颜色固定糖果色', preview: 'deco-sample' },
+      ]
+    },
+    {
+      title: '装饰背景',
+      desc: '屏幕底色/装饰元素',
+      items: [
+        { name: '页面底色', size: '全屏', use: '所有主屏背景', impl: 'CSS 渐变 #F4F9FF → #E7F2FF；<br>深色主题：#0F2444 → #1F3A5F', preview: 'bg-page' },
+        { name: '顶部云朵装饰', size: '360 × 280', use: '屏 01 / 屏 11 顶部', impl: 'CSS radial-gradient 椭圆 + 糖果圆点；<br>可换：纯背景色去掉装饰', preview: 'bg-clouds' },
+        { name: 'Hero 横幅底', size: '全宽 × 180', use: '屏 12 · 最近播放', impl: 'CSS 渐变 #FFA1BD → #7C5BC7；<br>可换：专辑大封面图作为底', preview: 'bg-hero' },
+        { name: '装饰圆环/线条', size: 'SVG inline', use: '屏 04 / 屏 11 封面', impl: '保留 SVG 实现（不用图片）', preview: 'illus-sakura' },
+      ]
+    },
+  ];
+
+  function renderItem(it) {
+    let prev = '';
+    if (it.preview === 'swatch' || it.preview === 'bg-page' || it.preview === 'bg-hero') {
+      prev = `<div class="asset-preview" style="background:${it.gradient};${it.large?'height:80px;':''}${it.small?'width:48px;height:48px;border-radius:10px;':''}"></div>`;
+    } else if (it.preview === 'letter') {
+      prev = `<div class="asset-preview cover-letter-box" style="background:${it.gradient};${it.small?'width:48px;height:48px;border-radius:10px;':''}"><span>${it.letter || ''}</span></div>`;
+    } else if (it.preview === 'illus-empty') {
+      prev = `<div class="asset-preview"><svg viewBox="0 0 96 96" width="64" height="64"><circle cx="48" cy="48" r="36" fill="#D7E9FF" opacity="0.6"/><ellipse cx="48" cy="56" rx="22" ry="14" fill="#FFFFFF"/><rect x="36" y="38" width="24" height="20" rx="3" fill="#FFFFFF" stroke="#6FB6FF" stroke-width="2"/><line x1="36" y1="44" x2="60" y2="44" stroke="#6FB6FF" stroke-width="2"/><circle cx="42" cy="51" r="1.5" fill="#6FB6FF"/><circle cx="48" cy="51" r="1.5" fill="#6FB6FF"/><circle cx="54" cy="51" r="1.5" fill="#6FB6FF"/><circle cx="20" cy="30" r="3" fill="#FFC4D6"/><circle cx="78" cy="34" r="2.5" fill="#9BE3C8"/></svg></div>`;
+    } else if (it.preview === 'illus-error') {
+      prev = `<div class="asset-preview"><div class="asset-err-ico">${I.alert}</div></div>`;
+    } else if (it.preview === 'illus-sakura') {
+      prev = `<div class="asset-preview" style="background:linear-gradient(135deg,#FFD1DD,#FFE4ED,#FFC4D6);justify-content:center;align-items:center;"><svg viewBox="0 0 100 100" width="64" height="64"><path d="M0 70 L25 50 L50 70 L75 50 L100 70 L100 100 L0 100 Z" fill="#9DC9FF" opacity="0.6"/><circle cx="50" cy="55" r="18" fill="#FFC4D6"/><circle cx="50" cy="55" r="10" fill="#FFE4ED"/></svg></div>`;
+    } else if (it.preview === 'logo-cloud') {
+      prev = `<div class="asset-preview"><svg viewBox="0 0 80 80" width="64" height="64"><circle cx="26" cy="36" r="14" fill="#9DC9FF"/><circle cx="52" cy="34" r="16" fill="#9DC9FF"/><circle cx="40" cy="30" r="12" fill="#9DC9FF"/><ellipse cx="40" cy="44" rx="32" ry="22" fill="#5A9BE8"/><circle cx="58" cy="50" r="3.5" fill="#9BE3C8"/><circle cx="14" cy="52" r="2.5" fill="#FFE89B"/></svg></div>`;
+    } else if (it.preview === 'avatar') {
+      prev = `<div class="asset-preview avatar-circle">柚</div>`;
+    } else if (it.preview === 'artist') {
+      prev = `<div class="asset-preview artist-circle">${it.letter || '?'}</div>`;
+    } else if (it.preview === 'icon-sample') {
+      const icons = [I.home, I.file, I.musicNote, I.transfer, I.settings, I.search, I.heart, I.share, I.upload, I.download, I.user, I.shield];
+      prev = `<div class="asset-preview icon-grid">${icons.map(i => `<span class="icon-cell">${i}</span>`).join('')}</div>`;
+    } else if (it.preview === 'deco-sample') {
+      const icons = [I.decoNote, I.decoStar, I.decoHeart, I.decoDisc, I.decoFlame, I.decoWave, I.decoSpark, I.decoHead];
+      prev = `<div class="asset-preview icon-grid">${icons.map(i => `<span class="icon-cell c-deco">${i}</span>`).join('')}</div>`;
+    } else if (it.preview === 'bg-clouds') {
+      prev = `<div class="asset-preview bg-clouds"></div>`;
+    }
+    return `
+      <div class="asset-row">
+        ${prev}
+        <div class="asset-info">
+          <div class="asset-name">${it.name}</div>
+          <div class="asset-meta">
+            <span class="chip" style="background:#F4F9FF;color:var(--brand-deep);padding:2px 8px;font-size:10px;">${it.size}</span>
+            <span class="asset-use">📍 ${it.use}</span>
+          </div>
+          <div class="asset-impl">${it.impl}</div>
+        </div>
+      </div>`;
+  }
+
+  return `
+  <div class="phone">
+    <div class="phone-screen" style="background:linear-gradient(180deg,#F4F9FF 0%,#E7F2FF 100%);">
+      ${statusbar()}
+      <div class="appbar">
+        <div class="titles">
+          <div class="title">资源库</div>
+          <div class="subtitle"><span class="dot"></span>设计交付清单 · 供开发参考</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <div class="card solid" style="background:linear-gradient(135deg,#CDE5FF,#D7E9FF);border:none;margin-bottom:14px;">
+          <div style="font-size:12px; line-height:1.7; color:var(--ink);">
+            <div style="font-family:Fredoka;font-weight:600;font-size:14px;margin-bottom:6px;">📦 占位资源说明</div>
+            原型里所有渐变色块、SVG 装饰、几何插画都是 <b style="color:var(--brand-deep);">占位实现</b>。<br>
+            下方按类型分组列出，标注了 <b>尺寸 / 用在哪 / 实现建议</b>，开发可直接对照。
+          </div>
+        </div>
+
+        ${groups.map(g => `
+          <div class="section-head">
+            <div class="title"><span class="accent"></span>${g.title}</div>
+            <span class="more">${g.items.length} 项</span>
+          </div>
+          <div class="card solid" style="padding:6px 12px;">
+            <div style="font-size:11px;color:var(--ink-soft);padding:6px 0 8px;">${g.desc}</div>
+            ${g.items.map(renderItem).join('')}
+          </div>
+        `).join('')}
+
+        <div class="mt-16"></div>
+        <div class="card solid" style="background:rgba(255,255,255,0.6);text-align:center;padding:14px;">
+          <div style="font-size:11px;color:var(--ink-mute);line-height:1.6;">
+            所有图标 SVG 已抽出至 <code style="background:#EAF0F8;padding:1px 6px;border-radius:4px;color:var(--brand-deep);font-family:monospace;">prototype/alist-android/index.html</code> 的 <code style="background:#EAF0F8;padding:1px 6px;border-radius:4px;color:var(--brand-deep);font-family:monospace;">const I = {...}</code> 对象<br>
+            开发可直接对照 SVG path 移植到 iconfont / Compose Vector / SwiftUI
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-name"><span class="num">13</span>资源库 · 交付清单</div>
+    <div class="phone-sub">所有占位元素 · 尺寸/用途/实现</div>
+  </div>`;
+}
+
+function coverChar(name) {
+  if (!name) return '♪';
+  const s = name.trim();
+  // 跳过前导非字母数字字符（如 《 " 等）
+  const m = s.match(/[\p{L}\p{N}]/u);
+  if (!m) return '♪';
+  // 中文 → 单字；英文 → 大写首字母
+  return m[0].toUpperCase();
+}
+
+/* —— 封面：渐变底 + 居中首字 + 右上角 deco 徽章 —— */
+function coverTile(name, gradient, badge) {
+  return `
+    <div class="cover" style="background:${gradient};">
+      <span class="cover-letter">${coverChar(name)}</span>
+      ${badge || ''}
+    </div>`;
+}
+
+const SCREENS = [
+  { id: 'login',    name: '01 · 登录',     render: Screen01_Login },
+  { id: 'home',     name: '02 · 首页',     render: Screen02_Home },
+  { id: 'files',    name: '03 · 文件',     render: Screen03_Files },
+  { id: 'preview',  name: '04 · 预览',     render: Screen04_Preview },
+  { id: 'music',    name: '11 · 音乐预览', render: Screen11_MusicPreview },
+  { id: 'transfer', name: '05 · 传输',     render: Screen05_Transfer },
+  { id: 'settings', name: '06 · 设置',     render: Screen06_Settings },
+  { id: 'storage',  name: '07 · 存储编辑', render: Screen07_StorageEdit },
+  { id: 'fullset',  name: '08 · 完整设置', render: Screen08_FullSettings },
+  { id: 'pick',     name: '09 · 选择目录', render: Screen09_PickTarget },
+  { id: 'states',   name: '10 · 状态合集', render: Screen10_States },
+  { id: 'musiclib', name: '12 · 音乐库',   render: Screen12_MusicLibrary },
+  { id: 'assets',   name: '13 · 资源库',   render: Screen13_AssetLibrary },
+];
+
+nav.innerHTML = SCREENS.map((s, i) =>
+  `<button class="nav-chip ${i===0?'active':''}" data-idx="${i}">${s.name}</button>`
+).join('');
+
+nav.querySelectorAll('.nav-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    nav.querySelectorAll('.nav-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const idx = parseInt(btn.dataset.idx);
+    const cards = wall.querySelectorAll('.phone-wrap');
+    if (cards[idx]) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+wall.innerHTML = SCREENS.map(s => `<div class="phone-wrap">${s.render()}</div>`).join('');
+</script>
+
+</body>
+</html>
