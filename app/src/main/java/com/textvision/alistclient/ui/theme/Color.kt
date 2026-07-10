@@ -24,6 +24,9 @@ val Brand900 = Color(0xFFD7E9FF)
 // ══════════════════════════════════════════════════════════════════════════════
 val CandyMint       = Color(0xFF9BE3C8)
 val CandyMintBg     = Color(0xFFDAF6EC)
+/** Deeper mint tint — used at the right edge of gradient hero cards
+ *  (e.g. StorageEditScreen info card). Added in Task 24. */
+val CandyMintDeep   = Color(0xFFC2EFE0)
 val CandyPink       = Color(0xFFFFC4D6)
 val CandyPinkBg     = Color(0xFFFFE4ED)
 val CandyLemon      = Color(0xFFFFE89B)
