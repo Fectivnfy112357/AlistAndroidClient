@@ -109,7 +109,7 @@ class ComponentSnapshotTest {
                     ActionButton("Outlined", onClick = {}, variant = ButtonVariant.OUTLINED)
                     ActionButton("Text", onClick = {}, variant = ButtonVariant.TEXT)
                     ActionButton("Disabled", onClick = {}, enabled = false)
-                    ActionButton("Loading", onClick = {}, loading = true)
+                    ActionButton("Loading", onClick = {}, isLoading = true)
                 }
             }
         }

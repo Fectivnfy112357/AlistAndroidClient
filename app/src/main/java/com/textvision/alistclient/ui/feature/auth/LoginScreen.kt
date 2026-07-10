@@ -95,7 +95,7 @@ fun LoginScreen(
                 text = "登录 Alist",
                 onClick = { viewModel.login(onLoginSuccess) },
                 modifier = Modifier.fillMaxWidth(),
-                loading = state.isLoading,
+                isLoading = state.isLoading,
             )
         }
     }

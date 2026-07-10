@@ -91,7 +91,7 @@ fun AdminSiteSettingsScreen(
                         text = if (s.isSaving) "保存中…" else "保存",
                         onClick = { viewModel.save() },
                         enabled = !s.isSaving,
-                        loading = s.isSaving,
+                        isLoading = s.isSaving,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),

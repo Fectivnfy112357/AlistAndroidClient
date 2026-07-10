@@ -187,7 +187,7 @@ private fun ActionButtonPreview() {
                     ActionButton(text = "Outlined", onClick = {}, variant = ButtonVariant.OUTLINED)
                     ActionButton(text = "Text", onClick = {}, variant = ButtonVariant.TEXT)
                 }
-                ActionButton(text = "Loading", onClick = {}, loading = true)
+                ActionButton(text = "Loading", onClick = {}, isLoading = true)
             }
         }
     }
