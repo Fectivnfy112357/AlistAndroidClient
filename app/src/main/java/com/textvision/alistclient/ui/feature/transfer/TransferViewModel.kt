@@ -19,30 +19,51 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class TransferTab(
-    val type: TransferType,
     val title: String,
     val emptyMessage: String,
+    val typeFilter: TransferType? = null,
+    val failedOnly: Boolean = false,
 ) {
-    UPLOAD(TransferType.Upload, "上传", "暂无上传任务"),
-    DOWNLOAD(TransferType.Download, "下载", "暂无下载任务"),
+    ALL("全部", "暂无传输任务", typeFilter = null),
+    UPLOAD("上传", "暂无上传任务", typeFilter = TransferType.Upload),
+    DOWNLOAD("下载", "暂无下载任务", typeFilter = TransferType.Download),
+    FAILED("失败", "暂无失败任务", failedOnly = true),
+    ;
+
+    /** Returns true when [task] belongs to this tab. */
+    fun matches(task: TransferEntity): Boolean {
+        if (failedOnly) {
+            return task.status == TransferStatus.Failed || task.status == TransferStatus.Interrupted
+        }
+        return typeFilter == null || task.type == typeFilter
+    }
 }
 
 data class TransferListUiState(
     val all: List<TransferEntity> = emptyList(),
-    val tab: TransferTab = TransferTab.UPLOAD,
+    val tab: TransferTab = TransferTab.ALL,
     val isOnline: Boolean = true,
 ) {
-    val visible: List<TransferEntity> = all.filter { it.type == tab.type }
+    val visible: List<TransferEntity> = all.filter(tab::matches)
+
+    /** Counts per tab (badge data). */
+    val allCount: Int = all.size
+    val uploadCount: Int = all.count { it.type == TransferType.Upload }
+    val downloadCount: Int = all.count { it.type == TransferType.Download }
+    val failedCount: Int = all.count {
+        it.status == TransferStatus.Failed || it.status == TransferStatus.Interrupted
+    }
+
     val summary: String
         get() {
             if (all.isEmpty()) return "传输任务"
-            val active = visible.count { it.status in TransferStatus.activeStatuses }
-            val failed = visible.count { it.status == TransferStatus.Failed || it.status == TransferStatus.Interrupted }
-            val completed = visible.count { it.status == TransferStatus.Success }
+            val active = all.count { it.status in TransferStatus.activeStatuses }
+            val failed = failedCount
+            val completed = all.count { it.status == TransferStatus.Success }
             return listOfNotNull(
-                active.takeIf { it > 0 }?.let { "$it 个进行中" },
-                failed.takeIf { it > 0 }?.let { "$it 个失败" },
-                completed.takeIf { it > 0 }?.let { "$it 个完成" },
+                active.takeIf { it > 0 }?.let { "$it 进行中" },
+                failed.takeIf { it > 0 }?.let { "$it 失败" },
+                completed.takeIf { it > 0 }?.let { "$it 完成" },
             ).joinToString(" · ").ifBlank { "暂无进行中的任务" }
         }
 }
@@ -53,7 +74,7 @@ class TransferViewModel @Inject constructor(
     private val networkMonitor: NetworkMonitorContract,
 ) : ViewModel() {
 
-    private val _tab = MutableStateFlow(TransferTab.UPLOAD)
+    private val _tab = MutableStateFlow(TransferTab.ALL)
     private val _isRefreshing = MutableStateFlow(false)
 
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -85,4 +106,11 @@ class TransferViewModel @Inject constructor(
     fun cancel(id: String) = manager.cancel(id)
     fun retry(id: String) = manager.retry(id)
     fun delete(id: String) = manager.delete(id)
+
+    /**
+     * Placeholder for "查看" link on a completed task. Real navigation to a file
+     * preview requires resolving the remote path; intentionally a no-op for now
+     * to keep this screen self-contained (see report §Deviations).
+     */
+    fun openCompleted(id: String) = Unit
 }
