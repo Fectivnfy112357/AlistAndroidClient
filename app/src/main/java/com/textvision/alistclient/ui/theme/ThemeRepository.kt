@@ -12,7 +12,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-enum class DarkMode { SYSTEM, LIGHT, DARK }
+// DarkMode enum is declared in Theme.kt (single source of truth).
 
 internal val Context.themeDataStore: DataStore<Preferences> by preferencesDataStore(name = "theme_prefs")
 internal val DARK_MODE_KEY = stringPreferencesKey("dark_mode_override")

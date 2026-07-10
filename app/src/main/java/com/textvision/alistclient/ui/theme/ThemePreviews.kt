@@ -60,7 +60,7 @@ private fun ColorScheme() {
 @Preview(name = "Colors Light", showBackground = true, widthDp = 320, heightDp = 520)
 @Composable
 private fun ColorsLightPreview() {
-    AlistClientTheme(darkTheme = false, dynamicColor = false) {
+    AlistTheme(darkMode = DarkMode.LIGHT) {
         Surface(color = MaterialTheme.colorScheme.background) { ColorScheme() }
     }
 }
@@ -74,7 +74,7 @@ private fun ColorsLightPreview() {
 )
 @Composable
 private fun ColorsDarkPreview() {
-    AlistClientTheme(darkTheme = true, dynamicColor = false) {
+    AlistTheme(darkMode = DarkMode.DARK) {
         Surface(color = MaterialTheme.colorScheme.background) { ColorScheme() }
     }
 }
@@ -82,7 +82,7 @@ private fun ColorsDarkPreview() {
 @Preview(name = "Typography", showBackground = true, widthDp = 360)
 @Composable
 private fun TypographyPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Headline Small", style = MaterialTheme.typography.headlineSmall)
@@ -99,7 +99,7 @@ private fun TypographyPreview() {
 @Preview(name = "AppShapes", showBackground = true, widthDp = 360)
 @Composable
 private fun ShapePreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("AppShapes small / medium / large")
@@ -123,7 +123,7 @@ private fun ShapePreview() {
 @Composable
 private fun MotionPreview() {
     var toggle by remember { mutableStateOf(false) }
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("AppMotion.SpringFast animated width")
@@ -145,7 +145,7 @@ private fun MotionPreview() {
 @Preview(name = "Theme Light", showBackground = true, widthDp = 360)
 @Composable
 private fun ThemeLightPreview() {
-    AlistClientTheme(darkTheme = false, dynamicColor = false) {
+    AlistTheme(darkMode = DarkMode.LIGHT) {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Light Theme", style = MaterialTheme.typography.headlineSmall)
@@ -164,7 +164,7 @@ private fun ThemeLightPreview() {
 )
 @Composable
 private fun ThemeDarkPreview() {
-    AlistClientTheme(darkTheme = true, dynamicColor = false) {
+    AlistTheme(darkMode = DarkMode.DARK) {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Dark Theme", style = MaterialTheme.typography.headlineSmall)

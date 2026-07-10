@@ -27,7 +27,8 @@ import com.textvision.alistclient.ui.components.FileCategory
 import com.textvision.alistclient.ui.components.LoadingState
 import com.textvision.alistclient.ui.components.ListItemRow
 import com.textvision.alistclient.ui.components.StatusBanner
-import com.textvision.alistclient.ui.theme.AlistClientTheme
+import com.textvision.alistclient.ui.theme.AlistTheme
+import com.textvision.alistclient.ui.theme.DarkMode
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,7 +45,7 @@ class ComponentSnapshotTest {
 
     @Composable
     private fun Sample(darkTheme: Boolean = false, content: @Composable () -> Unit) {
-        AlistClientTheme(darkTheme = darkTheme, dynamicColor = false) {
+        AlistTheme(darkMode = if (darkTheme) DarkMode.DARK else DarkMode.LIGHT) {
             Surface(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.padding(16.dp)) { content() }
             }

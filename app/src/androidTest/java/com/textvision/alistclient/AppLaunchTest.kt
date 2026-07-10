@@ -12,7 +12,7 @@ import com.textvision.alistclient.auth.SessionManager
 import com.textvision.alistclient.navigation.AppNavHost
 import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.ui.feature.preview.PreviewScreen
-import com.textvision.alistclient.ui.theme.AlistClientTheme
+import com.textvision.alistclient.ui.theme.AlistTheme
 import org.junit.Rule
 import org.junit.Test
 
@@ -94,7 +94,7 @@ class AppLaunchTest {
     @Test
     fun previewRouteUsesCloudShell() {
         composeRule.setContent {
-            AlistClientTheme {
+            AlistTheme {
                 PreviewScreen(
                     name = "missing-preview-file.txt",
                     path = "/missing-preview-file.txt",

@@ -16,7 +16,8 @@ import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.ui.feature.file.FileListContent
 import com.textvision.alistclient.ui.feature.file.FileUiState
-import com.textvision.alistclient.ui.theme.AlistClientTheme
+import com.textvision.alistclient.ui.theme.AlistTheme
+import com.textvision.alistclient.ui.theme.DarkMode
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,7 +56,7 @@ class FileScreenSnapshotTest {
         state: FileUiState,
         darkTheme: Boolean = false,
     ) {
-        AlistClientTheme(darkTheme = darkTheme, dynamicColor = false) {
+        AlistTheme(darkMode = if (darkTheme) DarkMode.DARK else DarkMode.LIGHT) {
             Surface(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.padding(16.dp)) {
                     FileListContent(

@@ -17,7 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.textvision.alistclient.ui.theme.AlistClientTheme
+import com.textvision.alistclient.ui.theme.AlistTheme
+import com.textvision.alistclient.ui.theme.DarkMode
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -53,7 +54,7 @@ class ThemeSnapshotTest {
     @Test
     fun theme_light() {
         composeRule.setContent {
-            AlistClientTheme(darkTheme = false, dynamicColor = false) {
+            AlistTheme(darkMode = DarkMode.LIGHT) {
                 SampleContent("Alist Theme Light")
             }
         }
@@ -63,20 +64,10 @@ class ThemeSnapshotTest {
     @Test
     fun theme_dark() {
         composeRule.setContent {
-            AlistClientTheme(darkTheme = true, dynamicColor = false) {
+            AlistTheme(darkMode = DarkMode.DARK) {
                 SampleContent("Alist Theme Dark")
             }
         }
         composeRule.onRoot().captureRoboImage("src/test/snapshots/images/theme_dark.png")
-    }
-
-    @Test
-    fun theme_dynamic_light() {
-        composeRule.setContent {
-            AlistClientTheme(darkTheme = false, dynamicColor = true) {
-                SampleContent("Alist Theme Dynamic")
-            }
-        }
-        composeRule.onRoot().captureRoboImage("src/test/snapshots/images/theme_dynamic_light.png")
     }
 }

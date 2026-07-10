@@ -25,7 +25,8 @@ import com.textvision.alistclient.ui.foundation.AppBottomBar
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
 import com.textvision.alistclient.ui.foundation.BottomNavItem
-import com.textvision.alistclient.ui.theme.AlistClientTheme
+import com.textvision.alistclient.ui.theme.AlistTheme
+import com.textvision.alistclient.ui.theme.DarkMode
 
 private val previewNavItems = listOf(
     BottomNavItem("home", "首页", Icons.Filled.Home, Icons.Outlined.Home),
@@ -37,7 +38,7 @@ private val previewNavItems = listOf(
 @Preview(name = "AppScaffold", showBackground = true)
 @Composable
 private fun AppScaffoldPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         AppScaffold(
             topBar = { AppTopBar(title = "标题") },
         ) { padding ->
@@ -53,7 +54,7 @@ private fun AppScaffoldPreview() {
 )
 @Composable
 private fun AppScaffoldDarkPreview() {
-    AlistClientTheme(darkTheme = true, dynamicColor = false) {
+    AlistTheme(darkMode = DarkMode.DARK) {
         AppScaffold(
             topBar = { AppTopBar(title = "标题", subtitle = "暗色模式") },
         ) { padding ->
@@ -65,7 +66,7 @@ private fun AppScaffoldDarkPreview() {
 @Preview(name = "AppTopBar", showBackground = true)
 @Composable
 private fun AppTopBarPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         AppTopBar(title = "文件", subtitle = "/root/documents", onNavigateUp = {})
     }
 }
@@ -73,7 +74,7 @@ private fun AppTopBarPreview() {
 @Preview(name = "AppBottomBar", showBackground = true)
 @Composable
 private fun AppBottomBarPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         AppBottomBar(currentRoute = "files", items = previewNavItems, onNavigate = {})
     }
 }
@@ -81,7 +82,7 @@ private fun AppBottomBarPreview() {
 @Preview(name = "StatusBanner (all kinds)", showBackground = true, widthDp = 360)
 @Composable
 private fun StatusBannerPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -99,7 +100,7 @@ private fun StatusBannerPreview() {
 @Preview(name = "AppAlertDialog", showBackground = true)
 @Composable
 private fun AppAlertDialogPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         AppAlertDialog(
             title = "删除文件",
             message = "确定要删除该文件吗？此操作无法撤销。",
@@ -115,7 +116,7 @@ private fun AppAlertDialogPreview() {
 @Preview(name = "EmptyState", showBackground = true, heightDp = 240)
 @Composable
 private fun EmptyStatePreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             EmptyState(
                 title = "空空如也",
@@ -129,7 +130,7 @@ private fun EmptyStatePreview() {
 @Preview(name = "ErrorState", showBackground = true, heightDp = 240)
 @Composable
 private fun ErrorStatePreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             ErrorState(message = "加载失败，请检查网络", onRetry = {})
         }
@@ -139,7 +140,7 @@ private fun ErrorStatePreview() {
 @Preview(name = "LoadingState", showBackground = true, heightDp = 240)
 @Composable
 private fun LoadingStatePreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             LoadingState(message = "加载中")
         }
@@ -149,7 +150,7 @@ private fun LoadingStatePreview() {
 @Preview(name = "ListItemRow", showBackground = true, widthDp = 360)
 @Composable
 private fun ListItemRowPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column {
                 ListItemRow(
@@ -172,7 +173,7 @@ private fun ListItemRowPreview() {
 @Preview(name = "ActionButton (variants)", showBackground = true, widthDp = 360)
 @Composable
 private fun ActionButtonPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -195,7 +196,7 @@ private fun ActionButtonPreview() {
 @Preview(name = "SearchField", showBackground = true, widthDp = 360)
 @Composable
 private fun SearchFieldPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             SearchField(query = "", onQueryChange = {}, placeholder = "搜索文件", modifier = Modifier.padding(12.dp))
         }
@@ -205,7 +206,7 @@ private fun SearchFieldPreview() {
 @Preview(name = "Breadcrumb", showBackground = true, widthDp = 360)
 @Composable
 private fun BreadcrumbPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Breadcrumb(path = "/root/documents/work", onNavigate = {})
         }
@@ -215,7 +216,7 @@ private fun BreadcrumbPreview() {
 @Preview(name = "FileTypeIcon Grid", showBackground = true, widthDp = 360)
 @Composable
 private fun FileTypeIconGridPreview() {
-    AlistClientTheme(dynamicColor = false) {
+    AlistTheme() {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),

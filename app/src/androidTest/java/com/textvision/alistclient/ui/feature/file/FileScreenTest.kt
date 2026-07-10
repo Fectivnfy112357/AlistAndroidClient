@@ -8,7 +8,7 @@ import androidx.compose.ui.test.performLongClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.file.model.FileType
-import com.textvision.alistclient.ui.theme.AlistClientTheme
+import com.textvision.alistclient.ui.theme.AlistTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -23,7 +23,7 @@ class FileScreenTest {
     @Test
     fun emptyState_shows_empty_message() {
         composeRule.setContent {
-            AlistClientTheme {
+            AlistTheme {
                 Surface {
                     FileListContent(
                         state = FileUiState(),
@@ -52,7 +52,7 @@ class FileScreenTest {
         )
         var captured: FileIntent? = null
         composeRule.setContent {
-            AlistClientTheme {
+            AlistTheme {
                 Surface {
                     FileListContent(
                         state = FileUiState(path = "/", files = listOf(file)),
