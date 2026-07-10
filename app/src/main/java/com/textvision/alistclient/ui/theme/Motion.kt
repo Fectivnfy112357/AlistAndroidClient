@@ -1,10 +1,10 @@
 package com.textvision.alistclient.ui.theme
 
+import android.provider.Settings
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -13,51 +13,48 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 
 object AppMotion {
-    // Spring specs
-    val SpringFast: AnimationSpec<Float> = spring(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessHigh
-    )
-    val SpringMedium: AnimationSpec<Float> = spring(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessMedium
-    )
-    val SpringSlow: AnimationSpec<Float> = spring(
-        dampingRatio = Spring.DampingRatioLowBouncy,
-        stiffness = Spring.StiffnessLow
-    )
-    // Tween durations
-    const val TweenShort: Int = 120
-    const val TweenMedium: Int = 240
-    const val TweenLong: Int = 400
-    val Easing = FastOutSlowInEasing
+    val SpringFast = spring<Float>(dampingRatio = 0.9f, stiffness = 1200f)
+    val SpringMedium = spring<Float>(dampingRatio = 0.85f, stiffness = 600f)
+    val SpringSlow = spring<Float>(dampingRatio = 0.8f, stiffness = 300f)
 
-    internal const val DurationShortMillis = 120
+    val TweenShort  = tween<Float>(120, easing = FastOutSlowInEasing)
+    val TweenMedium = tween<Float>(240, easing = FastOutSlowInEasing)
+    val TweenLong   = tween<Float>(400, easing = FastOutSlowInEasing)
+
     internal const val DurationMediumMillis = 240
-    internal const val DurationLongMillis = 300
-
-    internal const val PressedScale = 0.94f
-    internal const val RestScale = 1f
-
     internal val FloatTween: FiniteAnimationSpec<Float> = tween(
         durationMillis = DurationMediumMillis,
         easing = LinearEasing,
     )
-
     internal val OffsetTween: FiniteAnimationSpec<IntOffset> = tween(
         durationMillis = DurationMediumMillis,
         easing = LinearEasing,
     )
+}
+
+@Composable
+fun isReducedMotion(): Boolean {
+    val context = LocalContext.current
+    val scale = runCatching {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f,
+        )
+    }.getOrDefault(1f)
+    return scale == 0f
 }
 
 /**
@@ -70,17 +67,10 @@ object CloudMotion {
     val SpringFast: AnimationSpec<Float> get() = AppMotion.SpringFast
     val SpringMedium: AnimationSpec<Float> get() = AppMotion.SpringMedium
     val SpringSlow: AnimationSpec<Float> get() = AppMotion.SpringSlow
-    const val TweenShort: Int = AppMotion.TweenShort
-    const val TweenMedium: Int = AppMotion.TweenMedium
-    const val TweenLong: Int = AppMotion.TweenLong
-    val Easing get() = AppMotion.Easing
-    internal const val DurationShortMillis: Int = AppMotion.DurationShortMillis
-    internal const val DurationMediumMillis: Int = AppMotion.DurationMediumMillis
-    internal const val DurationLongMillis: Int = AppMotion.DurationLongMillis
-    internal const val PressedScale: Float = AppMotion.PressedScale
-    internal const val RestScale: Float = AppMotion.RestScale
-    internal val FloatTween: FiniteAnimationSpec<Float> get() = AppMotion.FloatTween
-    internal val OffsetTween: FiniteAnimationSpec<IntOffset> get() = AppMotion.OffsetTween
+    val TweenShort: Int = 120
+    val TweenMedium: Int = 240
+    val TweenLong: Int = 400
+    val Easing = FastOutSlowInEasing
 }
 
 @Stable
@@ -93,9 +83,9 @@ fun Modifier.cloudClickable(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (enabled && pressed) AppMotion.PressedScale else AppMotion.RestScale,
+        targetValue = if (enabled && pressed) 0.94f else 1f,
         animationSpec = tween(
-            durationMillis = AppMotion.DurationShortMillis,
+            durationMillis = 120,
             easing = LinearEasing,
         ),
         label = "cloud click scale",
