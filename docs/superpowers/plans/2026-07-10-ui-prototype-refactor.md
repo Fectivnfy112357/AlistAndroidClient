@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the project's UI (colors, typography, shapes, 13 screens) with the Sky Blue + Candy prototype design from `prototype/alist-android/DESIGN_HANDOFF.md`, while preserving all data layer, ViewModel, navigation, and test logic. Music library and music preview remain as placeholder empty states.
+**Goal:** Replace the project's UI (colors, typography, shapes, 13 screens) with the Sky Blue + Candy prototype design from `prototype/alist-android/DESIGN_HANDOFF.md`, while preserving all data layer, ViewModel, navigation, and test logic. Music library and music preview remain as placeholder empty states with full visual skeleton.
 
 **Architecture:** Method A — in-place refactor. Keep `ui/theme/`, `ui/components/`, `ui/feature/` directory structure, replace token files and rewrite shared component + 11 screen implementations against the HTML prototype. Keep a `@Deprecated` alias layer so existing 70+ references compile unchanged, then gradually migrated. Add 2 new `@Serializable` navigation routes for music library / preview (placeholder destinations).
 
@@ -61,27 +61,28 @@
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/music/SongRow.kt` | Compact row (cover + name + artist + duration) |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/music/MiniPlayer.kt` | Bottom docked player (cover + name + wave + play) |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/auth/LoginScreen.kt` | Sky-blue gradient bg + 3 inputs + cloud logo + login btn |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt` | 3 metrics + task card + storage list (no Hero server card) |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt` | Hero server card + 3 metrics + task card (5 chips) + storage list + 管理→ link |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeSections.kt` | Updated section list using new metrics cards |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeStorageSection.kt` | Storage list rows |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileScreen.kt` | FileRow + multi-select actionbar + offline banner |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileScreen.kt` | FileRow + multi-select actionbar (5 buttons) + offline banner + multi-hint with "移动" bold |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileListContent.kt` | Updated file-row layout |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileMultiSelectBar.kt` | Bottom action bar with select-all/copy/move/delete |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferScreen.kt` | 4-segmented (All/Upload/Download/Failed) + task-row + progress |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/file/FileMultiSelectBar.kt` | Bottom action bar with select-all/copy/move/delete/cancel |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferScreen.kt` | 4-segmented (All/Upload·N/Download·N/Failed) + 4-state task-row + progress |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferListContent.kt` | Task-row list |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferRow.kt` | Card layout with icon+name+progress; failed row adds retry/delete links |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferRow.kt` | 4-state card: upload/download/failed/completed (opacity 0.75) |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/transfer/TransferProgress.kt` | Gradle gradient bar |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/settings/SettingsScreen.kt` | UserAvatarCard at top + theme picker 3 cards + storage list + quick settings |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/settings/SettingsScreen.kt` | UserAvatarCard + theme picker 3 cards + 4 sections (appearance/storage/quick/maintenance) + logout + footer |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/KeyValueRow.kt` | KeyValueRow for PreviewScreen detail grid |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/UserAvatarCard.kt` | UserAvatarCard for SettingsScreen top |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewScreen.kt` | TopBar refresh + 3 outlined action buttons + KeyValueRow detail grid |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewImage.kt` | Token migration |
+| **Create** | `app/src/main/java/com/textvision/alistclient/ui/components/DecoBadge.kt` | 4-position × 7-color × 3-size decoration badge |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewScreen.kt` | TopBar refresh + 3 outlined action buttons + image bottom overlay strip + KeyValueRow detail grid |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewImage.kt` | Token migration + bottom overlay text strip |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewText.kt` | Token migration |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewAudio.kt` | Token migration |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/preview/PreviewFallback.kt` | Token migration |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/picker/MoveCopyTargetPickerScreen.kt` | Breadcrumb + new-folder button + target preview card + file rows with radio |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/storage/StorageEditScreen.kt` | Header card + 5 form fields + cookie card + enable toggle + save btn |
-| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/admin/AdminSiteSettingsScreen.kt` | Settings rows with section headers |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/picker/MoveCopyTargetPickerScreen.kt` | Breadcrumb chip chain (icons not emoji) + new dashed card + radio 24dp + sticky bottom confirm btn |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/storage/StorageEditScreen.kt` | mint-gradient info card + 5 fields + cookie card + enable toggle + save btn |
+| **Modify** | `app/src/main/java/com/textvision/alistclient/ui/feature/admin/AdminSiteSettingsScreen.kt` | 3 sections (site/preview/security) + token validity + save-all btn |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/feature/music/MusicLibraryScreen.kt` | 5 sections placeholder + empty state |
 | **Create** | `app/src/main/java/com/textvision/alistclient/ui/feature/music/MusicPreviewScreen.kt` | Empty state with "coming soon" |
 | **Modify** | `app/src/main/java/com/textvision/alistclient/navigation/AppDestination.kt` | + `MusicLibraryDest`, `MusicPreviewDest` |
@@ -1809,20 +1810,73 @@ Expected: PASS
 - [ ] **Step 10: Commit**
 
 ```bash
-git add app/src/main/java/com/textvision/alistclient/ui/components/music/
-git commit -m "feat(ui): add music placeholder components (CoverLetter/MiniPlayer/etc.)"
+git add app/src/main/java/com/textvision/alistclient/ui/components/music/ app/src/main/java/com/textvision/alistclient/ui/components/DecoBadge.kt
+git commit -m "feat(ui): add music placeholder components + DecoBadge"
 ```
 
-(Full code for WaveIndicator / AlbumCard / ArtistCard / SongRow / MusicHeroCard / MiniPlayer omitted for brevity — follow prototype §4.3. Each ~120 lines.)
+(Full code for WaveIndicator / AlbumCard / ArtistCard / SongRow / MusicHeroCard / MiniPlayer omitted for brevity — follow prototype §4.3. Each ~120 lines. DecoBadge is a new 100-line shared component for the album/song cover decoration badges.)
 
 ---
 
-### Task 19: Refresh HomeScreen.kt — Metrics + Storage list (no Hero card)
+### Task 18b: Create AppScaffold.kt — standard Scaffold wrapper
+
+**Files:**
+- Create: `app/src/main/java/com/textvision/alistclient/ui/foundation/AppScaffold.kt`
+
+- [ ] **Step 1: Create AppScaffold** following prototype §9.2:
+
+```kotlin
+package com.textvision.alistclient.ui.foundation
+
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+
+/**
+ * Standard Scaffold wrapper — replaces Material3 Scaffold, integrates AppTopBar + AppBottomBar.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppScaffold(
+    topBar: @Composable () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
+    background: @Composable () -> Unit = {},
+    content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit,
+) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = topBar,
+        bottomBar = bottomBar,
+        containerColor = MaterialTheme.colorScheme.background,
+        content = { padding ->
+            Row(Modifier.fillMaxSize()) {
+                background()
+                content(padding)
+            }
+        },
+    )
+}
+```
+
+- [ ] **Step 2: Build & commit**
+
+```bash
+git add app/src/main/java/com/textvision/alistclient/ui/foundation/AppScaffold.kt
+git commit -m "feat(ui): add AppScaffold wrapper with topBar/bottomBar/background slots"
+```
+
+---
+
+### Task 19: Refresh HomeScreen.kt — Hero + Metrics + 5-chip task + Storage
 
 **Files:**
 - Modify: `app/src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt` (full rewrite)
 
-- [ ] **Step 1: Rewrite** to follow prototype Screen02 layout (matches img_1.png):
+- [ ] **Step 1: Rewrite** to follow HTML Screen02_Home / img_1.png:
 
 ```kotlin
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1851,6 +1905,15 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
+                SectionCard(padding = PaddingValues(18.dp)) {
+                    HeroServerCard(
+                        serverName = state.serverName,
+                        serverVersion = state.serverVersion,
+                        online = state.online,
+                    )
+                }
+            }
+            item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MetricCard("用户", state.userCount.toString(), AppIcons.user, modifier = Modifier.weight(1f))
                     MetricCard("角色", state.roleCount.toString(), AppIcons.shield, accent = "mint", modifier = Modifier.weight(1f))
@@ -1870,20 +1933,60 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                         }
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            state.taskChips.take(3).forEach { Chip(it) }
+                            state.taskChips.take(5).forEachIndexed { i, label ->
+                                val (kind, dot) = when (i) {
+                                    0 -> ChipKind.PRIMARY to true
+                                    1 -> ChipKind.MINT to true
+                                    else -> ChipKind.GRAY to false
+                                }
+                                Chip(label, kind = kind, showDot = dot)
+                            }
                         }
                     }
                 }
             }
             item {
-                Text("存储源", style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("存储源", style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f))
+                    Text("管理 →", style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary)
+                }
             }
             items(state.storages) { storage ->
                 StorageCard(name = storage.name, path = storage.path, icon = AppIcons.database, color = "default",
                     disabled = !storage.enabled, onClick = { viewModel.editStorage(storage.id) })
             }
+        }
+    }
+}
+
+@Composable
+private fun HeroServerCard(serverName: String, serverVersion: String, online: Boolean) {
+    Box {
+        Box(Modifier.size(120.dp).align(Alignment.TopEnd).offset(30.dp, (-30).dp)
+            .background(Brush.radialGradient(
+                listOf(Brand300.copy(alpha = 0.6f), Color.Transparent),
+            ), shape = CircleShape))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(42.dp).clip(MaterialTheme.shapes.small)
+                .background(Brush.linearGradient(listOf(Brand500, Brand600))),
+                contentAlignment = Alignment.Center) {
+                Icon(AppIcons.cloud, contentDescription = null, tint = Color.White,
+                    modifier = Modifier.size(22.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(serverName, style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface)
+                Text("当前服务器 · $serverVersion",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp))
+            }
+            StatusChip(if (online) "在线" else "离线",
+                kind = if (online) ChipKind.MINT else ChipKind.GRAY)
         }
     }
 }
@@ -1900,10 +2003,10 @@ Expected: BUILD SUCCESSFUL
 
 ```bash
 git add app/src/main/java/com/textvision/alistclient/ui/feature/home/
-git commit -m "refactor(ui): HomeScreen with Metrics + Storage (no Hero card)"
+git commit -m "refactor(ui): HomeScreen with Hero + Metrics + 5 chips + Storage"
 ```
 
-(Full code listing for MetricCard / StorageCard / Chip omitted for brevity — follow prototype Screen02 / img_1.png. No HeroServerCard.)
+(Full code listing for MetricCard / StorageCard / Chip omitted for brevity — follow HTML Screen02_Home. HeroServerCard restored.)
 
 ---
 
@@ -1999,11 +2102,14 @@ git commit -m "refactor(ui): FileScreen multi-select with offline banner"
 **Files:**
 - Modify: 4 files under `feature/transfer/`
 
-- [ ] **Step 1: Rewrite** to follow prototype Screen05 / img_5.png:
-  - AppTopBar (no back); subtitle shows running/done counts
-  - **4-segmented** switcher: 全部 / 上传·N / 下载·N / 失败; each segment shows live count badge
-  - LazyColumn of `TaskRow` cards with icon + name + status + `TransferProgress` (5dp height gradient bar) + size/speed/time
-  - **Failed state**: bar turns red, below bar show "重试 / 删除" inline link buttons (ActionButton variant=TEXT)
+- [ ] **Step 1: Rewrite** to follow HTML Screen05 / img_5.png:
+  - AppTopBar (no back); subtitle = "N 进行中 · M 已完成"
+  - **4-segmented** switcher: 全部 / 上传·N (badge 色 `tertiary` candy-pink) / 下载·N (badge 色 `secondary` candy-mint) / 失败
+  - LazyColumn of **4-state** `TaskRow` cards:
+    - upload: 32dp pink icon (`tertiaryContainer` bg) + 名称 (truncate) + "上传中" (primary 色) + 5dp gradient progress + 进度数字 + "取消" link
+    - download: 32dp mint icon (`secondaryContainer` bg) + 名称 + "下载中" (secondary 色) + progress + "取消" link
+    - failed: 32dp 浅红 + alert icon + "失败" (`state-error` 色) + **红色**进度条 + 错误原因 + "重试 · 删除" inline links
+    - completed: **卡片整体 `opacity = 0.75`** + 32dp brand icon (`primaryContainer` bg) + check icon + "已完成" (`onSurfaceVariant` ink-soft 色) + 100% progress + 大小 + 完成时间 + "查看" link
 
 - [ ] **Step 2: Build & commit**
 
@@ -2014,81 +2120,21 @@ git commit -m "refactor(ui): TransferScreen segmented + task cards"
 
 ---
 
-### Task 23: Refresh SettingsScreen.kt — UserAvatarCard + Theme picker 3 cards + Settings rows
+### Task 23: Refresh SettingsScreen.kt — UserAvatarCard + Theme picker + 4 sections + logout + footer
 
 **Files:**
 - Modify: `app/src/main/java/com/textvision/alistclient/ui/feature/settings/SettingsScreen.kt`
-- Create: `app/src/main/java/com/textvision/alistclient/ui/components/UserAvatarCard.kt` (new shared component)
+- Create: `app/src/main/java/com/textvision/alistclient/ui/components/UserAvatarCard.kt` (new shared component, already listed)
 
-- [ ] **Step 1: Create UserAvatarCard.kt**
-
-```kotlin
-package com.textvision.alistclient.ui.components
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.ui.components.music.CoverLetter
-
-/**
- * User identity card for SettingsScreen top — 48dp circular avatar + name + role + server + status chip.
- */
-@Composable
-fun UserAvatarCard(
-    name: String,
-    role: String,
-    serverName: String,
-    status: String? = null,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CoverLetter(
-            name = name,
-            gradient = Brush.linearGradient(
-                listOf(
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.tertiary,
-                ),
-            ),
-            size = 48.dp,
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface)
-            Text("$role · $serverName",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        if (status != null) {
-            StatusChip(status, kind = ChipKind.MINT)
-        }
-    }
-}
-```
-
-(Use existing `StatusChip` / `ChipKind.MINT` from the components package — adjust as needed.)
-
-- [ ] **Step 2: Rewrite** to follow prototype Screen06 / img_6.png:
-  - AppTopBar (no back); subtitle shows current server
-  - **UserAvatarCard** at top (full width)
-  - **外观主题** section label + 3-card theme picker (sun/moon/auto)
-  - **存储源** section label + storage list (reuse Home's storage row)
-  - **快速设置** section label + grouped setting rows
+- [ ] **Step 1: Rewrite** to follow HTML Screen06 / img_6.png:
+  - AppTopBar (no back); subtitle = "管理你的小窝" + green dot
+  - **UserAvatarCard** (SectionCard): 48dp 圆形绿-蓝渐变 CoverLetter + 用户名 Fredoka 15 + 副标题 "我的云端小屋 · 在线" + 右侧 mint "VIP" chip
+  - **外观主题** section + SectionCard with 3 theme cards (each card has segmented swatch, NOT gradient; sun/moon/auto icons)
+  - **存储源** section + SectionCard with 3 `set-row` entries (36×36 渐变方, NOT 44×44 storage-card reused)
+  - **快速设置** section + SectionCard with 2 set-rows; 隐私与密码 has **Switch on** instead of chevron
+  - **维护** section + SectionCard with 2 set-rows (cleanup temp preview / 完整设置)
+  - **退出登录** outlined button: state-error text + state-error-bg border + 14dp radius
+  - Footer: centered 10px text "Alist Client · v1.0.0 · made with 💙"
 
 - [ ] **Step 2: Build & commit**
 
@@ -2104,27 +2150,32 @@ git commit -m "refactor(ui): SettingsScreen theme picker (3 cards) + grouped row
 **Files:**
 - Modify: 3 files under `feature/storage/`, `feature/admin/`, `feature/picker/`
 
-- [ ] **Step 1: StorageEdit** — Follow prototype Screen07 / img_7.png:
+- [ ] **Step 1: StorageEdit** — Follow HTML Screen07 / img_7.png:
   - AppTopBar (back + 标题 "编辑存储" + 副标题 存储名)
-  - **存储头卡** (SectionCard): mint 云 icon + 存储名 + 挂载路径 + 右侧 mint "已启用" chip
-  - **驱动参数** section: 备注 / 挂载路径 OutlinedTextField
-  - **Cookie** mint 浅色卡 (圆点 + "已设置 · N 天前更新" + outlined "重新获取" 按钮)
-  - **根目录路径** + **排序方式** OutlinedTextField
-  - **启用存储** Switch (with helper text)
-  - Sticky bottom: 48dp FILLED "保存修改" 主按钮
+  - **信息卡** (特殊 mint 渐变背景): `Brush.linearGradient(CandyMintBg, Color(0xFFC2EFE0))` 无描边; 内含 44×44 白色圆角方 + mint cloud icon + 存储名 Fredoka 15 (`Color(0xFF1B5A45)`) + "挂载路径 · /xxx" + 右侧 mint "已启用" chip
+  - **驱动参数** section + SectionCard (solid 14dp padding) 包裹 5 字段:
+    - 备注 / 挂载路径 OutlinedTextField (14dp 圆角)
+    - **Cookie**: `primaryContainer` 蓝渐变背景卡 + 圆点 + "已设置 · N 天前更新" + outlined "重新获取" 按钮 + cookie icon
+    - 根目录路径 OutlinedTextField
+    - 排序方式 OutlinedTextField + 右侧 chevron
+    - **启用存储** row: 左侧 "启用存储" 13 + "禁用后文件将不再显示" 11 + 右侧 Switch (on, brand gradient)
+  - 底部 sticky 48dp FILLED "保存修改" 主按钮
+  - 按钮下方居中 10px 副文字 "保存成功后将自动返回"
 
-- [ ] **Step 2: AdminSiteSettings** — Follow prototype Screen08 / img_8.png:
+- [ ] **Step 2: AdminSiteSettings** — Follow HTML Screen08 / img_8.png:
   - Section labels (站点 / 预览 / 安全)
-  - OutlinedTextField inputs for 站点标题 / 站点公告 / 站点图标
-  - Switch rows for 隐藏公告 / 启用预览 / 自动播放视频 / 强制代理
-  - Each section is a `SectionCard`
+  - **站点** card: 站点标题 / 站点公告 / 站点图标 3 OutlinedTextField + "隐藏公告" row (Switch off)
+  - **预览** card: 启用预览 (on) / 自动播放视频 (off) / 强制代理 (on) 3 rows with Switch
+  - **安全** card: "Token 有效期" OutlinedTextField (48 小时 + 右侧 chevron) + "签名直链" row (Switch on)
+  - 底部 sticky 48dp FILLED "保存全部" 主按钮
 
-- [ ] **Step 3: MoveCopyPicker** — Follow prototype Screen09 / img_9.png:
-  - AppTopBar (back + 标题 "选择目标" + 副标题 操作名)
-  - **面包屑 Row** (below TopBar): folder icon + path chip chain + 右侧 outlined "新建" pill 按钮
-  - **目标预览卡** (when target selected): folder icon + 名称 + 右侧 outlined "✓ 创建" 按钮 (active state)
+- [ ] **Step 3: MoveCopyPicker** — Follow HTML Screen09 / img_9.png:
+  - AppTopBar (back + 标题 "选择目标" + 副标题 "移动 N 项到…"); **无确认按钮**
+  - **面包屑 Row** (below TopBar): `AppIcons.home` (根目录) chip + `/` + `AppIcons.folder` (父目录) chip + `/` + `AppIcons.folder` (当前目录) chip + 末尾 "+ 新建" pill 按钮 (`primaryContainer` bg, 无描边, chip 圆角)
+  - **新建文件夹输入卡**: 1.5dp **dashed `primary` 描边** + `primaryContainer` 背景 + folder icon + 透明无描边 `OutlinedTextField` + 右侧 "✓ 创建" 文字按钮
   - **可移动到的位置** section label
-  - LazyColumn of `FileTypeIcon` folder rows: leading icon + name + secondary meta ("N 项 · X.X MB") + trailing 22×22 radio circle (selected = primary filled)
+  - LazyColumn of `FileTypeIcon` folder rows (38dp icon + name + secondary meta) + 24×24 radio circle (unselected = transparent + 2dp outline; selected = brand gradient filled + check icon); **当前目录行**用 `primaryContainer` 背景 + 名称 "N 项 · 当前目录" + `check on` 图标（与文件页一致，不用 radio）
+  - **底部 sticky** 48dp FILLED "确认移动到 · {选中名}" 主按钮
 
 - [ ] **Step 4: Build & commit**
 
@@ -2200,12 +2251,13 @@ git commit -m "feat(ui): add KeyValueRow component for detail grids"
 **Files:**
 - Modify: 5 files under `feature/preview/`
 
-- [ ] **Step 1: Rewrite PreviewScreen.kt** following prototype Screen04 / img_3.png:
-  - AppTopBar (back + 标题 + 副标题 路径 + 分享 icon-btn + 下载 icon-btn in actions)
+- [ ] **Step 1: Rewrite PreviewScreen.kt** following HTML Screen04 / img_3.png:
+  - AppTopBar (back + 标题 + 副标题 完整路径 + 分享 icon-btn + 下载 icon-btn in actions)
   - Existing PreviewImage/PreviewText/PreviewAudio/PreviewFallback content stays (token-migrated)
+  - **图片预览底部 overlay** (in PreviewImage.kt): 当是图片类型时，bottom 14dp padding + linear-gradient(180deg, transparent, rgba(0,0,0,0.45)) overlay + 白色 11px 标题 + 10px 副标题（分辨率+大小）
   - **Below preview body**, add:
-    - Row of 3 ActionButton(variant=OUTLINED): 分享 / 复制直链 / 其他应用 (icons: share / link / external), 18dp corner, 36dp height, weight 1f each
-    - **详细信息 SectionCard** with 4 KeyValueRow: 类型 / 尺寸 / 修改时间 / 位置
+    - Row of 3 ActionButton(variant=OUTLINED): 分享 / 复制直链 / 其他应用 (icons: share / link / external), 18dp corner, 38dp height, weight 1f each
+    - **详细信息 SectionCard** (solid 14dp padding) with `card-title "详细信息"` + 4 KeyValueRow: 类型 / 尺寸 / 修改时间 / 位置
 
 - [ ] **Step 2: Build & commit**
 
@@ -2222,99 +2274,73 @@ git commit -m "refactor(ui): PreviewScreen token migration"
 - Create: `app/src/main/java/com/textvision/alistclient/ui/feature/music/MusicLibraryScreen.kt`
 - Create: `app/src/main/java/com/textvision/alistclient/ui/feature/music/MusicPreviewScreen.kt`
 
-- [ ] **Step 1: MusicLibraryScreen.kt**
-
-```kotlin
-package com.textvision.alistclient.ui.feature.music
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.ui.components.MiniPlayer
-import com.textvision.alistclient.ui.components.music.*
-import com.textvision.alistclient.ui.foundation.AppBottomBar
-import com.textvision.alistclient.ui.foundation.AppTopBar
-import com.textvision.alistclient.ui.icons.AppIcons
-
-@Composable
-fun MusicLibraryScreen(
-    onOpenPreview: () -> Unit = {},
-    onPlay: (Int) -> Unit = {},
-) {
-    Column {
-        AppTopBar(title = "音乐库", subtitle = "音乐功能即将推出")
-        LazyColumn(
-            Modifier.weight(1f).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("推荐", "最近", "艺人", "专辑", "我的").forEach { Chip(it) }
-                }
-            }
-            item { MusicHeroCard(title = "敬请期待", subtitle = "音乐功能开发中", onClick = onOpenPreview) }
-            item { SectionHeader("最近添加", count = 5) }
-            items(5) { i -> SongRow(name = "示例歌曲 $i", artist = "示例艺人", duration = "${3 + i}:20", onClick = { onPlay(i) }) }
-            item { SectionHeader("艺人", count = 3) }
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(3) { i -> ArtistCard(name = "艺人 ${i + 1}", count = "${10 + i * 3}") }
-                }
-            }
-            item { SectionHeader("专辑", count = 3) }
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(3) { i -> AlbumCard(name = "专辑 ${i + 1}", artist = "艺人") }
-                }
-            }
-            item { SectionHeader("全部歌曲", count = 10) }
-            items(10) { i -> SongRow(name = "歌曲 ${i + 1}", artist = "艺人 $i", duration = "${3 + i % 4}:${(20 + i * 7) % 60}".padStart(5, '0'), onClick = { onPlay(i) }) }
-            item { Spacer(Modifier.height(80.dp)) }
-        }
-        MiniPlayer(cover = "♪", name = "暂无播放", artist = "—", isPlaying = false, onPlayPause = {})
-        AppBottomBar("music", onNavigate = {})
-    }
-}
-```
-
-- [ ] **Step 2: MusicPreviewScreen.kt**
+- [ ] **Step 7: MusicPreviewScreen.kt** — placeholder following HTML Screen11 player skeleton:
 
 ```kotlin
 @Composable
 fun MusicPreviewScreen(onBack: () -> Unit = {}) {
-    Column(Modifier.fillMaxSize()) {
-        AppTopBar(title = "音乐预览", subtitle = "占位", onBack = onBack)
-        Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(200.dp).clip(MaterialTheme.shapes.extraLarge)
-                    .background(Brush.linearGradient(listOf(Color(0xFFFFA1BD), Color(0xFF7C5BC7)))),
+    Box(Modifier.fillMaxSize()) {
+        SkyBlueBackground()
+        CloudDecor()
+        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            AppTopBar(
+                title = "正在播放",
+                subtitle = "来自「音乐库」",
+                onBack = onBack,
+                actions = {
+                    IconButton(onClick = {}) { Icon(AppIcons.heart, "收藏") }
+                    IconButton(onClick = {}) { Icon(AppIcons.more, "更多") }
+                },
+            )
+            Column(
+                Modifier.fillMaxWidth().weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // 300dp 渐变封面 + 几何 SVG 占位
+                Box(Modifier.size(300.dp).clip(MaterialTheme.shapes.extraLarge)
+                    .background(Brush.linearGradient(
+                        listOf(Color(0xFFFFA1BD), Color(0xFFC46683), Color(0xFF7C5BC7)),
+                    )),
                     contentAlignment = Alignment.Center) {
                     Icon(AppIcons.musicNote, contentDescription = null, tint = Color.White,
                         modifier = Modifier.size(80.dp))
                 }
                 Spacer(Modifier.height(24.dp))
-                Text("音乐功能即将推出", style = MaterialTheme.typography.headlineMedium)
+                Text("音乐功能即将推出", style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface)
                 Text("目前为占位界面，敬请期待",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp))
+                Spacer(Modifier.height(16.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatusChip("HIRES", kind = ChipKind.LILAC)
+                    StatusChip("FLAC · 24bit", kind = ChipKind.MINT)
+                }
+                Spacer(Modifier.height(24.dp))
+                // 占位进度条 + 控制按钮骨架
+                AppMusicPlayerControlsPlaceholder()
+                Spacer(Modifier.height(16.dp))
+                AppLyricsCardPlaceholder()
             }
         }
     }
 }
 ```
 
-- [ ] **Step 3: Build & commit**
+(Helper composables `AppMusicPlayerControlsPlaceholder` / `AppLyricsCardPlaceholder` = empty Containers matching HTML player chrome shape, used purely for visual congruence.)
 
-```bash
-git add app/src/main/java/com/textvision/alistclient/ui/feature/music/
-git commit -m "feat(ui): add music placeholder screens (library + preview)"
-```
+- [ ] **Step 8: MusicLibraryScreen.kt** — placeholder following HTML Screen12 5-section structure:
+  - AppTopBar (back + 标题 "音乐库" + 副标题 "N 首 · M 位艺人" + sort icon-btn + search brand icon-btn)
+  - **Section 1**: `LazyRow` 4 chips with counts (全部·N / 最近添加·N / 最爱·N / 下载·N)
+  - **Section 2**: `MusicHeroCard` placeholder with title "音乐功能即将推出"
+  - **Section 3**: SectionHead + `LazyRow` of 4 `AlbumCard` placeholders
+  - **Section 4**: SectionHead + `LazyRow` of 4 `ArtistCard` placeholders (84×84)
+  - **Section 5**: SectionHead + 2-column grid of 2 `AlbumCard` placeholders (140dp high)
+  - **Section 6**: SectionHead + 10 `SongRow` placeholders (first row `isPlaying=true`)
+  - Sticky bottom: `MiniPlayer` placeholder
 
 ---
 
@@ -2565,8 +2591,8 @@ Plan saved to `docs/superpowers/plans/2026-07-10-ui-prototype-refactor.md`.
 
 Two execution paths:
 
-**1. Subagent-Driven (recommended)** — 31 tasks dispatched to fresh subagents, review between tasks, tight iteration, no shared context bloat.
+**1. Subagent-Driven (recommended)** — 33 tasks dispatched to fresh subagents (Task 1–17 + 18 + 18b + 19–26 + 24b + 27–31), review between tasks, tight iteration, no shared context bloat.
 
-**2. Inline Execution** — Execute in this session, batched with checkpoints. Faster start, but conversation grows large over 31 tasks.
+**2. Inline Execution** — Execute in this session, batched with checkpoints. Faster start, but conversation grows large over 33 tasks.
 
 Choose path before invoking the execution skill.

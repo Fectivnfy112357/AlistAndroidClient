@@ -422,9 +422,10 @@ fun AlistTheme(
 
 | 组件 | 文件 | API 关键点 | 视觉关键点 |
 |---|---|---|---|
-| **AppScaffold** | `foundation/Scaffold.kt` | 包装 M3 Scaffold，提供 `topBar` / `bottomBar` slot | 屏幕背景渐变（SkyBlue 165°） |
+| **AppScaffold** | `foundation/AppScaffold.kt` | 标准 Scaffold（替代 Material3 Scaffold，自定义 TopBar + BottomBar slot） | 系统栏适配 + edge-to-edge |
 | **AppTopBar** | `foundation/AppBars.kt` | `title, subtitle?, onBack?, actions` | 顶栏背景 `surface.copy(0.92f)`，back 与 action 是 36dp 圆形 tonal icon-btn，title Fredoka 18 600，subtitle 11 600 + 6×6 在线点（ink 灰） |
 | **AppBottomBar** | `foundation/AppBars.kt` | `currentRoute, onNavigate` | 5 Tab（首页/文件/**音乐**/传输/设置），激活态圆角胶囊背景 + tinted icon；glass-white 背景 + 8dp 顶部 shadow |
+| **DecoBadge** | `components/DecoBadge.kt` | `icon, position(tl/tr/br/center), size(sm/md/lg), color(pink/mint/lemon/lilac/blue/orange/mute)` | 白色 92% 背景 + 4dp blur + 糖果色 icon；用于 AlbumCard 右下装饰徽章 |
 | **SectionCard** | `components/SectionCard.kt` | `Modifier, content` | 玻璃白 `surface.copy(0.78)` + 22dp 圆角 + 4dp shadow |
 | **ListItemRow** | `components/ListItemRow.kt` | `leading, title, subtitle?, trailing, onClick?` | 高度 48-64dp、14dp 圆角、ripple |
 | **KeyValueRow** | `components/KeyValueRow.kt` | `label: String, value: String` | 一行 label 左 / value 右；label `onSurfaceVariant` labelMedium，value `onSurface` bodyMedium；14dp 垂直间距；用于预览屏的"详细信息"网格 |
@@ -444,10 +445,10 @@ fun AlistTheme(
 |---|---|---|
 | **CoverLetter** | `components/music/CoverLetter.kt` | `name, gradient, size=42.dp` — 居中首字封面（CSS 渐变 + Fredoka 首字符）；字号 = size × 0.52 |
 | **WaveIndicator** | `components/music/WaveIndicator.kt` | `isPlaying, barCount=4, color` — 4 柱波形，scaleY 动画 1.2s 循环 |
-| **MusicHeroCard** | `components/music/MusicHeroCard.kt` | 大渐变横幅（含波形 + 大歌名 + 操作按钮）— 占位用 |
-| **AlbumCard** | `components/music/AlbumCard.kt` | 横滑方形专辑卡（105×105 + 名字 + 艺人） |
-| **ArtistCard** | `components/music/ArtistCard.kt` | 圆形艺人卡（84×84 + 名字 + 歌曲数） |
-| **SongRow** | `components/music/SongRow.kt` | 紧凑歌曲行（封面首字 + 歌名 + 艺人 + 时长） |
+| **MusicHeroCard** | `components/music/MusicHeroCard.kt` | `title, subtitle, isPlaying, onPlayPause, onFavorite, onQueue` | 大渐变横幅（180dp × 28dp 圆角，粉-紫-紫罗兰）+ 顶部 "刚刚播放" label + WaveIndicator + Fredoka 22 标题 + play/heartFill/queue 圆形按钮组 |
+| **AlbumCard** | `components/music/AlbumCard.kt` | `name, artist, gradient, decoBadge?, size = Size.SMALL(105dp) / LARGE(140dp)` | 横滑/网格方形专辑卡（封面 CoverLetter + 右下 DecoBadge + 名字 + 艺人） |
+| **ArtistCard** | `components/music/ArtistCard.kt` | `name, count, gradient` | 圆形艺人卡（84×84 圆形 CoverLetter + 名字 + 歌曲数） |
+| **SongRow** | `components/music/SongRow.kt` | `name, artist, duration, isPlaying?, onClick?` | 紧凑歌曲行（42dp CoverLetter + 歌名 + 艺人 + 时长 + more）；`isPlaying=true` 时背景 `primaryContainer` + 主色名称 |
 | **MiniPlayer** | `components/music/MiniPlayer.kt` | 全局底部迷你播放器（即使音乐 Tab 空态，也常驻于 5 主屏底部） |
 
 ### 4.3 SVG 资源
@@ -507,102 +508,138 @@ fun AlistTheme(
 
 #### 5.2.2 屏 02 首页（重写）
 
-布局（按原型 Screen02_Home）：
+布局（按 HTML Screen02_Home）：
 - 顶栏：标题 "早上好 ✨" + 副标题 "已连接 · 我的 Alist" + refresh/search icon-btn
+- **Hero 服务器卡**（18dp padding，相对位置有装饰圆）：42×42 蓝渐变方形 + "我的云端小屋" Fredoka 16 + "当前服务器 · v3.41.0" + 右侧 mint 绿点 "在线" chip
 - 3 指标行（grid 3 列）：用户/角色/在线，每张 16dp 圆角，icon 28×28 + label + numeral
-- 后台任务卡：进行中数字 + 4 个 chip（上传/解压/复制/离线下载/对象迁移）
-- 存储源列表：4 张 `storage-card`（阿里云/夸克/百度/本地），每张 44×44 渐变方 + 名称 + 路径 + 右侧 chevron 或 chip
-- **顶部不要 Hero 服务器卡**（截图确认 AppTopBar 副标题已足够承载服务器信息）
+- 后台任务卡：进行中数字 + **5 chips**（上传 / 解压 / 复制 / 离线下载 / 对象迁移），前 2 个带 dot
+- 存储源标题行：左侧 "存储源" 段落标题 + 右侧 "管理 →" 链接
+- 存储源列表：4 张 `storage-card`（阿里云/夸克/百度/本地），每张 44×44 渐变方 + 名称 + 路径 + 右侧 chevron 或 "已禁用" chip
 
 #### 5.2.3 屏 03 文件浏览（重写）
 
-布局（按原型 Screen03_Files）：
-- 顶栏：back 圆按钮 + 标题 "文件" + 副标题 "当前离线"（offline 点）+ refresh/upload
-- 离线状态横幅：`StatusBanner(kind = WARNING)`
+布局（按 HTML Screen03_Files）：
+- 顶栏：back 圆按钮 + 标题 "文件" + 副标题 "当前离线 · 部分操作不可用"（offline 点）+ refresh/upload
+- 离线状态横幅：`StatusBanner(kind = WARNING, message = "离线模式：仅可查看本地缓存")`
 - 搜索框（chip 圆角）
-- 多选提示条：蓝渐变背景 + check icon + "已选 X 项"
-- 多选模式行：22×22 check 圆 + 选中态背景 `primaryContainer`
-- 多选 actionbar：底部 4 按钮（下载/分享/移动/删除 danger）
-- 单选模式行：FileTypeIcon + 文件名 + 子标题 + more 按钮
+- **多选提示条**：`primaryContainer` 蓝渐变背景 + check icon + "已选 N 项 · 点击 **移动** 选择目标目录"（"移动" 加粗）
+- 多选模式行：22×22 check 圆 + 选中态背景 `primaryContainer` + `FileTypeIcon` + 名称 + 子标题 + more
+- **多选 actionbar**（5 按钮）：`已选 N` + 全选（蓝圆形 28×28 背景） + 移动（primary） + 下载 + 删除（danger） + 取消（×）
+- 单选模式行：22×22 check 圆（空）+ FileTypeIcon + 名称 + 子标题 + more
 
 #### 5.2.4 屏 04 文件预览（改外观）
 
 复用 `PreviewViewModel` / `PreviewRouter` / `PreviewImage` / `PreviewText` / `PreviewAudio` / `PreviewFallback` 现有实现。改造外观：
-- 顶部 `TopBar` 替换为新 `AppTopBar`（back 圆按钮 + 标题 + 副标题 + 分享 / 下载 icon-btn）
+- 顶部 `TopBar` 替换为新 `AppTopBar`（back 圆按钮 + 标题 + 副标题 完整路径 + 分享 / 下载 icon-btn）
 - `FileTypeIcon` 走新映射
 - 主题色自动随 token 改变
 - 错误态/加载态走新 `ErrorState` / `LoadingState`
+- **图片预览主体**（仅图片类型）：占满 340dp 高度、18dp 圆角、内部 SVG 占位；底部 14dp 渐变 overlay 文字条（白色 11px 标题 + 10px 副标题）
 - **预览主体下方**追加：
-  - **3 outlined 按钮行**：分享 / 复制直链 / 其他应用 — `ActionButton(variant = OUTLINED)` + `AppIcons.share / link / external`，18dp 圆角，36dp 高度
-  - **详细信息网格卡**：`SectionCard` 包裹 `Column` of `KeyValueRow`（label 在左、`onSurfaceVariant`；value 在右、`onSurface`），字段：类型 / 尺寸 / 修改时间 / 位置。KeyValueRow 是新共享组件，14dp 垂直间距
+  - **3 outlined 按钮行**：分享 / 复制直链 / 其他应用 — `ActionButton(variant = OUTLINED)` + `AppIcons.share / link / external`，18dp 圆角，38dp 高度，flex 1
+  - **详细信息卡**：`SectionCard`（solid 14dp padding）+ `card-title "详细信息"` + 4 行 `KeyValueRow`：类型 / 尺寸 / 修改时间 / 位置
 
 #### 5.2.5 屏 05 传输（重写）
 
-布局（按原型 Screen05_Transfer）：
-- 顶栏：标题 "传输" + 副标题（运行时展示当前进行中 / 已完成 计数）
-- segmented 切换器：**4 段** — 全部 / 上传（带上传计数 badge） / 下载（带下载计数 badge） / 失败
-- 任务卡：每张 `task-row` 16dp 圆角 + 32×32 icon（上传粉/下载薄荷） + 名称 + 状态 + 进度条（5dp 高度，粉/蓝/薄荷渐变）+ 文件大小/速度/时间
-- 失败态：进度条变红，进度条下方挂 "重试 / 删除" 链接按钮
+布局（按 HTML Screen05_Transfer）：
+- 顶栏：标题 "传输" + 副标题 "N 进行中 · M 已完成"（运行时计数）
+- segmented 切换器：**4 段** — 全部 / 上传·N（**badge 色 `candy-pink` / `tertiary`**） / 下载·N（**badge 色 `candy-mint` / `secondary`**） / 失败
+- 任务卡（4 种状态）：
+  - **上传中**：32×32 pink icon（`tertiaryContainer` bg） + 名称（truncate 单行省略） + "上传中"（primary 色 status） + 5dp 渐变进度条（`primary` → `candy-mint`）+ 进度数字 + "取消"链接
+  - **下载中**：32×32 mint icon（`secondaryContainer` bg） + 名称 + "下载中"（secondary 色 status） + 进度条 + "取消"链接
+  - **失败**：40×40 浅红圆 + alert icon + 名称 + "失败"（`state-error` 色） + 红色进度条 + 错误原因 + "重试 · 删除" 链接
+  - **已完成**：卡片整体 `opacity = 0.75` + 32×32 brand icon（`primaryContainer` bg） + 名称 + "已完成"（`onSurfaceVariant` ink-soft 色） + 100% 进度条 + 大小 + 完成时间 + "查看" 链接
 
 #### 5.2.6 屏 06 设置（重写）
 
-布局（按原型 Screen06_Settings）：
-- 顶栏：标题 "设置" + 副标题当前服务器
-- **用户卡**（顶部，紧贴顶栏）：渐变头像（48×48 圆形 + 用户名首字）+ 用户名 + 角色 + 服务器名 + 右侧 mint "VIP"/"在线" chip
-- **外观主题** 段落标题（labelMedium）
-- 主题选择器 3 张卡：sun（浅蓝白 swatch）/ moon（深蓝 swatch）/ auto（渐变 swatch），激活态主色描边
-- **存储源** 段落标题 + 列表（与首页复用同一组件）
-- 设置行（快速设置）：36×36 渐变方（蓝/薄荷/粉/紫罗兰/黄） + 名称 + 描述 + chevron
-- 关于/退出登录：底部
+布局（按 HTML Screen06_Settings）：
+- 顶栏：标题 "设置" + 副标题 "管理你的小窝"（绿点）
+- **用户卡**（顶部，SectionCard）：48×48 圆形渐变头像（`CoverLetter` 占位，绿-蓝渐变 `Brush.linearGradient(CandyMint, Brand500)`）+ 用户名 Fredoka 15 + 副标题 "我的云端小屋 · 在线" + 右侧 mint "VIP" chip
+- **外观主题** 段落标题（`labelMedium` onSurfaceVariant）+ SectionCard 包含 3 卡主题选择器：
+  - **sun 卡**（浅色，激活态）：swatch 三段色块（`BgStart / Surface / BgEnd`） + sun icon + "浅色" 文案
+  - **moon 卡**（深色）：swatch 三段色块（`Ink / DarkPrimaryContainer / DarkBg`） + moon icon + "深色"
+  - **auto 卡**（跟随）：swatch 三段（`BgStart / 渐变中间 / Ink`） + auto icon + "跟随"
+  - 激活态：主色 2dp 描边 + `primaryContainer` 背景
+- **存储源** 段落标题 + SectionCard 包含 3 行 `set-row`（36×36 渐变方 + 名称 + 描述 + chevron）：阿里云盘/夸克网盘/百度网盘
+- **快速设置** 段落标题 + SectionCard 包含 2 行 set-row：站点公告（chevron）/ 隐私与密码（**Switch 开关**，on 状态）
+- **维护** 段落标题 + SectionCard 包含 2 行 set-row：清理临时预览文件（chevron）/ 完整设置（chevron）
+- **退出登录** outlined 按钮（红文字 + `state-error-bg` 描边 + 14dp 圆角，flex 1）
+- **页脚**：居中 10px 文字 "Alist Client · v1.0.0 · made with 💙"
 
 #### 5.2.7 屏 07 存储编辑（重写）
 
-布局（按原型 Screen07_StorageEdit）：
-- 顶栏：back + 标题 "编辑存储" + 副标题（存储名）
-- **存储头卡**：`SectionCard` 包裹：mint 云渐变 icon + 存储名 + 挂载路径 + 右侧 mint "已启用" chip
-- **驱动参数** 段落标题 + 表单字段：
+布局（按 HTML Screen07_StorageEdit）：
+- 顶栏：back + 标题 "编辑存储" + 副标题 "存储名"
+- **信息卡**（特殊 mint 渐变背景）：`Brush.linearGradient(CandyMintBg, Color(0xFFC2EFE0))`，无描边；内含 44×44 白色圆角方 + mint cloud icon + 存储名 Fredoka 15 (深色 `Color(0xFF1B5A45)`) + "挂载路径 · /xxx" + 右侧 mint "已启用" chip
+- **驱动参数** 段落标题 + SectionCard（solid 14dp padding）包含 5 字段：
   - 备注（OutlinedTextField，14dp 圆角）
   - 挂载路径（OutlinedTextField）
-  - Cookie：mint 浅色字段卡（圆点 + "已设置 · N 天前更新" + "重新获取" outlined 小按钮）
+  - Cookie：mint 浅色字段卡（`primaryContainer` 蓝渐变背景，圆点 + "已设置 · N 天前更新" + outlined "重新获取" 按钮 + cookie icon）
   - 根目录路径（OutlinedTextField）
-  - 排序方式（OutlinedTextField，下拉选择感）
-- **启用存储** toggle（开关 + "禁用后文件将不再显示" 描述）
-- 底部 sticky "保存修改" 主按钮（48dp，蓝渐变）
+  - 排序方式（OutlinedTextField + 右侧 chevron，**下拉选择感**）
+  - **启用存储** row：左侧 "启用存储" 13 + "禁用后文件将不再显示" 11 + 右侧 Switch（on 状态，蓝渐变）
+- 底部 sticky 48dp FILLED "保存修改" 主按钮
+- 按钮下方居中 10px 副文字 "保存成功后将自动返回"
 
 #### 5.2.8 屏 08 完整设置（重写）
 
-按原型 index.html 现有设置结构 + 主题改写
+布局（按 HTML Screen08_FullSettings）：
+- 顶栏：back + 标题 "完整设置" + 副标题 "N 项 · M 组"
+- **站点** 段落标题 + SectionCard 包含：
+  - 站点标题 / 站点公告 / 站点图标 3 个 OutlinedTextField
+  - "隐藏公告" row（左侧 13 + "登录后不可见" 11 + 右侧 Switch，**off**）
+- **预览** 段落标题 + SectionCard 包含 3 row：
+  - "启用预览"（Switch on）
+  - "自动播放视频"（Switch off）
+  - "强制代理"（Switch on）
+- **安全** 段落标题 + SectionCard 包含：
+  - "Token 有效期" OutlinedTextField（48 小时 + 右侧 chevron）
+  - "签名直链" row（Switch on）
+- 底部 sticky 48dp FILLED "保存全部" 主按钮
 
 #### 5.2.9 屏 09 移动/复制选择目标（重写）
 
-布局（按原型 Screen09_PickTarget）：
-- 顶栏：back + 标题 "选择目标" + 副标题（操作名）
-- **面包屑**（位于顶栏下方）：文件夹 icon + 当前路径 chip 链（"根目录 / 父目录 / 当前目录"）+ 右侧 "新建" pill 按钮
-- **目标预览卡**：当用户选中目标目录时显示 — 文件夹 icon + 名称 + 右侧 "✓ 创建" outlined 按钮（选中态）
+布局（按 HTML Screen09_PickTarget）：
+- 顶栏：back + 标题 "选择目标" + 副标题 "移动 N 项到…"
+- **面包屑 Row**（位于顶栏下方）：横向 chip 链（`AppIcons.home` + "根目录" + `/` + `AppIcons.folder` + "当前目录"） + 末尾 "+ 新建" pill 按钮（`primaryContainer` 背景，无描边，chip 圆角）
+- **新建文件夹输入卡**（当新建激活时显示）：`Surface` with 1.5dp **dashed `primary` 描边** + `primaryContainer` 背景；内含 folder icon + OutlinedTextField（透明无描边）+ 右侧 "✓ 创建" 文字按钮
 - **可移动到的位置** 段落标题
-- 文件行（FileTypeIcon + 文件名 + 次级元数据如 "N 项 · X.X MB"）+ 右侧 22×22 radio circle（选中态蓝渐变实心）
+- 文件行（`FileTypeIcon` folder 38×38 + 名称 + 次级元数据 "N 项 · X.X MB"）+ 右侧 24×24 radio circle（未选 = 透明 + 2dp `outline` 描边；选中 = 蓝渐变实心 + check icon）
+- 当前目录行：背景 `primaryContainer` + 名称副标题 "N 项 · 当前目录" + 选中态用 `check on`（与文件页一致）
+- **底部 sticky 48dp FILLED "确认移动到 · {选中名}" 主按钮**（置于 `bottomBar` 之外，scrim 灰白背景）
 
 #### 5.2.10 屏 10 状态合集（demo）
 
-按原型 Screen10_States：EmptyState / ErrorState / LoadingState 各演示
+按 HTML Screen10_States：4 态合一展示
+- 顶栏：back + 标题 "传输" + 副标题 "离线 · 任务已暂停"（offline 橙点）
+- 离线状态横幅：`StatusBanner(kind = WARNING, message = "离线模式：传输操作已暂停", actionLabel = "重试")`
+- **空态卡**：`EmptyState` icon (96×96 SVG 文件盒+糖果点缀) + title "这里空空如也 ✨" + desc "失败的传输任务会出现在这里 / 小窝正在安静等待你回来"
+- **错误态卡**：SectionCard 包含 40×40 浅红圆 + alert icon + "加载失败" 13 + "网络异常，请检查后重试" 11 + 右侧 "↻ 重试" 按钮（红 chip 圆角）
+- **加载骨架卡**：SectionCard 包含 3 行（40×40 圆角方 + 60%/40% 宽度 shimmer 行）
+- **删除确认 modal 演示**（内嵌于 SectionCard 占位）：scrim + 底部 modal + drag handle + "确认删除 N 项？" + 描述 + "再想想 / 确认删除" 双按钮
 
 #### 5.2.11 屏 11 音乐预览（占位空态）
 
-- 顶栏：back + 标题 "音乐预览"
-- 大封面区（占位 SVG 大图标 + 渐变背景）
-- "音乐功能即将推出" 文案
-- 不接 ViewModel，固定内容
+- 屏幕背景：`linear-gradient(165deg, #E0EAFF 0%, #D7E9FF 55%, #CDE5FF 100%)` + `CloudDecor`
+- 顶栏：back + 标题 "正在播放" + 副标题 "来自「音乐库」" + actions: heart icon-btn + more icon-btn
+- 大封面区（300dp 高度，28dp 圆角，粉-紫渐变） + 几何 SVG 装饰（同心圆 + 音符）
+- 歌曲信息：歌名 Fredoka 20 + "艺人 · 专辑" 12 + HIRES/FLAC chip 行
+- 进度条（6dp 高度，蓝-薄荷渐变 + 14×14 白色手柄）+ 时长 1:24 / 3:42
+- 控制按钮行：随机 + 上一首 + **大圆播放 64dp**（蓝渐变 + 6px 白光环）+ 下一首 + 循环
+- 副操作行：队列 pill + 麦克风 + 下载
+- 歌词预览卡：SectionCard 半透明 + "歌词" 标签 + "展开 ↓" 链接 + 3 行歌词（中间行加粗主色，其余 mute）
+- **占位说明**：保留完整播放器视觉骨架，仅文字 + chips 改为 "音乐功能即将推出" 占位文案
 
 #### 5.2.12 屏 12 音乐库（占位 5 section）
 
-布局（按原型 Screen12_MusicLibrary，但内容是占位）：
-- 顶栏：标题 "音乐库" + 副标题
-- **Section 1**: 5 chips（推荐/最近/艺人/专辑/我的）
-- **Section 2**: MusicHeroCard（占位 "敬请期待" 渐变横幅）
-- **Section 3**: 最近添加（5 个 SongRow 占位）
-- **Section 4**: 艺人（3 个 ArtistCard 占位）
-- **Section 5**: 专辑（3 个 AlbumCard 占位）
-- **Section 6**: 全部歌曲（10 个 SongRow 占位）
+布局（按 HTML Screen12_MusicLibrary，结构完整 + 占位内容）：
+- 顶栏：back + 标题 "音乐库" + 副标题 "N 首 · M 位艺人" + actions: sort icon-btn + search brand icon-btn
+- **Section 1（筛选 chips）**：横向滚动 `LazyRow` 4 chips：全部 · N / 最近添加 · N / 最爱 · N / 下载 · N（首项 primaryContainer 激活；其余 `surfaceContainerHigh` 灰底）
+- **Section 2（MusicHeroCard）**：180dp 高度 + 28dp 圆角 + 粉-紫-紫罗兰渐变；顶部 "刚刚播放" 小标 + WaveIndicator；底部歌名 Fredoka 22 + "艺人 · 专辑 · 时长" + 圆形 play + heartFill + queue 圆按钮组
+- **Section 3（最近添加）**：section 标题 "最近添加"（4×14 渐变 accent 条 + Fredoka 14）+ "查看全部 →" 链接 + 横向 `LazyRow` 4 张 `AlbumCard`（105×105 + deco-badge 右下）
+- **Section 4（艺人）**：section 标题 + "全部 N 位 →" 链接 + 横向 4 张 `ArtistCard`（84×84 圆形 + 名字 + 歌曲数）
+- **Section 5（专辑）**：section 标题 + "更多 →" 链接 + **2 列网格**（grid 2 列 12dp gap）2 张 `AlbumCard`（140dp 高 + deco-badge 右下 lg）
+- **Section 6（全部歌曲）**：section 标题 + 右侧 "随机播放" 按钮（shuffle icon + 文字）+ 10 个 `SongRow`（42dp CoverLetter + 名称 + 艺人 + 时长 + more）；首项 `playing` 状态（`primaryContainer` 背景 + 主色名称）
 - 底部常驻 `MiniPlayer`（点击无操作）
 
 #### 5.2.13 屏 13 资源库（demo）
@@ -720,15 +757,19 @@ composable<MusicPreviewDest> { MusicPreviewScreen(onBack = { ... }) }
 
 ### 10.3 体验验收
 
-- [ ] 登录页云朵装饰 + 糖果圆点
-- [ ] 首页 3 指标行 + 任务卡 + 存储列表（**无 Hero 服务器卡**）
-- [ ] 文件页多选 actionbar + 离线横幅 + 选中态 `primaryContainer` 背景
-- [ ] 预览页 3 outlined 按钮（分享 / 复制直链 / 其他应用）+ 详细信息网格卡
-- [ ] 传输页 4 段 segmented（全部 / 上传 / 下载 / 失败）+ 任务卡 + 失败态链接
-- [ ] 设置页用户头像卡 + 主题 3 卡 + 存储列表 + 快速设置行
-- [ ] 存储编辑页头卡 + 5 字段表单 + cookie 卡片 + 启用 toggle + 保存主按钮
-- [ ] 选择目标页面包屑 + 目标预览卡 + 文件行 + radio circle
-- [ ] 音乐 Tab 点击进入音乐库（5 section + 空态文案）
+- [ ] 登录页云朵装饰 + 糖果圆点 + 165° 渐变
+- [ ] 首页 Hero 服务器卡 + 3 指标行 + 任务卡（5 chip）+ 存储列表 + "管理 →" 链接
+- [ ] 文件页多选提示条（含 "移动" 加粗）+ 离线横幅 + 5 按钮 actionbar
+- [ ] 文件预览页 3 outlined 按钮 + 图片底部 overlay 信息条 + 详细信息网格卡
+- [ ] 传输页 4 段 segmented（上传·N 用 tertiary / 下载·N 用 secondary 着色）+ 4 种状态任务卡（含已完成 opacity 0.75）
+- [ ] 设置页用户头像卡 + 主题 3 卡 + 4 段（外观/存储源/快速设置/维护）+ 退出登录 + 版本页脚
+- [ ] 存储编辑页 mint 渐变信息卡 + 5 字段驱动参数 + cookie 字段卡 + 启用 toggle + 保存主按钮
+- [ ] 完整设置页 3 段（站点/预览/安全）+ Token 有效期 + 保存全部主按钮
+- [ ] 选择目标页 面包屑 chip 链（icon 而非 emoji）+ 新建 dashed 卡片 + radio 24×24 + 底部 sticky 确认按钮
+- [ ] 音乐预览页完整播放器骨架（300dp 封面 + 进度 + 64dp 大圆 + 控制 + 队列 + 歌词卡），文字为"音乐功能即将推出"占位
+- [ ] 音乐库页 4 chips 横滑 + MusicHeroCard + 最近添加 album-card 横滑 + 艺人横滑 + 专辑 2 列网格 + 随机播放按钮 + SongRow playing 状态
+- [ ] 状态合集页 4 态（空态/错误/加载骨架/删除确认 modal）
+- [ ] 音乐 Tab 点击进入音乐库（5 section + 占位文案）
 - [ ] 长按进入多选（移动端习惯）
 - [ ] 下拉刷新支持（保留现有实现）
 - [ ] 行内菜单（more）支持
@@ -740,6 +781,8 @@ composable<MusicPreviewDest> { MusicPreviewScreen(onBack = { ... }) }
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v3.0 | 2026-07-10 | 按 prototype/alist-android/DESIGN_HANDOFF.md 全面替换 M3 Expressive |
+| v3.1 | 2026-07-10 | 与 PNG 截图对齐（6 处视觉修正） |
+| v3.2 | 2026-07-10 | 与 HTML 原型 + DESIGN_HANDOFF 全面对齐（12 处修正，含 Hero 卡恢复） |
 
 ---
 
