@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.network.dto.StorageInfo
+import com.textvision.alistclient.ui.components.Chip
+import com.textvision.alistclient.ui.components.ChipKind
 import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.feature.home.dto.SectionResult
 import com.textvision.alistclient.ui.feature.home.dto.StorageData

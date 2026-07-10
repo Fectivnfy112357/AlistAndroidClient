@@ -27,8 +27,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.textvision.alistclient.ui.components.ChipKind
 import com.textvision.alistclient.ui.components.SectionCard
-import com.textvision.alistclient.ui.feature.home.ChipKind
 import com.textvision.alistclient.ui.feature.home.StatusChip
 import com.textvision.alistclient.ui.foundation.AppTopBar
 import com.textvision.alistclient.ui.foundation.CloudDecor
