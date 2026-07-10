@@ -21,9 +21,6 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -114,11 +111,11 @@ fun AppBottomBar(
     modifier: Modifier = Modifier,
 ) {
     val items = listOf(
-        BottomItem("home",   "首页", AppIcons.home),
-        BottomItem("files",  "文件", AppIcons.file),
-        BottomItem("music",  "音乐", AppIcons.musicNote),
-        BottomItem("trans",  "传输", AppIcons.transfer),
-        BottomItem("set",    "设置", AppIcons.settings),
+        BottomItem("home",      "首页", AppIcons.home),
+        BottomItem("files",     "文件", AppIcons.file),
+        BottomItem("music",     "音乐", AppIcons.musicNote),
+        BottomItem("transfers", "传输", AppIcons.transfer),
+        BottomItem("settings",  "设置", AppIcons.settings),
     )
     Surface(
         modifier = modifier
@@ -177,62 +174,3 @@ private data class BottomItem(
     val label: String,
     val icon: ImageVector,
 )
-
-// ---------------------------------------------------------------------------
-//  Deprecation aliases — keep existing callers compiling until Task 27 wires
-//  the new prototype components. New code should use the primary signatures
-//  above (`onBack` + hardcoded 5-tab list).
-// ---------------------------------------------------------------------------
-
-// Note: previous `onNavigateUp` parameter was renamed to `onBack` (Task 8).
-// Legacy callers were updated to use `onBack`; no overload alias needed here.
-
-/**
- * Legacy item shape used by the old `AppBottomBar(items = …)` overload.
- */
-data class BottomNavItem(
-    val route: String,
-    val label: String,
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector,
-)
-
-/**
- * Legacy `AppBottomBar` overload — accepts the old `items: List<BottomNavItem>`
- * shape so `BottomNavBar.kt` and previews keep compiling.
- *
- * Renders the items via the M3 NavigationBar; falls back to `selectedIcon`
- * (or `unselectedIcon` if selectedIcon == unselectedIcon) for the active tab.
- */
-@Composable
-fun AppBottomBar(
-    currentRoute: String,
-    items: List<BottomNavItem>,
-    onNavigate: (String) -> Unit,
-) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        items.forEach { item ->
-            val selected = currentRoute == item.route
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onNavigate(item.route) },
-                icon = {
-                    Icon(
-                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.label,
-                    )
-                },
-                label = { Text(item.label) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            )
-        }
-    }
-}

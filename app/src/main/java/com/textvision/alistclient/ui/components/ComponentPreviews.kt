@@ -6,16 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,17 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.foundation.AppBottomBar
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
-import com.textvision.alistclient.ui.foundation.BottomNavItem
 import com.textvision.alistclient.ui.theme.AlistTheme
 import com.textvision.alistclient.ui.theme.DarkMode
-
-private val previewNavItems = listOf(
-    BottomNavItem("home", "首页", Icons.Filled.Home, Icons.Outlined.Home),
-    BottomNavItem("files", "文件", Icons.Filled.Folder, Icons.Outlined.Folder),
-    BottomNavItem("music", "音乐", Icons.Filled.MusicNote, Icons.Outlined.MusicNote),
-    BottomNavItem("transfers", "传输", Icons.Filled.SwapVert, Icons.Outlined.SwapVert),
-    BottomNavItem("settings", "设置", Icons.Filled.Settings, Icons.Outlined.Settings),
-)
 
 @Preview(name = "AppScaffold", showBackground = true)
 @Composable
@@ -78,7 +60,7 @@ private fun AppTopBarPreview() {
 @Composable
 private fun AppBottomBarPreview() {
     AlistTheme() {
-        AppBottomBar(currentRoute = "files", items = previewNavItems, onNavigate = {})
+        AppBottomBar(currentRoute = "files", onNavigate = {})
     }
 }
 
