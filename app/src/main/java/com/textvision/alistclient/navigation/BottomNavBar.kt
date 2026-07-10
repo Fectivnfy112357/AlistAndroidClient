@@ -1,14 +1,23 @@
 package com.textvision.alistclient.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.textvision.alistclient.ui.components.music.MiniPlayer
 import com.textvision.alistclient.ui.foundation.AppBottomBar
+import com.textvision.alistclient.ui.theme.Brand500
+import com.textvision.alistclient.ui.theme.CandyPink
 
 private const val TAB_HOME = "home"
 private const val TAB_FILES = "files"
@@ -38,7 +47,8 @@ fun AppBottomNavBar(
         else -> null
     } ?: return
 
-    Box(modifier) {
+    Column(modifier) {
+        MiniPlayerDock()
         AppBottomBar(
             currentRoute = currentTab,
             onNavigate = { route ->
@@ -56,6 +66,29 @@ fun AppBottomNavBar(
                     restoreState = true
                 }
             },
+        )
+    }
+}
+
+/**
+ * Persistent mini-player placeholder rendered ABOVE the bottom nav on the
+ * 4 main tabs (Home/Files/Transfers/Settings). Tapping does nothing — music
+ * playback is not yet wired (spec §1.3 #10).
+ */
+@Composable
+private fun MiniPlayerDock() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        MiniPlayer(
+            name = "等待音乐功能推出",
+            artist = "云端电台 · 占位",
+            gradient = Brush.linearGradient(listOf(CandyPink, Brand500)),
+            isPlaying = false,
+            onPlayPause = {},
         )
     }
 }
