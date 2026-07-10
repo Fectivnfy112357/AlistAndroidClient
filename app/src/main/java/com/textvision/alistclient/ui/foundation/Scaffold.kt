@@ -18,9 +18,10 @@ import androidx.compose.ui.graphics.Color
  * Slots (prototype §9.2):
  * - [topBar] — usually [AppTopBar]
  * - [bottomBar] — usually [AppBottomBar]
- * - [background] — optional decorative background (e.g. [SkyBlueBackground] + [CloudDecor]).
- *   Drawn behind [content], covers the full container. When omitted, the theme
- *   background color fills the container.
+ * - [background] — optional decorative background. Defaults to
+ *   [SkyBlueBackground] + [CloudDecor] so every screen shares the sky-blue base.
+ *   Drawn behind [content], covers the full container. Pass `{}` to opt out and
+ *   fall back to the flat theme background color.
  * - [content] — main content, receives Scaffold's inner PaddingValues.
  */
 @Composable
@@ -28,7 +29,10 @@ fun AppScaffold(
     modifier: Modifier = Modifier,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
-    background: @Composable () -> Unit = {},
+    background: @Composable () -> Unit = {
+        SkyBlueBackground()
+        CloudDecor()
+    },
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Box(

@@ -11,23 +11,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import com.textvision.alistclient.ui.theme.BgEnd
 import com.textvision.alistclient.ui.theme.BgStart
 import com.textvision.alistclient.ui.theme.Brand200
 import com.textvision.alistclient.ui.theme.CandyMint
 import com.textvision.alistclient.ui.theme.CandyPink
+import com.textvision.alistclient.ui.theme.DarkBg
+import com.textvision.alistclient.ui.theme.DarkSurface
 
 /**
  * Vertical sky-blue gradient background — login / hero / 165° screen base.
+ * Theme-aware: light mode uses the sky-blue gradient; dark mode uses the
+ * deep-navy gradient so it stays legible when applied globally.
  */
 @Composable
 fun SkyBlueBackground(modifier: Modifier = Modifier) {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val colors = if (isDark) listOf(DarkBg, DarkSurface) else listOf(BgStart, BgEnd)
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(BgStart, BgEnd),
+                    colors = colors,
                     startY = 0f,
                     endY = 1200f,
                 ),
