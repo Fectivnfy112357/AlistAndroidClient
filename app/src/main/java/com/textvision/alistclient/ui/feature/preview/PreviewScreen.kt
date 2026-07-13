@@ -1,26 +1,35 @@
 package com.textvision.alistclient.ui.feature.preview
 
 import android.content.Intent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.textvision.alistclient.file.model.FileItem
@@ -28,15 +37,12 @@ import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.preview.MimeTypeResolver
 import com.textvision.alistclient.preview.PreviewMode
 import com.textvision.alistclient.preview.PreviewRouter
-import com.textvision.alistclient.ui.components.ActionButton
-import com.textvision.alistclient.ui.components.ButtonVariant
 import com.textvision.alistclient.ui.components.KeyValueRow
-import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
 import com.textvision.alistclient.ui.icons.AppIcons
-import com.textvision.alistclient.ui.theme.AlistTheme
-import com.textvision.alistclient.ui.theme.DarkMode
+import com.textvision.alistclient.ui.theme.Brand500
+import com.textvision.alistclient.ui.theme.Brand600
 
 @Composable
 fun PreviewScreen(
@@ -66,9 +72,7 @@ fun PreviewScreen(
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
 
-    val onDownload: () -> Unit = {
-        viewModel.enqueueDownload(path, name)
-    }
+    val onDownload: () -> Unit = { viewModel.enqueueDownload(path, name) }
     val onExternalOpen: () -> Unit = {
         downloadUrl?.takeIf { it.isNotBlank() }?.let { url ->
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -94,15 +98,22 @@ fun PreviewScreen(
         topBar = {
             AppTopBar(
                 title = "文件预览",
-                subtitle = path,
+                subtitle = name,
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = onShare) {
-                        Icon(AppIcons.share, contentDescription = "分享")
-                    }
-                    IconButton(onClick = onDownload) {
-                        Icon(AppIcons.download, contentDescription = "下载")
-                    }
+                    PreviewTopBarAction(
+                        icon = AppIcons.share,
+                        contentDescription = "分享",
+                        brand = false,
+                        onClick = onShare,
+                    )
+                    Spacer(Modifier.size(6.dp))
+                    PreviewTopBarAction(
+                        icon = AppIcons.download,
+                        contentDescription = "下载",
+                        brand = true,
+                        onClick = onDownload,
+                    )
                 },
             )
         },
@@ -112,7 +123,7 @@ fun PreviewScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             PreviewBody(
@@ -138,6 +149,34 @@ fun PreviewScreen(
     }
 }
 
+/** Top-bar circle button — translucent white or brand-gradient fill. */
+@Composable
+private fun PreviewTopBarAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    brand: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .let { base ->
+                if (brand) base.background(Brush.linearGradient(listOf(Brand500, Brand600)))
+                else base.background(com.textvision.alistclient.ui.theme.Surface.copy(alpha = 0.7f))
+            }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (brand) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
 @Composable
 private fun PreviewBody(
     mode: PreviewMode,
@@ -150,7 +189,7 @@ private fun PreviewBody(
     when (mode) {
         is PreviewMode.Image -> ImagePreview(
             url = mode.url,
-            title = name,
+            title = formatImageTitle(name),
             subtitle = formatImageSubtitle(size),
         )
         is PreviewMode.Text -> TextPreview(mode.url, fetchText)
@@ -176,6 +215,7 @@ private fun PreviewBody(
     }
 }
 
+/** Three ghost-pill action buttons with leading icon — matches prototype §5.2.4. */
 @Composable
 private fun ActionRow(
     onShare: () -> Unit,
@@ -184,28 +224,58 @@ private fun ActionRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ActionButton(
-            text = "分享",
+        PreviewActionPill(
+            label = "分享",
+            icon = AppIcons.share,
             onClick = onShare,
             modifier = Modifier.weight(1f),
-            variant = ButtonVariant.OUTLINED,
-            leadingIcon = AppIcons.share,
         )
-        ActionButton(
-            text = "复制直链",
+        PreviewActionPill(
+            label = "复制直链",
+            icon = AppIcons.link,
             onClick = onCopyLink,
             modifier = Modifier.weight(1f),
-            variant = ButtonVariant.OUTLINED,
-            leadingIcon = AppIcons.link,
         )
-        ActionButton(
-            text = "其他应用",
+        PreviewActionPill(
+            label = "其他应用",
+            icon = AppIcons.external,
             onClick = onExternalOpen,
             modifier = Modifier.weight(1f),
-            variant = ButtonVariant.OUTLINED,
-            leadingIcon = AppIcons.external,
+        )
+    }
+}
+
+@Composable
+private fun PreviewActionPill(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(com.textvision.alistclient.ui.theme.Surface.copy(alpha = 0.7f))
+            .clickable(onClick = onClick)
+            .height(38.dp)
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.size(6.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
         )
     }
 }
@@ -217,16 +287,21 @@ private fun DetailsCard(
     type: FileType,
     size: Long,
 ) {
-    SectionCard(
-        modifier = Modifier.fillMaxWidth(),
-        padding = PaddingValues(14.dp),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(com.textvision.alistclient.ui.theme.Surface.copy(alpha = 0.7f))
+            .padding(14.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "详细信息",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 4.dp),
+                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = androidx.compose.ui.unit.TextUnit.Unspecified),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp),
+                modifier = Modifier.padding(bottom = 10.dp),
+                textAlign = TextAlign.Start,
             )
             KeyValueRow(label = "类型", value = formatFileTypeLabel(name, type))
             KeyValueRow(label = "尺寸", value = formatSize(size))
@@ -258,120 +333,5 @@ private fun formatSize(bytes: Long): String {
     else "%.1f %s".format(value, units[unitIdx])
 }
 
+private fun formatImageTitle(name: String): String = name
 private fun formatImageSubtitle(size: Long): String = formatSize(size)
-
-// ---------------------------------------------------------------------------
-//  Previews
-//
-//  PreviewScreen wires Hilt + navigation backstack, so we preview the layout
-//  sections in isolation (AppTopBar + ActionRow + DetailsCard) under
-//  AlistTheme — three themes per prototype success criterion §1.3.7.
-// ---------------------------------------------------------------------------
-
-@Preview(name = "TopBar + ActionRow + Details (Light)")
-@Composable
-private fun PreviewTopBarLight() {
-    AlistTheme(darkMode = DarkMode.LIGHT) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AppTopBar(
-                title = "文件预览",
-                subtitle = "/d/photos/海岸线日落.jpg",
-                onBack = {},
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(AppIcons.share, contentDescription = "分享")
-                    }
-                    IconButton(onClick = {}) {
-                        Icon(AppIcons.download, contentDescription = "下载")
-                    }
-                },
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                ActionRow(onShare = {}, onCopyLink = {}, onExternalOpen = {})
-                DetailsCard(
-                    name = "海岸线日落.jpg",
-                    path = "/d/photos/海岸线日落.jpg",
-                    type = FileType.Image,
-                    size = 2_516_582,
-                )
-            }
-        }
-    }
-}
-
-@Preview(name = "TopBar + ActionRow + Details (Dark)")
-@Composable
-private fun PreviewTopBarDark() {
-    AlistTheme(darkMode = DarkMode.DARK) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AppTopBar(
-                title = "文件预览",
-                subtitle = "/d/notes/Rustdesk密钥.md",
-                onBack = {},
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(AppIcons.share, contentDescription = "分享")
-                    }
-                    IconButton(onClick = {}) {
-                        Icon(AppIcons.download, contentDescription = "下载")
-                    }
-                },
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                ActionRow(onShare = {}, onCopyLink = {}, onExternalOpen = {})
-                DetailsCard(
-                    name = "Rustdesk密钥.md",
-                    path = "/d/notes/Rustdesk密钥.md",
-                    type = FileType.Text,
-                    size = 4_096,
-                )
-            }
-        }
-    }
-}
-
-@Preview(name = "TopBar + ActionRow + Details (Audio)")
-@Composable
-private fun PreviewTopBarAudio() {
-    AlistTheme(darkMode = DarkMode.LIGHT) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AppTopBar(
-                title = "文件预览",
-                subtitle = "/music/lofi/lofi-chill.mp3",
-                onBack = {},
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(AppIcons.share, contentDescription = "分享")
-                    }
-                    IconButton(onClick = {}) {
-                        Icon(AppIcons.download, contentDescription = "下载")
-                    }
-                },
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                ActionRow(onShare = {}, onCopyLink = {}, onExternalOpen = {})
-                DetailsCard(
-                    name = "lofi-chill.mp3",
-                    path = "/music/lofi/lofi-chill.mp3",
-                    type = FileType.Audio,
-                    size = 6_582_144,
-                )
-            }
-        }
-    }
-}

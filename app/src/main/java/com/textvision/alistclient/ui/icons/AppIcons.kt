@@ -31,7 +31,7 @@ object AppIcons {
     val doc        : ImageVector = Icons.Outlined.Description
     val archive    : ImageVector = Icons.Outlined.Archive
     val upload     : ImageVector = Icons.Outlined.CloudUpload
-    val download   : ImageVector = Icons.Outlined.CloudDownload
+    val download   : ImageVector = Icons.Outlined.FileDownload
     val transfer   : ImageVector = Icons.Outlined.SwapVert
 
     // — Action
