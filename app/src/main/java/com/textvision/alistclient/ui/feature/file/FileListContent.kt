@@ -211,7 +211,7 @@ private fun FileIconBox(type: FileType) {
         FileType.Video   -> listOf(CandyLilacBg, Color(0xFFDDD0FF)) to Color(0xFF7C5BC7)
         FileType.Audio   -> listOf(CandyMintBg, CandyMint) to Color(0xFF2D9B7C)
         FileType.Text    -> listOf(CandyLemonBg, CandyLemon) to Color(0xFF9C7A1F)
-        FileType.Pdf     -> listOf(CandyPinkBg, CandyPink) to Color(0xFFC46683)
+        FileType.Pdf     -> listOf(CandyLemonBg, CandyLemon) to Color(0xFF9C7A1F)
         FileType.Archive -> listOf(Color(0xFFE8EFF8), Color(0xFFD7E1F0)) to InkSoft
         FileType.Other   -> listOf(Color(0xFFEAF0F8), Color(0xFFD7E1F0)) to InkSoft
     }

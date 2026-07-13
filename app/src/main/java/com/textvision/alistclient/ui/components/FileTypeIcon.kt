@@ -88,8 +88,8 @@ private data class CandyPalette(
 @Composable
 private fun candyPalette(category: FileCategory): CandyPalette = when (category) {
     FileCategory.FOLDER -> CandyPalette(
-        gradient = Brush.linearGradient(listOf(Color(0xFFBFE0FF), Color(0xFFD7E9FF))),
-        tint = Color(0xFF1F3A5F),
+        gradient = Brush.linearGradient(listOf(Color(0xFF6FB6FF), Color(0xFF6FB6FF))),
+        tint = Color(0xFFFFFFFF),
     )
     FileCategory.IMAGE -> CandyPalette(
         gradient = Brush.linearGradient(listOf(Color(0xFFFFE4ED), Color(0xFFFFD1DD))),
