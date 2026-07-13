@@ -29,10 +29,12 @@ val CandyMintBg     = Color(0xFFDAF6EC)
 val CandyMintDeep   = Color(0xFFC2EFE0)
 val CandyPink       = Color(0xFFFFC4D6)
 val CandyPinkBg     = Color(0xFFFFE4ED)
+val CandyPinkDeep   = Color(0xFFFFD1DD)
 val CandyLemon      = Color(0xFFFFE89B)
 val CandyLemonBg    = Color(0xFFFFF4CC)
 val CandyLilac      = Color(0xFFD8C7FF)
 val CandyLilacBg    = Color(0xFFECE2FF)
+val CandyLilacDeep  = Color(0xFFDDD0FF)
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Music gradient stops — used by MusicPreviewScreen 300dp cover and

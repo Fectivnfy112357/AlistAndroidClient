@@ -1,5 +1,7 @@
 package com.textvision.alistclient.ui.feature.settings
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,23 +10,22 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.CleaningServices
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,135 +38,223 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.textvision.alistclient.admin.form.localizedLabel
 import com.textvision.alistclient.network.dto.SettingItem
-import com.textvision.alistclient.ui.components.ListItemRow
 import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.Brand50
+import com.textvision.alistclient.ui.theme.Brand100
+import com.textvision.alistclient.ui.theme.Brand200
+import com.textvision.alistclient.ui.theme.Brand300
+import com.textvision.alistclient.ui.theme.Brand400
 import com.textvision.alistclient.ui.theme.Brand500
-import com.textvision.alistclient.ui.theme.Brand600
 import com.textvision.alistclient.ui.theme.Brand700
 import com.textvision.alistclient.ui.theme.CandyLemon
-import com.textvision.alistclient.ui.theme.CandyLilac
+import com.textvision.alistclient.ui.theme.CandyLemonBg
+import com.textvision.alistclient.ui.theme.CandyLilacBg
+import com.textvision.alistclient.ui.theme.CandyLilacDeep
 import com.textvision.alistclient.ui.theme.CandyMint
 import com.textvision.alistclient.ui.theme.CandyMintBg
-import com.textvision.alistclient.ui.theme.CandyPink
+import com.textvision.alistclient.ui.theme.CandyMintDeep
+import com.textvision.alistclient.ui.theme.CandyPinkBg
+import com.textvision.alistclient.ui.theme.CandyPinkDeep
 import com.textvision.alistclient.ui.theme.DarkBg
-import com.textvision.alistclient.ui.theme.DarkSurface
+import com.textvision.alistclient.ui.theme.DarkPrimaryContainer
 import com.textvision.alistclient.ui.theme.Ink
+import com.textvision.alistclient.ui.theme.InkMute
+import com.textvision.alistclient.ui.theme.InkSoft
+import com.textvision.alistclient.ui.theme.MusicMagenta
+import com.textvision.alistclient.ui.theme.MusicViolet
 import com.textvision.alistclient.ui.theme.StateError
 import com.textvision.alistclient.ui.theme.StateErrorBg
+import com.textvision.alistclient.ui.theme.StateSuccessFg
+import com.textvision.alistclient.ui.theme.StateWarnFg
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Section primitives — aligned with prototype `.card-title` + `.set-row`.
-// ═══════════════════════════════════════════════════════════════════════════
+@Composable
+internal fun SettingsHeader(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+    ) {
+        Text(
+            text = "设置",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(
+            modifier = Modifier.padding(top = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(CandyMint),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "管理你的小窝",
+                style = MaterialTheme.typography.labelSmall,
+                color = InkSoft,
+            )
+        }
+    }
+}
 
-/** Uppercase tracked label above a card — prototype `.card-title`. */
+@Composable
+internal fun SettingsUserCard(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(CandyMint, Brand500))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "柚",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "柚子 · admin",
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 15.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "我的云端小屋 · 在线",
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = InkSoft,
+            )
+        }
+        Surface(shape = CircleShape, color = CandyMintBg) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(Modifier.size(5.dp).clip(CircleShape).background(StateSuccessFg))
+                Text("VIP", style = MaterialTheme.typography.labelSmall, color = StateSuccessFg)
+            }
+        }
+    }
+}
+
 @Composable
 internal fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelSmall.copy(
+        style = MaterialTheme.typography.titleSmall.copy(
             fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.8.sp,
+            letterSpacing = 0.04.em,
         ),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(start = 4.dp, bottom = 8.dp),
+        modifier = modifier.padding(bottom = 12.dp),
     )
 }
 
-/** Hairline divider used between `.set-row` items inside a single card. */
 @Composable
-internal fun Divider() {
+internal fun Divider(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
             .height(1.dp)
-            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+            .background(MaterialTheme.colorScheme.outline),
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Theme picker — prototype `.theme-pick` + `.theme-card`.
-//  Each card shows a 3-stop swatch + icon + label.
-// ═══════════════════════════════════════════════════════════════════════════
-
-/** A theme card. Each variant supplies its own 3-stop swatch gradient. */
 @Composable
 internal fun ThemeCard(
     label: String,
     icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
-    swatchStops: List<Color>,
+    swatchStops: List<Brush>,
     modifier: Modifier = Modifier,
 ) {
-    val border = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent
-    val container = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-    else MaterialTheme.colorScheme.surface
+    val shape = RoundedCornerShape(14.dp)
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(container)
+            .clip(shape)
+            .background(
+                if (selected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+            )
             .border(
-                width = if (selected) 2.dp else 1.dp,
+                width = 2.dp,
                 color = if (selected) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(14.dp),
+                shape = shape,
             )
-            .clickable(onClick = onClick)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(32.dp)
                 .clip(RoundedCornerShape(10.dp)),
         ) {
-            swatchStops.forEach { stop ->
+            swatchStops.forEach { brush ->
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth()
-                        .background(stop),
+                        .fillMaxHeight()
+                        .background(brush),
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(28.dp),
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurface,
-        )
+        Row(
+            modifier = Modifier.padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) Brand700 else InkSoft,
+                modifier = Modifier.size(28.dp),
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) Brand700 else InkSoft,
+            )
+        }
     }
 }
 
-/** Light swatch — sky-blue + white + light-blue gradient. */
-internal val LightSwatch = listOf(Brand50, Color.White, Brand500.copy(alpha = 0.4f))
-/** Dark swatch — deep navy 3 stops. */
-internal val DarkSwatch = listOf(Ink, DarkSurface, DarkBg)
-/** Follow-system swatch — gradient from light to dark. */
-internal val SystemSwatch = listOf(Brand50, Brand500, Ink)
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  Storage source row — prototype `.set-row` with gradient icon + chevron.
-// ═══════════════════════════════════════════════════════════════════════════
+internal val LightSwatch = listOf<Brush>(
+    SolidColor(Brand50),
+    SolidColor(Color.White),
+    SolidColor(Brand100),
+)
+internal val DarkSwatch = listOf<Brush>(
+    SolidColor(Ink),
+    SolidColor(DarkPrimaryContainer),
+    SolidColor(DarkBg),
+)
+internal val SystemSwatch = listOf<Brush>(
+    SolidColor(Brand50),
+    Brush.linearGradient(listOf(Brand50, Ink)),
+    SolidColor(Ink),
+)
 
 @Composable
 internal fun StorageSourceRow(
@@ -174,53 +263,44 @@ internal fun StorageSourceRow(
     driver: String,
     onClick: () -> Unit,
 ) {
-    val gradient = storageGradient(driver)
-    ListItemRow(
-        leading = {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(gradient),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    AppIcons.database,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.92f),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        },
+    val visual = storageVisual(driver)
+    SettingsRow(
+        icon = visual.icon,
+        iconBackground = visual.background,
+        iconTint = visual.tint,
         title = title,
         subtitle = subtitle,
-        trailing = {
-            Icon(
-                AppIcons.chevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
+        trailing = { SettingsChevron() },
         onClick = onClick,
     )
 }
 
-private fun storageGradient(driver: String): Brush {
-    val d = driver.lowercase()
+private data class StorageVisual(
+    val icon: ImageVector,
+    val background: Brush,
+    val tint: Color,
+)
+
+private fun storageVisual(driver: String): StorageVisual {
+    val value = driver.lowercase()
     return when {
-        "local" in d -> Brush.linearGradient(listOf(CandyMint, CandyMintBg))
-        "s3" in d -> Brush.linearGradient(listOf(CandyLemon, CandyPink))
-        "ali" in d || "oss" in d -> Brush.linearGradient(listOf(Brand500, Brand600))
-        "quark" in d -> Brush.linearGradient(listOf(CandyMint, Brand600))
-        "baidu" in d -> Brush.linearGradient(listOf(CandyLilac, CandyPink))
-        "gdrive" in d || "google" in d -> Brush.linearGradient(listOf(Brand600, Brand700))
-        else -> Brush.linearGradient(listOf(Brand500, Brand600))
+        "quark" in value -> StorageVisual(
+            icon = AppIcons.cloud,
+            background = Brush.linearGradient(listOf(CandyMintBg, CandyMintDeep)),
+            tint = StateSuccessFg,
+        )
+        "baidu" in value -> StorageVisual(
+            icon = AppIcons.database,
+            background = Brush.linearGradient(listOf(CandyLilacBg, CandyLilacDeep)),
+            tint = MusicViolet,
+        )
+        else -> StorageVisual(
+            icon = AppIcons.database,
+            background = Brush.linearGradient(listOf(Brand400, Brand200)),
+            tint = Brand700,
+        )
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  Quick-setting row + privacy password switch (prototype `.set-row`).
-// ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 internal fun QuickSettingRow(
@@ -228,36 +308,17 @@ internal fun QuickSettingRow(
     onEdit: (String) -> Unit,
 ) {
     var editing by remember { mutableStateOf(false) }
-    ListItemRow(
-        leading = {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    AppIcons.sparkle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        },
+    SettingsRow(
+        icon = AppIcons.sparkle,
+        iconBackground = Brush.linearGradient(listOf(CandyPinkBg, CandyPinkDeep)),
+        iconTint = MusicMagenta,
         title = displayLabel(item.key),
-        subtitle = item.value?.takeIf { it.isNotBlank() } ?: "(未设置)",
-        trailing = {
-            Icon(
-                AppIcons.chevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
+        subtitle = item.value?.takeIf(String::isNotBlank) ?: "(未设置)",
+        trailing = { SettingsChevron() },
         onClick = { editing = true },
     )
     if (editing) {
-        var text by remember { mutableStateOf(item.value.orEmpty()) }
+        var text by remember(item.value) { mutableStateOf(item.value.orEmpty()) }
         AlertDialog(
             onDismissRequest = { editing = false },
             title = { Text(displayLabel(item.key)) },
@@ -270,10 +331,12 @@ internal fun QuickSettingRow(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    onEdit(text)
-                    editing = false
-                }) { Text("保存") }
+                TextButton(
+                    onClick = {
+                        onEdit(text)
+                        editing = false
+                    },
+                ) { Text("保存") }
             },
             dismissButton = {
                 TextButton(onClick = { editing = false }) { Text("取消") }
@@ -282,141 +345,180 @@ internal fun QuickSettingRow(
     }
 }
 
-/** Privacy row with switch (no dialog) — prototype `.switch.on`. */
 @Composable
 internal fun PrivacyPasswordRow() {
     var enabled by remember { mutableStateOf(true) }
-    ListItemRow(
-        leading = {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    AppIcons.shield,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        },
+    SettingsRow(
+        icon = AppIcons.shield,
+        iconBackground = Brush.linearGradient(listOf(CandyLemonBg, CandyLemon)),
+        iconTint = StateWarnFg,
         title = "隐私与密码",
         subtitle = "指纹解锁 · 自动登录",
         trailing = {
-            Switch(checked = enabled, onCheckedChange = { enabled = it })
+            PrototypeSwitch(
+                checked = enabled,
+                onCheckedChange = { enabled = it },
+            )
         },
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Maintenance rows — prototype `.set-row` with mint broom + blue settings.
-// ═══════════════════════════════════════════════════════════════════════════
+@Composable
+private fun PrototypeSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val thumbOffset by animateDpAsState(if (checked) 18.dp else 0.dp, label = "switchThumb")
+    Box(
+        modifier = modifier
+            .size(width = 48.dp, height = 48.dp)
+            .toggleable(checked, role = Role.Switch, onValueChange = onCheckedChange),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 40.dp, height = 22.dp)
+                .clip(CircleShape)
+                .background(
+                    if (checked) Brush.linearGradient(listOf(Brand500, CandyMint))
+                    else SolidColor(MaterialTheme.colorScheme.outline),
+                )
+                .padding(2.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .offset(x = thumbOffset)
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+            )
+        }
+    }
+}
 
 @Composable
 internal fun CleanPreviewRow(onClick: () -> Unit) {
-    ListItemRow(
-        leading = {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Outlined.CleaningServices,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        },
+    SettingsRow(
+        icon = AppIcons.broom,
+        iconBackground = Brush.linearGradient(listOf(CandyMintBg, CandyMintDeep)),
+        iconTint = StateSuccessFg,
         title = "清理临时预览文件",
         subtitle = "已使用 234 MB",
-        trailing = {
-            Icon(
-                AppIcons.chevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
+        trailing = { SettingsChevron() },
         onClick = onClick,
     )
 }
 
 @Composable
 internal fun AdvancedSettingsRow(onClick: () -> Unit) {
-    ListItemRow(
-        leading = {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Outlined.Settings,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        },
+    SettingsRow(
+        icon = AppIcons.settings,
+        iconBackground = Brush.linearGradient(listOf(Brand400, Brand200)),
+        iconTint = Brand700,
         title = "完整设置",
         subtitle = "全部站点设置项",
-        trailing = {
-            Icon(
-                AppIcons.chevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
+        trailing = { SettingsChevron() },
         onClick = onClick,
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Logout button — prototype `.btn-ghost.btn-icon-text` with red border.
-// ═══════════════════════════════════════════════════════════════════════════
+@Composable
+private fun SettingsRow(
+    icon: ImageVector,
+    iconBackground: Brush,
+    iconTint: Color,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    trailing: @Composable () -> Unit = {},
+    onClick: (() -> Unit)? = null,
+) {
+    val rowModifier = modifier
+        .fillMaxWidth()
+        .let { base ->
+            if (onClick == null) base else base.clickable(
+                role = Role.Button,
+                onClickLabel = title,
+                onClick = onClick,
+            )
+        }
+        .padding(vertical = 12.dp)
+    Row(modifier = rowModifier, verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(iconBackground),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = subtitle,
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = InkMute,
+            )
+        }
+        trailing()
+    }
+}
+
+@Composable
+private fun SettingsChevron() {
+    Icon(
+        imageVector = AppIcons.chevronRight,
+        contentDescription = null,
+        tint = InkMute,
+        modifier = Modifier.size(14.dp),
+    )
+}
 
 @Composable
 internal fun LogoutButton(onClick: () -> Unit) {
-    Surface(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .border(
-                width = 1.5.dp,
-                color = StateErrorBg,
-                shape = RoundedCornerShape(18.dp),
-            )
-            .clickable(onClick = onClick),
-        color = Color.Transparent,
+            .height(48.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+        Surface(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(38.dp),
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            border = BorderStroke(1.5.dp, StateErrorBg),
         ) {
-            Icon(
-                Icons.AutoMirrored.Outlined.Logout,
-                contentDescription = null,
-                tint = StateError,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = "退出登录",
-                style = MaterialTheme.typography.labelLarge,
-                color = StateError,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    AppIcons.logout,
+                    contentDescription = null,
+                    tint = StateError,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text("退出登录", style = MaterialTheme.typography.labelLarge, color = StateError)
+            }
         }
     }
 }
 
-internal fun displayLabel(key: String): String = localizedLabel(key)
+internal fun displayLabel(key: String): String = when (key) {
+    "announcement" -> "站点公告"
+    else -> localizedLabel(key)
+}
