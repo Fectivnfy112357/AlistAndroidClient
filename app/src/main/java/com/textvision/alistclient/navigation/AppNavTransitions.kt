@@ -44,8 +44,7 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTrans
             fadeIn(AppNavTween, initialAlpha = 0.92f) +
                 slideInVertically(AppNavOffsetTween) { it / 28 }
         from.isMainTab() && to.isMainTab() ->
-            fadeIn(AppNavTween, initialAlpha = 0.82f) +
-                slideInHorizontally(AppNavOffsetTween) { width -> width / 8 }
+            EnterTransition.None
         to.navDepth() > from.navDepth() ->
             fadeIn(AppNavTween, initialAlpha = 0.86f) +
                 slideInHorizontally(AppNavOffsetTween) { width -> width / 8 }
@@ -59,8 +58,7 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsExitTransi
     val to = targetState.destination
     return when {
         from.isMainTab() && to.isMainTab() ->
-            fadeOut(AppNavTween, targetAlpha = 0.82f) +
-                slideOutHorizontally(AppNavOffsetTween) { width -> -width / 10 }
+            ExitTransition.None
         to.navDepth() > from.navDepth() ->
             fadeOut(AppNavTween, targetAlpha = 0.9f)
         to.hasRoute(LoginDest::class) ->
