@@ -4,20 +4,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -141,26 +146,70 @@ private fun LoginContent(
                 isLoading = state.isLoading,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Text(
+                text = "新用户？了解 Alist →",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 14.dp),
+            )
         }
+        LoginCandyDots(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp),
+        )
     }
 }
 
-/** 76dp 蓝渐变圆角方块 + 云朵图标 —— 登录页品牌 logo。 */
+/** 原型中的蓝色云朵 logo，以叠加圆形保留其柔软轮廓。 */
 @Composable
 private fun CloudLogo() {
     Box(
         modifier = Modifier
-            .size(76.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(Brush.linearGradient(listOf(Brand500, Brand600))),
+            .size(80.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = AppIcons.cloud,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(40.dp),
+        Box(
+            Modifier
+                .size(width = 64.dp, height = 44.dp)
+                .offset(y = 8.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Brand500, Brand600))),
         )
+        Box(
+            Modifier
+                .size(34.dp)
+                .offset(x = (-14).dp, y = (-2).dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Brand500, Brand600))),
+        )
+        Box(
+            Modifier
+                .size(38.dp)
+                .offset(x = 14.dp, y = (-4).dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Brand500, Brand600))),
+        )
+        Box(
+            Modifier
+                .size(28.dp)
+                .offset(y = (-12).dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Brand500, Brand600))),
+        )
+    }
+}
+
+@Composable
+private fun LoginCandyDots(modifier: Modifier = Modifier) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(
+            com.textvision.alistclient.ui.theme.CandyPink,
+            com.textvision.alistclient.ui.theme.CandyMint,
+            com.textvision.alistclient.ui.theme.CandyLilac,
+        ).forEach { color ->
+            Box(Modifier.size(6.dp).clip(CircleShape).background(color))
+        }
     }
 }
 
@@ -186,6 +235,12 @@ private fun InputField(
         },
         singleLine = true,
         shape = RoundedCornerShape(14.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = Color.White.copy(alpha = 0.88f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.78f),
+            focusedBorderColor = Color.Transparent,
+            unfocusedBorderColor = Color.Transparent,
+        ),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         keyboardOptions = KeyboardOptions(
             keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
