@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -121,45 +120,42 @@ private fun DashboardList(
     onRetrySection: (SectionKey) -> Unit,
     onRefresh: () -> Unit,
 ) {
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
+    LazyColumn(
         modifier = Modifier.fillMaxSize().padding(contentPadding),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item { HeroServerCard(data.publicSection, online = isOnline) }
-            item {
-                MetricRow(
-                    serverStats = data.serverStatsSection,
-                    session = data.sessionSection,
-                    onRetryServerStats = { onRetrySection(SectionKey.ServerStats) },
-                    onRetrySession = { onRetrySection(SectionKey.Session) },
+        item { HeroServerCard(data.publicSection, online = isOnline) }
+        item {
+            MetricRow(
+                serverStats = data.serverStatsSection,
+                session = data.sessionSection,
+                onRetryServerStats = { onRetrySection(SectionKey.ServerStats) },
+                onRetrySession = { onRetrySection(SectionKey.Session) },
+            )
+        }
+        item {
+            Box(modifier = Modifier.testTag("home_task_section")) {
+                TaskSection(
+                    task = data.taskSection,
+                    onRetry = { onRetrySection(SectionKey.Task) },
                 )
             }
+        }
+        item { StorageHeader(onManage = onManageStorage) }
+        val storages = data.storages
+        if (storages.isEmpty()) {
             item {
-                Box(modifier = Modifier.testTag("home_task_section")) {
-                    TaskSection(
-                        task = data.taskSection,
-                        onRetry = { onRetrySection(SectionKey.Task) },
-                    )
-                }
+                StorageEmptyOrFailed(
+                    storageSection = data.storageSection,
+                    onRetry = { onRetrySection(SectionKey.Storage) },
+                )
             }
-            item { StorageHeader(onManage = onManageStorage) }
-            val storages = data.storages
-            if (storages.isEmpty()) {
-                item {
-                    StorageEmptyOrFailed(
-                        storageSection = data.storageSection,
-                        onRetry = { onRetrySection(SectionKey.Storage) },
-                    )
-                }
-            } else {
-                items(storages) { storage ->
-                    StorageCard(storage = storage) { onStorageClick(storage.mountPath) }
+        } else {
+            items(storages) { storage ->
+                StorageCard(storage = storage) {
+                    android.util.Log.d("HomeScreen", "onStorageClick mountPath=${storage.mountPath}")
+                    onStorageClick(storage.mountPath)
                 }
             }
         }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,72 +19,65 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.textvision.alistclient.file.FileViewModel
 import com.textvision.alistclient.file.model.FileItem
-import com.textvision.alistclient.file.model.FileUiState
 import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.ui.components.ActionButton
 import com.textvision.alistclient.ui.components.ButtonVariant
-import com.textvision.alistclient.ui.components.FileCategory
-import com.textvision.alistclient.ui.components.FileTypeIcon
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
 import com.textvision.alistclient.ui.icons.AppIcons
+import com.textvision.alistclient.ui.theme.Brand300
 import com.textvision.alistclient.ui.theme.Brand500
 import com.textvision.alistclient.ui.theme.Brand600
+import com.textvision.alistclient.ui.theme.Ink
+import com.textvision.alistclient.ui.theme.InkSoft
+import com.textvision.alistclient.util.FileSizeFormatter
 
+/**
+ * Target directory picker (prototype Screen09 — 1:1 clone of [img_9.png]).
+ *
+ * Layout:
+ *  - Sticky AppTopBar: "选择目标" + "移动 N 项到…" subtitle (green online dot)
+ *  - Breadcrumb row of chips: 根目录 / 段 / 段 / [ + 新建 ]
+ *  - (Optional) new-folder creation strip
+ *  - "可移动到的位置" label
+ *  - LazyColumn of folder rows:
+ *      - Current directory row (brand-300 wash + ✓ on right, primary color)
+ *      - Folder rows with 38dp folder icon + name + meta + radio circle
+ *  - Bottom confirm bar: 48dp brand-gradient "确认移动到 · <name>"
+ */
 @Composable
 fun MoveCopyTargetPickerScreen(
     onTargetSelected: (String) -> Unit,
     op: String = "move",
     initialPath: String = "/",
     count: Int = 1,
-    viewModel: FileViewModel = hiltViewModel(),
+    viewModel: MoveCopyPickerViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(initialPath) { viewModel.load(initialPath) }
-
-    var currentPath by rememberSaveable { mutableStateOf(initialPath) }
-    var selectedTarget by rememberSaveable { mutableStateOf<String?>(null) }
-    var showCreateFolder by rememberSaveable { mutableStateOf(false) }
-    var newFolderName by rememberSaveable { mutableStateOf("") }
-
-    val success = state as? FileUiState.Success
-    val directories = success?.items.orEmpty().filter { it.isDir }
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val subtitle = when (op) {
         "copy" -> "复制 $count 项到…"
         else -> "移动 $count 项到…"
-    }
-
-    LaunchedEffect(success?.path) {
-        if (success != null) currentPath = success.path
     }
 
     AppScaffold(
@@ -103,26 +95,24 @@ fun MoveCopyTargetPickerScreen(
                 .padding(innerPadding),
         ) {
             BreadcrumbRow(
-                path = currentPath,
-                onNavigateRoot = { viewModel.load("/"); currentPath = "/" },
+                path = state.currentPath,
+                onNavigateRoot = { viewModel.load("/") },
                 onNavigateSegment = { i ->
-                    val parts = currentPath.trim('/').split('/').filter { it.isNotBlank() }
-                    if (i < 0) currentPath = "/"
-                    else currentPath = "/" + parts.take(i + 1).joinToString("/")
-                    viewModel.load(currentPath)
+                    val parts = state.currentPath.trim('/').split('/').filter { it.isNotBlank() }
+                    val newPath = if (i < 0) "/" else "/" + parts.take(i + 1).joinToString("/")
+                    viewModel.load(newPath)
                 },
-                onCreate = { showCreateFolder = !showCreateFolder },
+                onCreate = { viewModel.toggleCreate() },
+                isCreating = state.isCreatingFolder,
             )
 
-            if (showCreateFolder) {
-                NewFolderCard(
-                    name = newFolderName,
-                    onNameChange = { newFolderName = it },
+            if (state.isCreatingFolder) {
+                NewFolderStrip(
+                    name = state.newFolderName,
+                    onNameChange = viewModel::updateNewFolderName,
                     onConfirm = {
-                        if (newFolderName.isNotBlank()) {
-                            showCreateFolder = false
-                            newFolderName = ""
-                        }
+                        // Prototype: dismiss strip; actual mkdir would call repository here.
+                        viewModel.toggleCreate()
                     },
                 )
             }
@@ -130,31 +120,29 @@ fun MoveCopyTargetPickerScreen(
             Text(
                 text = "可移动到的位置",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
+                color = InkSoft,
+                modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 4.dp),
             )
 
             Box(modifier = Modifier.weight(1f)) {
                 LazyColumn(contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
                     item(key = "__current__") {
-                        FolderRow(
-                            name = "当前目录",
-                            subtitle = "$count 项 · 当前目录",
-                            selected = true,
-                            showCurrentStyle = true,
-                            onClick = { onTargetSelected(currentPath) },
+                        CurrentDirectoryRow(
+                            count = count,
+                            selected = state.selectedTarget == null,
+                            onClick = {
+                                viewModel.selectTarget(state.currentPath)
+                                onTargetSelected(state.currentPath)
+                            },
                         )
                     }
-                    items(directories, key = { it.path }) { dir ->
-                        FolderRow(
-                            name = dir.name,
-                            subtitle = "文件夹",
-                            selected = selectedTarget == dir.path,
-                            showCurrentStyle = false,
+                    items(state.directories, key = { it.path }) { dir ->
+                        FolderRowPrototype(
+                            dir = dir,
+                            selected = state.selectedTarget == dir.path,
                             onClick = {
-                                currentPath = dir.path
                                 viewModel.load(dir.path)
-                                selectedTarget = dir.path
+                                viewModel.selectTarget(dir.path)
                             },
                         )
                     }
@@ -162,12 +150,9 @@ fun MoveCopyTargetPickerScreen(
             }
 
             BottomConfirmBar(
-                targetName = if (selectedTarget != null) {
-                    currentPath.trim('/').split('/').lastOrNull() ?: "当前目录"
-                } else "当前目录",
-                enabled = true,
+                targetName = displayNameFor(state.currentPath, state.selectedTarget),
                 onConfirm = {
-                    val target = selectedTarget ?: currentPath
+                    val target = state.selectedTarget ?: state.currentPath
                     onTargetSelected(target)
                 },
             )
@@ -175,12 +160,24 @@ fun MoveCopyTargetPickerScreen(
     }
 }
 
+private fun displayNameFor(currentPath: String, selected: String?): String =
+    if (selected != null) {
+        selected.trim('/').split('/').lastOrNull()?.takeIf { it.isNotBlank() } ?: "当前目录"
+    } else {
+        currentPath.trim('/').split('/').lastOrNull()?.takeIf { it.isNotBlank() } ?: "当前目录"
+    }
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Breadcrumb chips
+// ─────────────────────────────────────────────────────────────────────────
+
 @Composable
 private fun BreadcrumbRow(
     path: String,
     onNavigateRoot: () -> Unit,
     onNavigateSegment: (Int) -> Unit,
     onCreate: () -> Unit,
+    isCreating: Boolean,
 ) {
     val parts = path.trim('/').split('/').filter { it.isNotBlank() }
     Row(
@@ -190,50 +187,43 @@ private fun BreadcrumbRow(
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Chip(icon = AppIcons.home, label = "根目录", onClick = onNavigateRoot)
+        ChipPill(icon = AppIcons.home, label = "根目录", onClick = onNavigateRoot)
         parts.forEachIndexed { idx, seg ->
             Separator()
-            Chip(
-                icon = AppIcons.folder,
-                label = seg,
-                onClick = { onNavigateSegment(idx) },
-            )
+            ChipPill(icon = AppIcons.folder, label = seg, onClick = { onNavigateSegment(idx) })
         }
         Spacer(Modifier.width(4.dp))
         Separator()
-        PillButton(label = "+ 新建", onClick = onCreate)
+        ChipPill(
+            icon = if (isCreating) Icons.Outlined.Check else Icons.Outlined.Add,
+            label = if (isCreating) "收起" else "+ 新建",
+            onClick = onCreate,
+        )
     }
 }
 
 @Composable
-private fun Chip(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+private fun ChipPill(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .clip(MaterialTheme.shapes.small)
             .background(MaterialTheme.colorScheme.primaryContainer)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(14.dp))
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(13.dp),
+        )
         Spacer(Modifier.width(4.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-    }
-}
-
-@Composable
-private fun PillButton(label: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(MaterialTheme.shapes.small)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(Icons.Outlined.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(14.dp))
-        Spacer(Modifier.width(4.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
     }
 }
 
@@ -246,78 +236,186 @@ private fun Separator() {
     )
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  New-folder creation strip
+// ─────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun NewFolderCard(
+private fun NewFolderStrip(
     name: String,
     onNameChange: (String) -> Unit,
     onConfirm: () -> Unit,
 ) {
-    val brandShape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(18.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 8.dp)
-            .clip(brandShape)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .border(1.5.dp, MaterialTheme.colorScheme.primary, brandShape)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .clip(shape)
+            .background(Brand300)
+            .border(1.5.dp, MaterialTheme.colorScheme.primary, shape)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(AppIcons.folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.width(8.dp))
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            placeholder = { Text("新建文件夹", style = MaterialTheme.typography.bodyMedium) },
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            colors = androidx.compose.material3.TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-            ),
-            shape = RoundedCornerShape(14.dp),
+        Icon(
+            AppIcons.folder,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
         )
         Spacer(Modifier.width(8.dp))
-        TextButton(onClick = onConfirm) {
-            Text("✓ 创建", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            androidx.compose.foundation.text.BasicTextField(
+                value = name,
+                onValueChange = onNameChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Ink),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth(),
+                decorationBox = { inner ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (name.isEmpty()) {
+                            Text(
+                                "新建文件夹",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        inner()
+                    }
+                },
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(Brush.linearGradient(listOf(Brand500, Brand600)))
+                .clickable(onClick = onConfirm)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Outlined.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text("创建", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimary)
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Folder rows
+// ─────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun CurrentDirectoryRow(
+    count: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Brand300)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Brush.linearGradient(listOf(Brand300, Brand500.copy(alpha = 0.4f)))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                AppIcons.folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text("当前目录", style = MaterialTheme.typography.bodyMedium, color = Ink)
+            Text(
+                "$count 项 · 当前目录",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (selected) {
+            Icon(
+                Icons.Outlined.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
 
 @Composable
-private fun FolderRow(
-    name: String,
-    subtitle: String,
+private fun FolderRowPrototype(
+    dir: FileItem,
     selected: Boolean,
-    showCurrentStyle: Boolean,
     onClick: () -> Unit,
 ) {
-    val bg = if (showCurrentStyle) MaterialTheme.colorScheme.primaryContainer
-             else if (selected) MaterialTheme.colorScheme.primaryContainer
-             else androidx.compose.ui.graphics.Color.Transparent
+    val bg = if (selected) Brand300 else androidx.compose.ui.graphics.Color.Transparent
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clip(MaterialTheme.shapes.small)
+            .clip(RoundedCornerShape(14.dp))
             .background(bg)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FileTypeIcon(FileCategory.FOLDER, size = 38.dp)
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Brush.linearGradient(listOf(Brand300, MaterialTheme.colorScheme.primaryContainer))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                AppIcons.folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(dir.name, style = MaterialTheme.typography.bodyMedium, color = Ink)
+            Text(
+                subtitleFor(dir),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        if (showCurrentStyle) {
-            Icon(Icons.Outlined.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        } else {
-            RadioCircle(selected = selected)
-        }
+        RadioCircle(selected = selected)
+    }
+}
+
+private fun subtitleFor(dir: FileItem): String {
+    // Prototype §9.2 placeholder meta — falls back gracefully when sizes are unknown.
+    return when {
+        dir.size > 0L -> "${dir.size} 项 · ${FileSizeFormatter.humanize(dir.size)}"
+        else -> "文件夹"
     }
 }
 
@@ -327,35 +425,53 @@ private fun RadioCircle(selected: Boolean) {
         Box(
             modifier = Modifier
                 .size(24.dp)
-                .clip(RoundedCornerShape(50))
+                .clip(CircleShape)
                 .background(Brush.linearGradient(listOf(Brand500, Brand600))),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Outlined.Check, contentDescription = null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(14.dp))
+            Icon(
+                Icons.Outlined.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(14.dp),
+            )
         }
     } else {
         Box(
             modifier = Modifier
                 .size(24.dp)
-                .clip(RoundedCornerShape(50))
-                .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(50)),
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape),
         )
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  Bottom confirm bar
+// ─────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun BottomConfirmBar(targetName: String, enabled: Boolean, onConfirm: () -> Unit) {
+private fun BottomConfirmBar(
+    targetName: String,
+    onConfirm: () -> Unit,
+) {
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         shadowElevation = 8.dp,
     ) {
-        Column(modifier = Modifier.navigationBarsPadding().padding(horizontal = 14.dp, vertical = 10.dp)) {
+        Column(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
             ActionButton(
                 text = "确认移动到 · $targetName",
                 onClick = onConfirm,
-                enabled = enabled,
+                enabled = true,
                 variant = ButtonVariant.FILLED,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
             )
         }
     }

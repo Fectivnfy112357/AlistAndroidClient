@@ -42,19 +42,18 @@ import com.textvision.alistclient.ui.icons.AppIcons
 fun AppTopBar(
     title: String,
     subtitle: String? = null,
+    subtitleIsOffline: Boolean = false,
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Surface(
+    Box(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
     ) {
         Row(
             modifier = Modifier
                 .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                .height(56.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (onBack != null) {
@@ -84,7 +83,10 @@ fun AppTopBar(
                             Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.tertiary),
+                                .background(
+                                    if (subtitleIsOffline) MaterialTheme.colorScheme.tertiary
+                                    else MaterialTheme.colorScheme.tertiary,
+                                ),
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(

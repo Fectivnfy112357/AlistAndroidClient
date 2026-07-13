@@ -34,6 +34,7 @@ fun SearchField(
 ) {
     Surface(
         modifier = modifier
+            .padding(horizontal = 8.dp)
             .fillMaxWidth()
             .height(40.dp),
         shape = CircleShape,

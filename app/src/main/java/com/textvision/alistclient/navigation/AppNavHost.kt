@@ -103,6 +103,9 @@ fun AppNavHost(
                     } else {
                         null
                     },
+                    onMoveSelected = { paths, _ ->
+                        navController.navigate(MoveCopyPickerDest(op = "move", path = dest.path))
+                    },
                 )
             }
             composable<TransfersDest> { TransferScreen() }

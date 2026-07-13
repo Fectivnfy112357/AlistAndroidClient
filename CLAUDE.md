@@ -39,7 +39,7 @@ MSYS_NO_PATHCONV=1 adb pull //sdcard/scr.png ./scr.png
 Native Android client (MVP) for [Alist v3](https://github.com/AlistGo/alist) — a multi-storage file management server. Single-module Kotlin app targeting Android 8.0+ (minSdk 26, targetSdk 34), built with Jetpack Compose and Material3. 2026-07-08 完成 **UI Expressive 全面重做**（见 `docs/superpowers/specs/2026-07-08-ui-expressive-redesign-design.md`）—— 旧的 `Cloud*` 组件已删除，统一迁移到 M3 通用组件（`ActionButton` / `EmptyState` / `StatusBanner` / `AppAlertDialog` 等），屏幕按 `ui/feature/<name>/` 重组。
 
 - **Package / Application ID**: `com.textvision.alistclient`
-- **Alist API base URL**: 默认 `http://127.0.0.1:5244/`，登录可改。绑定见 `di/AppModule.kt:NetworkModule`。
+- **Alist API base URL**: 默认 `http://textvision.top:5244/`，登录可改。绑定见 `di/AppModule.kt:NetworkModule`。
 - **Navigation 路由**：基于 Navigation Compose 2.8 + kotlinx.serialization 的类型安全目标，定义在 `navigation/AppDestination.kt`（`LoginDest` / `HomeDest` / `FilesDest` / `TransfersDest` / `SettingsDest` / `PreviewDest` / `MoveCopyPickerDest` / `StorageEditDest` / `AdminSiteSettingsDest`）。旧 `AppRoute` 字符串路由已废弃。
 - **MVP 限制**：无后台可靠传输/断点续传、仅竖屏、单账号、不支持自签 HTTPS。详见 `docs/testing/known-limitations.md`。
 

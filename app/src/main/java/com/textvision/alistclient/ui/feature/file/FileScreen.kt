@@ -3,13 +3,21 @@ package com.textvision.alistclient.ui.feature.file
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,7 +25,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -26,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.textvision.alistclient.LocalSnackbarHostState
 import com.textvision.alistclient.file.model.FileItem
+import com.textvision.alistclient.navigation.MoveCopyPickerDest
 import com.textvision.alistclient.ui.components.AppAlertDialog
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.SearchField
@@ -33,14 +45,29 @@ import com.textvision.alistclient.ui.components.StatusBanner
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
 import com.textvision.alistclient.ui.icons.AppIcons
+import com.textvision.alistclient.ui.theme.Brand500
+import com.textvision.alistclient.ui.theme.Brand600
+import com.textvision.alistclient.ui.theme.CandyMint
+import com.textvision.alistclient.ui.theme.StateWarnFg
 import kotlinx.coroutines.launch
 
+/**
+ * File browser — prototype Screen03 (1:1 clone of [img_2.png]).
+ *
+ * Top bar (prototype):
+ *   - 32dp round back button on translucent white surface
+ *   - title "文件" + subtitle row with mint/offline dot
+ *   - ghost refresh + brand-gradient upload icon buttons
+ *
+ * Offline banner: pale yellow pill with offline icon (prototype §3.2).
+ */
 @Composable
 fun FileScreen(
     initialPath: String = "/",
     onPreview: (FileItem) -> Unit = {},
     onFolderNavigate: (path: String) -> Unit = {},
     onBack: (() -> Unit)? = null,
+    onMoveSelected: (paths: List<String>, destPath: String) -> Unit = { _, _ -> },
     vm: FileViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -60,7 +87,7 @@ fun FileScreen(
     }
 
     LaunchedEffect(initialPath) {
-        if (state.path != initialPath) {
+        if (state.path != initialPath || state.files.isEmpty() && state.error == null && !state.isLoading) {
             vm.onIntent(FileIntent.Load(initialPath))
         }
     }
@@ -70,14 +97,22 @@ fun FileScreen(
             AppTopBar(
                 title = "文件",
                 subtitle = if (state.isOnline) state.path else "当前离线 · 部分操作不可用",
+                subtitleIsOffline = !state.isOnline,
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = { vm.onIntent(FileIntent.Load(state.path)) }) {
-                        Icon(AppIcons.refresh, contentDescription = "刷新")
-                    }
-                    IconButton(onClick = { uploadLauncher.launch("*/*") }) {
-                        Icon(AppIcons.upload, contentDescription = "上传")
-                    }
+                    FileTopBarAction(
+                        icon = AppIcons.refresh,
+                        contentDescription = "刷新",
+                        brand = false,
+                        onClick = { vm.onIntent(FileIntent.Load(state.path)) },
+                    )
+                    Spacer(Modifier.size(6.dp))
+                    FileTopBarAction(
+                        icon = AppIcons.upload,
+                        contentDescription = "上传",
+                        brand = true,
+                        onClick = { uploadLauncher.launch("*/*") },
+                    )
                 },
             )
         },
@@ -90,9 +125,7 @@ fun FileScreen(
                             .filter { it !in state.selection }
                             .forEach { vm.onIntent(FileIntent.MultiSelectToggle(it)) }
                     },
-                    onMove = {
-                        scope.launch { snackbar.showSnackbar("移动功能即将推出") }
-                    },
+                    onMove = { onMoveSelected(state.selection.toList(), state.path) },
                     onDownload = { vm.onIntent(FileIntent.MultiSelectDownload(state.selection.toList())) },
                     onDelete = { showDeleteConfirm = true },
                     onClear = { vm.onIntent(FileIntent.MultiSelectClear) },
@@ -115,10 +148,7 @@ fun FileScreen(
                 Spacer(Modifier.height(8.dp))
             }
             if (!state.isOnline) {
-                StatusBanner(
-                    kind = BannerKind.WARNING,
-                    message = "离线模式：仅可查看本地缓存",
-                )
+                OfflineBanner(message = "离线模式：仅可查看本地缓存")
                 Spacer(Modifier.height(8.dp))
             }
             SearchField(
@@ -130,36 +160,38 @@ fun FileScreen(
                 FileMultiSelectHint(selectionCount = state.selection.size)
                 Spacer(Modifier.height(8.dp))
             }
-            FileListContent(
-                state = state,
-                onIntent = vm::onIntent,
-                onPreview = onPreview,
-                onFolderNavigate = onFolderNavigate,
-                onShare = { file ->
-                    val link = file.downloadUrl
-                    if (link.isNullOrBlank()) {
-                        scope.launch { snackbar.showSnackbar("该文件无直链") }
-                    } else {
-                        val send = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, link)
+            Box(modifier = Modifier.weight(1f)) {
+                FileListContent(
+                    state = state,
+                    onIntent = vm::onIntent,
+                    onPreview = onPreview,
+                    onFolderNavigate = onFolderNavigate,
+                    onShare = { file ->
+                        val link = file.downloadUrl
+                        if (link.isNullOrBlank()) {
+                            scope.launch { snackbar.showSnackbar("该文件无直链") }
+                        } else {
+                            val send = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, link)
+                            }
+                            context.startActivity(Intent.createChooser(send, "分享"))
                         }
-                        context.startActivity(Intent.createChooser(send, "分享"))
-                    }
-                },
-                onCopyLink = { file ->
-                    val link = file.downloadUrl
-                    if (link.isNullOrBlank()) {
-                        scope.launch { snackbar.showSnackbar("该文件无直链") }
-                    } else {
-                        clipboard.setText(AnnotatedString(link))
-                        scope.launch { snackbar.showSnackbar("已复制直链") }
-                    }
-                },
-                onDownloadFeedback = {
-                    scope.launch { snackbar.showSnackbar("已加入下载队列") }
-                },
-            )
+                    },
+                    onCopyLink = { file ->
+                        val link = file.downloadUrl
+                        if (link.isNullOrBlank()) {
+                            scope.launch { snackbar.showSnackbar("该文件无直链") }
+                        } else {
+                            clipboard.setText(AnnotatedString(link))
+                            scope.launch { snackbar.showSnackbar("已复制直链") }
+                        }
+                    },
+                    onDownloadFeedback = {
+                        scope.launch { snackbar.showSnackbar("已加入下载队列") }
+                    },
+                )
+            }
         }
     }
 
@@ -175,6 +207,64 @@ fun FileScreen(
             dismissLabel = "取消",
             onDismiss = { showDeleteConfirm = false },
             destructive = true,
+        )
+    }
+}
+
+/** Prototype §3.2: pale-yellow pill banner with offline icon. */
+@Composable
+private fun OfflineBanner(message: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(com.textvision.alistclient.ui.theme.StateWarnBg)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            AppIcons.offline,
+            contentDescription = null,
+            tint = StateWarnFg,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.size(10.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.labelMedium,
+            color = StateWarnFg,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/** Prototype top-bar action — translucent white circle, optional brand-gradient fill. */
+@Composable
+internal fun FileTopBarAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    brand: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .let { base ->
+                if (brand) {
+                    base.background(Brush.linearGradient(listOf(Brand500, Brand600)))
+                } else {
+                    base.background(com.textvision.alistclient.ui.theme.Surface.copy(alpha = 0.7f))
+                }
+            }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (brand) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(16.dp),
         )
     }
 }

@@ -1,10 +1,8 @@
 package com.textvision.alistclient.ui.feature.preview
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,10 +34,9 @@ internal fun TextPreview(url: String, fetch: suspend (String) -> String) {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .padding(14.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(14.dp),
     )
 }
 
