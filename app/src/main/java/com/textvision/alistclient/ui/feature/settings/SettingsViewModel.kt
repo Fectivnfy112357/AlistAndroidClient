@@ -12,14 +12,9 @@ import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.network.dto.StoragePatch
 import com.textvision.alistclient.preview.PreviewFileStore
 import com.textvision.alistclient.transfer.TransferManager
-import com.textvision.alistclient.ui.theme.DarkMode
-import com.textvision.alistclient.ui.theme.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,7 +24,6 @@ data class SettingsUiState(
     val quickSettings: List<SettingItem> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val darkMode: DarkMode = DarkMode.SYSTEM,
 )
 
 @HiltViewModel
@@ -40,23 +34,12 @@ class SettingsViewModel @Inject constructor(
     private val storageRepository: StorageRepositoryContract,
     private val settingsRepository: SettingsRepositoryContract,
     private val sessionManager: SessionManager,
-    private val themeRepository: ThemeRepository,
 ) : ViewModel() {
     private val _loggedOut = MutableStateFlow(false)
     val loggedOut: StateFlow<Boolean> = _loggedOut
 
     private val _uiState = MutableStateFlow(SettingsUiState())
-
-    val uiState: StateFlow<SettingsUiState> = combine(
-        _uiState,
-        themeRepository.darkMode,
-    ) { state, mode ->
-        state.copy(darkMode = mode)
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = _uiState.value,
-    )
+    val uiState: StateFlow<SettingsUiState> = _uiState
 
     fun loadAdminData() {
         val base = sessionManager.loadSavedSession()?.serverUrl ?: return
@@ -113,12 +96,6 @@ class SettingsViewModel @Inject constructor(
                 }
                 else -> _uiState.update { it.copy(errorMessage = failureMessage(r)) }
             }
-        }
-    }
-
-    fun setDarkMode(mode: DarkMode) {
-        viewModelScope.launch {
-            themeRepository.setDarkMode(mode)
         }
     }
 

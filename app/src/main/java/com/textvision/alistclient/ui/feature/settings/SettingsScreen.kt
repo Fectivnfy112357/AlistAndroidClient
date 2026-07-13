@@ -21,7 +21,6 @@ fun SettingsScreen(
 
     SettingsContent(
         uiState = uiState,
-        onDarkModeChange = viewModel::setDarkMode,
         onStorageClick = onStorageClick,
         onQuickSettingEdit = { item, value -> viewModel.saveQuickSetting(item.key, value) },
         onClearPreviewFiles = { viewModel.clearPreviewFiles() },

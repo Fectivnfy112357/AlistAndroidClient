@@ -10,14 +10,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,10 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.textvision.alistclient.admin.form.localizedLabel
 import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.ui.icons.AppIcons
-import com.textvision.alistclient.ui.theme.Brand50
-import com.textvision.alistclient.ui.theme.Brand100
 import com.textvision.alistclient.ui.theme.Brand200
-import com.textvision.alistclient.ui.theme.Brand300
 import com.textvision.alistclient.ui.theme.Brand400
 import com.textvision.alistclient.ui.theme.Brand500
 import com.textvision.alistclient.ui.theme.Brand700
@@ -64,9 +59,6 @@ import com.textvision.alistclient.ui.theme.CandyMintBg
 import com.textvision.alistclient.ui.theme.CandyMintDeep
 import com.textvision.alistclient.ui.theme.CandyPinkBg
 import com.textvision.alistclient.ui.theme.CandyPinkDeep
-import com.textvision.alistclient.ui.theme.DarkBg
-import com.textvision.alistclient.ui.theme.DarkPrimaryContainer
-import com.textvision.alistclient.ui.theme.Ink
 import com.textvision.alistclient.ui.theme.InkMute
 import com.textvision.alistclient.ui.theme.InkSoft
 import com.textvision.alistclient.ui.theme.MusicMagenta
@@ -177,84 +169,6 @@ internal fun Divider(modifier: Modifier = Modifier) {
             .background(MaterialTheme.colorScheme.outline),
     )
 }
-
-@Composable
-internal fun ThemeCard(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
-    swatchStops: List<Brush>,
-    modifier: Modifier = Modifier,
-) {
-    val shape = RoundedCornerShape(14.dp)
-    Column(
-        modifier = modifier
-            .clip(shape)
-            .background(
-                if (selected) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-            )
-            .border(
-                width = 2.dp,
-                color = if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outline,
-                shape = shape,
-            )
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(32.dp)
-                .clip(RoundedCornerShape(10.dp)),
-        ) {
-            swatchStops.forEach { brush ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(brush),
-                )
-            }
-        }
-        Row(
-            modifier = Modifier.padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (selected) Brand700 else InkSoft,
-                modifier = Modifier.size(28.dp),
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (selected) Brand700 else InkSoft,
-            )
-        }
-    }
-}
-
-internal val LightSwatch = listOf<Brush>(
-    SolidColor(Brand50),
-    SolidColor(Color.White),
-    SolidColor(Brand100),
-)
-internal val DarkSwatch = listOf<Brush>(
-    SolidColor(Ink),
-    SolidColor(DarkPrimaryContainer),
-    SolidColor(DarkBg),
-)
-internal val SystemSwatch = listOf<Brush>(
-    SolidColor(Brand50),
-    Brush.linearGradient(listOf(Brand50, Ink)),
-    SolidColor(Ink),
-)
 
 @Composable
 internal fun StorageSourceRow(

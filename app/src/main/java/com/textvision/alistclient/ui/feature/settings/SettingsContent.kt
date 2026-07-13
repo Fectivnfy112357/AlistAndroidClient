@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,14 +19,11 @@ import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.components.StatusBanner
-import com.textvision.alistclient.ui.icons.AppIcons
-import com.textvision.alistclient.ui.theme.DarkMode
 import com.textvision.alistclient.ui.theme.InkMute
 
 @Composable
 internal fun SettingsContent(
     uiState: SettingsUiState,
-    onDarkModeChange: (DarkMode) -> Unit,
     onStorageClick: (Long) -> Unit,
     onQuickSettingEdit: (SettingItem, String) -> Unit,
     onClearPreviewFiles: () -> Unit,
@@ -54,37 +50,6 @@ internal fun SettingsContent(
                         solid = true,
                     ) {
                         SettingsUserCard()
-                    }
-                }
-
-                item(key = "theme", contentType = "section") {
-                    SettingsSection(title = "外观主题", cardPadding = PaddingValues(16.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ThemeCard(
-                                label = "浅色",
-                                icon = AppIcons.sun,
-                                selected = uiState.darkMode == DarkMode.LIGHT,
-                                swatchStops = LightSwatch,
-                                onClick = { onDarkModeChange(DarkMode.LIGHT) },
-                                modifier = Modifier.weight(1f),
-                            )
-                            ThemeCard(
-                                label = "深色",
-                                icon = AppIcons.moon,
-                                selected = uiState.darkMode == DarkMode.DARK,
-                                swatchStops = DarkSwatch,
-                                onClick = { onDarkModeChange(DarkMode.DARK) },
-                                modifier = Modifier.weight(1f),
-                            )
-                            ThemeCard(
-                                label = "跟随",
-                                icon = AppIcons.auto,
-                                selected = uiState.darkMode == DarkMode.SYSTEM,
-                                swatchStops = SystemSwatch,
-                                onClick = { onDarkModeChange(DarkMode.SYSTEM) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
                     }
                 }
 

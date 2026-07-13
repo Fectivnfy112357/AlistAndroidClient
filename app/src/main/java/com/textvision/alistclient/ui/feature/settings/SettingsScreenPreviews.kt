@@ -1,6 +1,5 @@
 package com.textvision.alistclient.ui.feature.settings
 
-import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.textvision.alistclient.network.dto.SettingItem
@@ -12,29 +11,14 @@ import com.textvision.alistclient.ui.theme.DarkMode
 @Composable
 private fun SettingsScreenLightPreview() {
     AlistTheme(darkMode = DarkMode.LIGHT) {
-        SettingsPreviewBody(DarkMode.LIGHT)
-    }
-}
-
-@Preview(
-    name = "SettingsScreen Dark",
-    showBackground = true,
-    widthDp = 360,
-    heightDp = 800,
-    uiMode = Configuration.UI_MODE_NIGHT_YES,
-)
-@Composable
-private fun SettingsScreenDarkPreview() {
-    AlistTheme(darkMode = DarkMode.DARK) {
-        SettingsPreviewBody(DarkMode.DARK)
+        SettingsPreviewBody()
     }
 }
 
 @Composable
-private fun SettingsPreviewBody(darkMode: DarkMode) {
+private fun SettingsPreviewBody() {
     SettingsContent(
         uiState = SettingsUiState(
-            darkMode = darkMode,
             storages = listOf(
                 StorageInfo(id = 1, mountPath = "/aliyun", driver = "Aliyundrive", remark = "阿里云盘"),
                 StorageInfo(id = 2, mountPath = "/quark", driver = "Quark", remark = "夸克网盘"),
@@ -50,7 +34,6 @@ private fun SettingsPreviewBody(darkMode: DarkMode) {
                 SettingItem(key = "announcement", value = "欢迎来到我的云端小屋 ✨"),
             ),
         ),
-        onDarkModeChange = {},
         onStorageClick = {},
         onQuickSettingEdit = { _, _ -> },
         onClearPreviewFiles = {},

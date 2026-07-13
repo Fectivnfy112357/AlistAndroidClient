@@ -10,14 +10,11 @@ import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.network.dto.StorageList
 import com.textvision.alistclient.preview.PreviewFileStore
 import com.textvision.alistclient.transfer.TransferManager
-import com.textvision.alistclient.ui.theme.DarkMode
-import com.textvision.alistclient.ui.theme.ThemeRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -40,10 +37,6 @@ class SettingsViewModelTest {
             serverUrl = "http://test", username = "u", password = "p", token = "t"
         )
     }
-    private val themeRepo: ThemeRepository = mockk(relaxed = true) {
-        coEvery { darkMode } returns MutableStateFlow(DarkMode.SYSTEM)
-        coEvery { setDarkMode(any()) } returns Unit
-    }
 
     @Before fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     @After fun tearDown() { Dispatchers.resetMain() }
@@ -55,14 +48,7 @@ class SettingsViewModelTest {
         storageRepository = storage,
         settingsRepository = settings,
         sessionManager = session,
-        themeRepository = themeRepo,
     )
-
-    @Test fun setDarkModePersists() = runTest {
-        val viewModel = vm()
-        viewModel.setDarkMode(DarkMode.DARK)
-        coVerify { themeRepo.setDarkMode(DarkMode.DARK) }
-    }
 
     @Test fun toggleStorageCallsRepo() = runTest {
         coEvery { storage.list(any()) } returns AdminResult.Ok(

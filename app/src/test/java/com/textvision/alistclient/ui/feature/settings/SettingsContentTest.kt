@@ -34,7 +34,6 @@ class SettingsContentTest {
     val composeRule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     private val state = SettingsUiState(
-        darkMode = DarkMode.LIGHT,
         storages = listOf(
             StorageInfo(id = 1, mountPath = "/aliyun", driver = "Aliyundrive", remark = "阿里云盘"),
             StorageInfo(id = 2, mountPath = "/quark", driver = "Quark", remark = "夸克网盘"),
@@ -59,35 +58,27 @@ class SettingsContentTest {
         composeRule.onNodeWithText("设置").assertIsDisplayed()
         composeRule.onNodeWithText("管理你的小窝").assertIsDisplayed()
         composeRule.onNodeWithText("柚子 · admin").assertIsDisplayed()
-        composeRule.onNodeWithText("外观主题").assertIsDisplayed()
-        composeRule.onNodeWithText("浅色").assertIsDisplayed()
-        composeRule.onNodeWithText("深色").assertIsDisplayed()
-        composeRule.onNodeWithText("跟随").assertIsDisplayed()
         composeRule.onNodeWithText("存储源").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("/baidu · 已禁用").assertIsDisplayed()
         composeRule.onNodeWithText("站点公告").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("快速设置").assertIsDisplayed()
         composeRule.onAllNodesWithText("站点标题").assertCountEquals(0)
         composeRule.onNodeWithText("维护").performScrollTo().assertIsDisplayed()
-        composeRule.onNode(hasScrollAction()).performScrollToIndex(6)
+        composeRule.onNode(hasScrollAction()).performScrollToIndex(5)
         composeRule.onNodeWithText("退出登录").assertIsDisplayed()
         composeRule.onNodeWithText("Alist Client · v1.0.0 · made with 💙").assertIsDisplayed()
     }
 
     @Test
-    fun themeAndStorageActionsRemainConnected() {
-        var selectedMode: DarkMode? = null
+    fun storageActionRemainsConnected() {
         var selectedStorage: Long? = null
         setContent(
-            onDarkModeChange = { selectedMode = it },
             onStorageClick = { selectedStorage = it },
         )
 
-        composeRule.onNodeWithText("深色").performClick()
         composeRule.onNodeWithText("夸克网盘").performScrollTo().performClick()
 
         composeRule.runOnIdle {
-            assertEquals(DarkMode.DARK, selectedMode)
             assertEquals(2L, selectedStorage)
         }
     }
@@ -97,12 +88,11 @@ class SettingsContentTest {
         setContent()
         composeRule.onRoot().captureRoboImage("build/outputs/roborazzi/settings_top.png")
 
-        composeRule.onNode(hasScrollAction()).performScrollToIndex(6)
+        composeRule.onNode(hasScrollAction()).performScrollToIndex(5)
         composeRule.onRoot().captureRoboImage("build/outputs/roborazzi/settings_bottom.png")
     }
 
     private fun setContent(
-        onDarkModeChange: (DarkMode) -> Unit = {},
         onStorageClick: (Long) -> Unit = {},
     ) {
         composeRule.setContent {
@@ -110,7 +100,6 @@ class SettingsContentTest {
                 Surface {
                     SettingsContent(
                         uiState = state,
-                        onDarkModeChange = onDarkModeChange,
                         onStorageClick = onStorageClick,
                         onQuickSettingEdit = { _: SettingItem, _: String -> },
                         onClearPreviewFiles = {},
