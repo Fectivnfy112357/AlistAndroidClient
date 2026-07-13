@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -92,20 +93,24 @@ internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) 
         padding = PaddingValues(14.dp),
         solid = true,
     ) {
-        Box {
-            // Right-top decorative glow (prototype `.card` radial circle).
-            Box(
-                Modifier
-                    .size(90.dp)
-                    .align(Alignment.TopEnd)
-                    .offset(x = 22.dp, y = (-22).dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Brand300.copy(alpha = 0.6f), Color.Transparent),
-                        ),
+        Box(
+            modifier = Modifier.drawBehind {
+                val d = 90.dp.toPx()
+                val ox = 22.dp.toPx()
+                val oy = -22.dp.toPx()
+                val cx = size.width + ox - d / 2f
+                val cy = oy + d / 2f
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        listOf(Brand300.copy(alpha = 1f), Brand200.copy(alpha = 0.5f)),
+                        center = androidx.compose.ui.geometry.Offset(cx, cy),
+                        radius = d / 2f,
                     ),
-            )
+                    radius = d / 2f,
+                    center = androidx.compose.ui.geometry.Offset(cx, cy),
+                )
+            },
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Gradient cloud icon square (prototype `#6FB6FF → #4A98E8`).
                 Box(

@@ -43,20 +43,7 @@ internal fun StorageHeader(onManage: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f),
-        ) {
-            // Prototype `.section-head .title .accent` 4dp gradient bar.
-            Box(
-                modifier = Modifier
-                    .size(width = 4.dp, height = 14.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(Brush.verticalGradient(listOf(Brand500, Color(0xFF9BE3C8)))),
-            )
-            Spacer(Modifier.width(6.dp))
-            HomeSectionTitle("存储源")
-        }
+        SectionAccentTitle("存储源", modifier = Modifier.weight(1f))
         Text(
             text = "管理 →",
             style = MaterialTheme.typography.labelMedium,
@@ -67,6 +54,35 @@ internal fun StorageHeader(onManage: () -> Unit) {
                 .testTag("home_storage_manage"),
         )
     }
+}
+
+/** Section title row: 4dp vertical accent bar + title text. */
+@Composable
+internal fun SectionAccentTitle(text: String, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 4.dp, height = 14.dp)
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(Brush.verticalGradient(listOf(Brand500, Color(0xFF9BE3C8)))),
+        )
+        Spacer(Modifier.width(6.dp))
+        HomeSectionTitle(text)
+    }
+}
+
+/** Section title row for the background-task card. */
+@Composable
+internal fun TaskHeader() {
+    SectionAccentTitle(
+        text = "后台任务",
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 8.dp),
+    )
 }
 
 @Composable

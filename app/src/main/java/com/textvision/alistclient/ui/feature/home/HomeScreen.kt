@@ -5,8 +5,11 @@ package com.textvision.alistclient.ui.feature.home
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -135,7 +138,9 @@ private fun DashboardList(
             )
         }
         item {
-            Box(modifier = Modifier.testTag("home_task_section")) {
+            Column(modifier = Modifier.testTag("home_task_section")) {
+                TaskHeader()
+                Spacer(Modifier.height(8.dp))
                 TaskSection(
                     task = data.taskSection,
                     onRetry = { onRetrySection(SectionKey.Task) },
