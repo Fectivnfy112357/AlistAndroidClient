@@ -9,12 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CleaningServices
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,8 +19,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.textvision.alistclient.ui.components.BannerKind
-import com.textvision.alistclient.ui.components.ListItemRow
 import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.components.StatusBanner
 import com.textvision.alistclient.ui.components.UserAvatarCard
@@ -54,143 +47,143 @@ fun SettingsScreen(
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier.padding(innerPadding),
-            contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // ─── 1) 用户卡 ────────────────────────────────────────────────
             item {
-                SectionCard(modifier = Modifier.fillMaxWidth()) {
+                SectionCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    padding = PaddingValues(14.dp),
+                ) {
                     UserAvatarCard(
-                        name = "访客",
-                        role = "VIP",
+                        name = "柚子",
+                        role = "admin",
                         serverName = "我的云端小屋 · 在线",
                         status = "VIP",
                     )
                 }
             }
 
+            // ─── 2) 外观主题 ──────────────────────────────────────────────
             item {
-                SectionCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        SectionTitle("外观主题")
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            ThemeCard(
-                                label = "浅色",
-                                icon = AppIcons.sun,
-                                selected = uiState.darkMode == DarkMode.LIGHT,
-                                onClick = { viewModel.setDarkMode(DarkMode.LIGHT) },
-                                modifier = Modifier.weight(1f),
-                            )
-                            ThemeCard(
-                                label = "深色",
-                                icon = AppIcons.moon,
-                                selected = uiState.darkMode == DarkMode.DARK,
-                                onClick = { viewModel.setDarkMode(DarkMode.DARK) },
-                                modifier = Modifier.weight(1f),
-                            )
-                            ThemeCard(
-                                label = "自动",
-                                icon = AppIcons.auto,
-                                selected = uiState.darkMode == DarkMode.SYSTEM,
-                                onClick = { viewModel.setDarkMode(DarkMode.SYSTEM) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
+                Column(modifier = Modifier.padding(top = 12.dp)) {
+                    SectionTitle("外观主题")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ThemeCard(
+                            label = "浅色",
+                            icon = AppIcons.sun,
+                            selected = uiState.darkMode == DarkMode.LIGHT,
+                            swatchStops = LightSwatch,
+                            onClick = { viewModel.setDarkMode(DarkMode.LIGHT) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        ThemeCard(
+                            label = "深色",
+                            icon = AppIcons.moon,
+                            selected = uiState.darkMode == DarkMode.DARK,
+                            swatchStops = DarkSwatch,
+                            onClick = { viewModel.setDarkMode(DarkMode.DARK) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        ThemeCard(
+                            label = "跟随",
+                            icon = AppIcons.auto,
+                            selected = uiState.darkMode == DarkMode.SYSTEM,
+                            swatchStops = SystemSwatch,
+                            onClick = { viewModel.setDarkMode(DarkMode.SYSTEM) },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
 
+            // ─── 3) 存储源 ────────────────────────────────────────────────
             if (uiState.storages.isNotEmpty()) {
                 item {
-                    SectionCard(modifier = Modifier.fillMaxWidth()) {
-                        Column {
-                            SectionTitle("存储源")
-                            uiState.storages.take(3).forEachIndexed { index, storage ->
-                                val id = storage.id ?: return@forEachIndexed
-                                if (index > 0) Divider()
-                                StorageSourceRow(
-                                    title = storage.remark?.takeIf { it.isNotBlank() }
-                                        ?: storage.mountPath.substringAfterLast('/').ifBlank { storage.mountPath },
-                                    subtitle = storage.driver,
-                                    driver = storage.driver,
-                                    onClick = { onStorageClick(id) },
-                                )
+                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                        SectionTitle("存储源")
+                        SectionCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            padding = PaddingValues(vertical = 6.dp, horizontal = 14.dp),
+                        ) {
+                            Column {
+                                uiState.storages.take(3).forEachIndexed { index, storage ->
+                                    val id = storage.id ?: return@forEachIndexed
+                                    if (index > 0) Divider()
+                                    StorageSourceRow(
+                                        title = storage.remark?.takeIf { it.isNotBlank() }
+                                            ?: storage.mountPath.substringAfterLast('/').ifBlank { storage.mountPath },
+                                        subtitle = "${storage.mountPath} · ${storage.driver}",
+                                        driver = storage.driver,
+                                        onClick = { onStorageClick(id) },
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
+            // ─── 4) 快速设置 ──────────────────────────────────────────────
             if (uiState.quickSettings.isNotEmpty()) {
                 item {
-                    SectionCard(modifier = Modifier.fillMaxWidth()) {
-                        Column {
-                            SectionTitle("快速设置")
-                            uiState.quickSettings.take(2).forEachIndexed { index, setting ->
-                                if (index > 0) Divider()
-                                QuickSettingRow(
-                                    item = setting,
-                                    onEdit = { viewModel.saveQuickSetting(setting.key, it) },
-                                )
+                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                        SectionTitle("快速设置")
+                        SectionCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            padding = PaddingValues(vertical = 6.dp, horizontal = 14.dp),
+                        ) {
+                            Column {
+                                uiState.quickSettings.take(2).forEachIndexed { index, setting ->
+                                    if (index > 0) Divider()
+                                    QuickSettingRow(
+                                        item = setting,
+                                        onEdit = { viewModel.saveQuickSetting(setting.key, it) },
+                                    )
+                                }
+                                Divider()
+                                PrivacyPasswordRow()
                             }
-                            Divider()
-                            PrivacyPasswordRow()
                         }
                     }
                 }
             }
 
+            // ─── 5) 维护 ──────────────────────────────────────────────────
             item {
-                SectionCard(modifier = Modifier.fillMaxWidth()) {
-                    Column {
-                        SectionTitle("维护")
-                        ListItemRow(
-                            leading = {
-                                Icon(Icons.Outlined.CleaningServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            title = "清理临时预览文件",
-                            subtitle = "释放本机预览缓存",
-                            trailing = {
-                                Icon(AppIcons.chevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            },
-                            onClick = { viewModel.clearPreviewFiles() },
-                        )
-                        Divider()
-                        ListItemRow(
-                            leading = {
-                                Icon(Icons.Outlined.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            title = "完整设置",
-                            subtitle = "所有带表单的设置项",
-                            trailing = {
-                                Icon(AppIcons.chevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            },
-                            onClick = onAdvancedSettings,
-                        )
+                Column(modifier = Modifier.padding(top = 12.dp)) {
+                    SectionTitle("维护")
+                    SectionCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        padding = PaddingValues(vertical = 6.dp, horizontal = 14.dp),
+                    ) {
+                        Column {
+                            CleanPreviewRow(onClick = { viewModel.clearPreviewFiles() })
+                            Divider()
+                            AdvancedSettingsRow(onClick = onAdvancedSettings)
+                        }
                     }
                 }
             }
 
             uiState.errorMessage?.let { msg ->
                 item {
-                    StatusBanner(
-                        kind = BannerKind.ERROR,
-                        message = msg,
-                        actionLabel = "重试",
-                        onAction = { viewModel.loadAdminData() },
-                    )
+                    Spacer(Modifier.height(8.dp))
+                    StatusBanner(message = msg, kind = com.textvision.alistclient.ui.components.BannerKind.ERROR)
                 }
             }
 
+            // ─── 6) 退出登录 + Footer ─────────────────────────────────────
             item {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(16.dp))
                 LogoutButton(onClick = viewModel::logout)
                 Spacer(Modifier.height(8.dp))
             }
-
             item {
                 Text(
                     text = "Alist Client · v1.0.0 · made with 💙",
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

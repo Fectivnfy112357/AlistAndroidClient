@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -36,78 +38,103 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.textvision.alistclient.admin.form.localizedLabel
 import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.ui.components.ListItemRow
 import com.textvision.alistclient.ui.icons.AppIcons
+import com.textvision.alistclient.ui.theme.Brand50
 import com.textvision.alistclient.ui.theme.Brand500
 import com.textvision.alistclient.ui.theme.Brand600
+import com.textvision.alistclient.ui.theme.Brand700
 import com.textvision.alistclient.ui.theme.CandyLemon
 import com.textvision.alistclient.ui.theme.CandyLilac
 import com.textvision.alistclient.ui.theme.CandyMint
+import com.textvision.alistclient.ui.theme.CandyMintBg
 import com.textvision.alistclient.ui.theme.CandyPink
+import com.textvision.alistclient.ui.theme.DarkBg
+import com.textvision.alistclient.ui.theme.DarkSurface
+import com.textvision.alistclient.ui.theme.Ink
 import com.textvision.alistclient.ui.theme.StateError
 import com.textvision.alistclient.ui.theme.StateErrorBg
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  Section primitives — aligned with prototype `.card-title` + `.set-row`.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Uppercase tracked label above a card — prototype `.card-title`. */
 @Composable
-internal fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(bottom = 4.dp),
+        style = MaterialTheme.typography.labelSmall.copy(
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.8.sp,
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.padding(start = 4.dp, bottom = 8.dp),
     )
 }
 
+/** Hairline divider used between `.set-row` items inside a single card. */
 @Composable
 internal fun Divider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
+            .padding(horizontal = 16.dp)
             .height(1.dp)
             .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
     )
 }
 
-/** One theme card — segmented pill of 3 swatches + label + icon highlight when selected. */
+// ═══════════════════════════════════════════════════════════════════════════
+//  Theme picker — prototype `.theme-pick` + `.theme-card`.
+//  Each card shows a 3-stop swatch + icon + label.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** A theme card. Each variant supplies its own 3-stop swatch gradient. */
 @Composable
 internal fun ThemeCard(
     label: String,
     icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
+    swatchStops: List<Color>,
     modifier: Modifier = Modifier,
 ) {
     val border = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent
     val container = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-    else MaterialTheme.colorScheme.surfaceContainerHigh
+    else MaterialTheme.colorScheme.surface
     Column(
         modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
+            .clip(RoundedCornerShape(14.dp))
             .background(container)
             .border(
-                width = if (selected) 1.5.dp else 0.dp,
-                color = border,
-                shape = MaterialTheme.shapes.medium,
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outline,
+                shape = RoundedCornerShape(14.dp),
             )
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
             modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(2.dp),
+                .fillMaxWidth()
+                .height(32.dp)
+                .clip(RoundedCornerShape(10.dp)),
         ) {
-            listOf(CandyLemon, CandyPink, CandyLilac).forEach { c ->
+            swatchStops.forEach { stop ->
                 Box(
                     modifier = Modifier
-                        .size(width = 12.dp, height = 16.dp)
-                        .background(c),
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(stop),
                 )
             }
         }
@@ -117,17 +144,28 @@ internal fun ThemeCard(
             contentDescription = null,
             tint = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(28.dp),
         )
         Spacer(Modifier.height(4.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
             color = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurface,
         )
     }
 }
+
+/** Light swatch — sky-blue + white + light-blue gradient. */
+internal val LightSwatch = listOf(Brand50, Color.White, Brand500.copy(alpha = 0.4f))
+/** Dark swatch — deep navy 3 stops. */
+internal val DarkSwatch = listOf(Ink, DarkSurface, DarkBg)
+/** Follow-system swatch — gradient from light to dark. */
+internal val SystemSwatch = listOf(Brand50, Brand500, Ink)
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Storage source row — prototype `.set-row` with gradient icon + chevron.
+// ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 internal fun StorageSourceRow(
@@ -142,7 +180,7 @@ internal fun StorageSourceRow(
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(gradient),
                 contentAlignment = Alignment.Center,
             ) {
@@ -170,13 +208,19 @@ internal fun StorageSourceRow(
 private fun storageGradient(driver: String): Brush {
     val d = driver.lowercase()
     return when {
-        "local" in d -> Brush.linearGradient(listOf(CandyMint, CandyMint))
+        "local" in d -> Brush.linearGradient(listOf(CandyMint, CandyMintBg))
         "s3" in d -> Brush.linearGradient(listOf(CandyLemon, CandyPink))
-        "ali" in d || "oss" in d -> Brush.linearGradient(listOf(CandyPink, CandyLilac))
-        "gdrive" in d || "google" in d -> Brush.linearGradient(listOf(Brand500, Brand600))
+        "ali" in d || "oss" in d -> Brush.linearGradient(listOf(Brand500, Brand600))
+        "quark" in d -> Brush.linearGradient(listOf(CandyMint, Brand600))
+        "baidu" in d -> Brush.linearGradient(listOf(CandyLilac, CandyPink))
+        "gdrive" in d || "google" in d -> Brush.linearGradient(listOf(Brand600, Brand700))
         else -> Brush.linearGradient(listOf(Brand500, Brand600))
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Quick-setting row + privacy password switch (prototype `.set-row`).
+// ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 internal fun QuickSettingRow(
@@ -186,11 +230,20 @@ internal fun QuickSettingRow(
     var editing by remember { mutableStateOf(false) }
     ListItemRow(
         leading = {
-            Icon(
-                Icons.Outlined.Settings,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    AppIcons.sparkle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         },
         title = displayLabel(item.key),
         subtitle = item.value?.takeIf { it.isNotBlank() } ?: "(未设置)",
@@ -229,39 +282,118 @@ internal fun QuickSettingRow(
     }
 }
 
+/** Privacy row with switch (no dialog) — prototype `.switch.on`. */
 @Composable
 internal fun PrivacyPasswordRow() {
     var enabled by remember { mutableStateOf(true) }
     ListItemRow(
         leading = {
-            Icon(
-                AppIcons.shield,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    AppIcons.shield,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         },
         title = "隐私与密码",
-        subtitle = "登录密码与生物识别",
+        subtitle = "指纹解锁 · 自动登录",
         trailing = {
-            Switch(
-                checked = enabled,
-                onCheckedChange = { enabled = it },
-            )
+            Switch(checked = enabled, onCheckedChange = { enabled = it })
         },
     )
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Maintenance rows — prototype `.set-row` with mint broom + blue settings.
+// ═══════════════════════════════════════════════════════════════════════════
+
+@Composable
+internal fun CleanPreviewRow(onClick: () -> Unit) {
+    ListItemRow(
+        leading = {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.CleaningServices,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        },
+        title = "清理临时预览文件",
+        subtitle = "已使用 234 MB",
+        trailing = {
+            Icon(
+                AppIcons.chevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+internal fun AdvancedSettingsRow(onClick: () -> Unit) {
+    ListItemRow(
+        leading = {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.Settings,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        },
+        title = "完整设置",
+        subtitle = "全部站点设置项",
+        trailing = {
+            Icon(
+                AppIcons.chevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Logout button — prototype `.btn-ghost.btn-icon-text` with red border.
+// ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 internal fun LogoutButton(onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .height(44.dp)
+            .clip(RoundedCornerShape(18.dp))
             .border(
-                width = 1.dp,
+                width = 1.5.dp,
                 color = StateErrorBg,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(18.dp),
             )
             .clickable(onClick = onClick),
         color = Color.Transparent,
@@ -277,7 +409,7 @@ internal fun LogoutButton(onClick: () -> Unit) {
                 tint = StateError,
                 modifier = Modifier.size(18.dp),
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(6.dp))
             Text(
                 text = "退出登录",
                 style = MaterialTheme.typography.labelLarge,

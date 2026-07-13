@@ -1,0 +1,794 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - heading "Alist · 安卓客户端原型" [level=1] [ref=e4]
+    - paragraph [ref=e5]: 浅蓝白 × 糖果点缀 × 弹弹字体 · 10 屏完整可交互预览
+  - generic [ref=e6]:
+    - button "01 · 登录" [ref=e7] [cursor=pointer]
+    - button "02 · 首页" [ref=e8] [cursor=pointer]
+    - button "03 · 文件" [ref=e9] [cursor=pointer]
+    - button "04 · 预览" [ref=e10] [cursor=pointer]
+    - button "11 · 音乐预览" [ref=e11] [cursor=pointer]
+    - button "05 · 传输" [ref=e12] [cursor=pointer]
+    - button "06 · 设置" [ref=e13] [cursor=pointer]
+    - button "07 · 存储编辑" [ref=e14] [cursor=pointer]
+    - button "08 · 完整设置" [ref=e15] [cursor=pointer]
+    - button "09 · 选择目录" [ref=e16] [cursor=pointer]
+    - button "10 · 状态合集" [ref=e17] [cursor=pointer]
+    - button "12 · 音乐库" [ref=e18] [cursor=pointer]
+    - button "13 · 资源库" [ref=e19] [cursor=pointer]
+  - generic [ref=e20]:
+    - generic [ref=e22]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]: 9:41
+          - generic [ref=e27]: "87"
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - heading "登录 Alist" [level=2] [ref=e49]
+            - paragraph [ref=e50]: 连接你的私有云盘 · 安全又可爱
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e53]: 服务器地址
+              - generic [ref=e54]: http://192.168.1.10:5244
+            - generic [ref=e60]:
+              - generic [ref=e61]: 用户名
+              - generic [ref=e62]: 请输入用户名
+            - generic [ref=e68]:
+              - generic [ref=e69]: 密码
+              - generic [ref=e70]: •••••••••••
+            - button "登录 Alist" [ref=e75] [cursor=pointer]
+            - paragraph [ref=e76]: 新用户？了解 Alist →
+      - generic [ref=e81]:
+        - generic [ref=e82]: "01"
+        - text: 登录页
+      - generic [ref=e83]: 居中卡片 · 玻璃白输入 · 蓝色渐变按钮
+    - generic [ref=e85]:
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - generic [ref=e88]: 9:41
+          - generic [ref=e89]: "87"
+        - generic [ref=e102]:
+          - generic [ref=e103]: 早上好 ✨
+          - generic [ref=e104]: 已连接 · 我的 Alist
+        - generic [ref=e115]:
+          - generic [ref=e119]:
+            - generic [ref=e123]:
+              - generic [ref=e124]: 我的云端小屋
+              - generic [ref=e125]: 当前服务器 · v3.41.0
+            - generic [ref=e126]: 在线
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - generic [ref=e134]: 用户
+              - generic [ref=e135]: "12"
+            - generic [ref=e136]:
+              - generic [ref=e140]: 角色
+              - generic [ref=e141]: "3"
+            - generic [ref=e142]:
+              - generic [ref=e146]: 在线
+              - generic [ref=e147]: "5"
+          - generic [ref=e148]: 后台任务
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e151]: 进行中
+              - generic [ref=e152]: "2"
+            - generic [ref=e153]:
+              - generic [ref=e154]: 上传 · 1
+              - generic [ref=e156]: 解压 · 1
+              - generic [ref=e158]: 复制
+              - generic [ref=e159]: 离线下载
+              - generic [ref=e160]: 对象迁移
+          - generic [ref=e161]:
+            - generic [ref=e162]: 存储源
+            - generic [ref=e163]: 管理 →
+          - generic [ref=e170] [cursor=pointer]:
+            - generic [ref=e171]: 阿里云盘
+            - generic [ref=e172]: /aliyun · 已挂载
+          - generic [ref=e180] [cursor=pointer]:
+            - generic [ref=e181]: 夸克网盘
+            - generic [ref=e182]: /quark · 已挂载
+          - generic [ref=e186] [cursor=pointer]:
+            - generic [ref=e192]:
+              - generic [ref=e193]: 百度网盘
+              - generic [ref=e194]: /baidu · 已禁用
+            - generic [ref=e195]: 已禁用
+          - generic [ref=e201] [cursor=pointer]:
+            - generic [ref=e202]: 本地存储
+            - generic [ref=e203]: /local · 本机文件
+        - generic [ref=e207]:
+          - button "首页" [ref=e208] [cursor=pointer]
+          - button "文件" [ref=e213] [cursor=pointer]
+          - button "音乐" [ref=e219] [cursor=pointer]
+          - button "传输" [ref=e226] [cursor=pointer]
+          - button "设置" [ref=e231] [cursor=pointer]
+      - generic [ref=e237]:
+        - generic [ref=e238]: "02"
+        - text: 首页 · 仪表盘
+      - generic [ref=e239]: Hero 卡片 · 指标行 · 存储列表
+    - generic [ref=e241]:
+      - generic [ref=e242]:
+        - generic [ref=e243]:
+          - generic [ref=e244]: 9:41
+          - generic [ref=e245]: "87"
+        - generic [ref=e260]:
+          - generic [ref=e261]: 文件
+          - generic [ref=e262]: 当前离线 · 部分操作不可用
+        - generic [ref=e272]:
+          - generic [ref=e273]: 离线模式：仅可查看本地缓存
+          - textbox "按名称筛选…" [ref=e282]: 旅行
+          - generic [ref=e283]: 已选 2 项 · 点击 移动 选择目标目录
+          - generic [ref=e297] [cursor=pointer]:
+            - generic [ref=e298]: 旅行日记 · 京都樱花.jpg
+            - generic [ref=e299]: 3.2 MB · 今天 14:21
+          - generic [ref=e312] [cursor=pointer]:
+            - generic [ref=e313]: 2024 春季合集
+            - generic [ref=e314]: 12 项 · 87 MB
+          - generic [ref=e326] [cursor=pointer]:
+            - generic [ref=e327]: vlog_04.mp4
+            - generic [ref=e328]: 128 MB · 昨天
+          - generic [ref=e340] [cursor=pointer]:
+            - generic [ref=e341]: 攻略笔记.pdf
+            - generic [ref=e342]: 1.8 MB · 上周
+          - generic [ref=e355] [cursor=pointer]:
+            - generic [ref=e356]: 晚安白噪音.mp3
+            - generic [ref=e357]: 8.4 MB · 2024-04
+          - generic [ref=e369] [cursor=pointer]:
+            - generic [ref=e370]: raw照片.zip
+            - generic [ref=e371]: 256 MB · 2024-03
+        - generic [ref=e377]:
+          - generic [ref=e378]: 已选 2
+          - button [ref=e379] [cursor=pointer]
+          - button "移动" [ref=e383] [cursor=pointer]
+          - button "下载" [ref=e389] [cursor=pointer]
+          - button "删除" [ref=e394] [cursor=pointer]
+          - button "× 取消" [ref=e400] [cursor=pointer]:
+            - generic [ref=e401]: ×
+            - generic [ref=e402]: 取消
+      - generic [ref=e403]:
+        - generic [ref=e404]: "03"
+        - text: 文件页 · 多选态
+      - generic [ref=e405]: 离线横幅 · 行内菜单 · 底部操作条
+    - generic [ref=e407]:
+      - generic [ref=e408]:
+        - generic [ref=e409]:
+          - generic [ref=e410]: 9:41
+          - generic [ref=e411]: "87"
+        - generic [ref=e426]:
+          - generic [ref=e427]: 文件预览
+          - generic [ref=e428]: 旅行日记 · 京都樱花.jpg
+        - generic [ref=e441]:
+          - generic [ref=e455]:
+            - generic [ref=e456]: 2024 · 京都 · 哲学之道
+            - generic [ref=e457]: 4032 × 3024 · 3.2 MB
+          - generic [ref=e458]:
+            - button [ref=e459] [cursor=pointer]
+            - button [ref=e467] [cursor=pointer]
+            - button [ref=e472] [cursor=pointer]
+          - generic [ref=e478]:
+            - generic [ref=e479]: 详细信息
+            - generic [ref=e480]:
+              - generic [ref=e481]: 类型
+              - generic [ref=e482]: JPEG 图像
+            - generic [ref=e483]:
+              - generic [ref=e484]: 尺寸
+              - generic [ref=e485]: 4032 × 3024
+            - generic [ref=e486]:
+              - generic [ref=e487]: 修改时间
+              - generic [ref=e488]: 2024-04-12 14:21
+            - generic [ref=e489]:
+              - generic [ref=e490]: 位置
+              - generic [ref=e491]: /阿里云盘/2024春季合集
+      - generic [ref=e492]:
+        - generic [ref=e493]: "04"
+        - text: 文件预览 · 图片
+      - generic [ref=e494]: 沉浸式预览 · 分享/直链/另存
+    - generic [ref=e496]:
+      - generic [ref=e498]:
+        - generic [ref=e499]:
+          - generic [ref=e500]: 9:41
+          - generic [ref=e501]: "87"
+        - generic [ref=e516]:
+          - generic [ref=e517]: 正在播放
+          - generic [ref=e518]: 来自「音乐库」
+        - generic [ref=e529]:
+          - generic [ref=e542]:
+            - heading "春之声 · 第三乐章" [level=2] [ref=e543]
+            - generic [ref=e544]: 坂本龍一 · async
+            - generic [ref=e545]:
+              - generic [ref=e546]: HIRES
+              - generic [ref=e547]: FLAC · 24bit
+          - generic [ref=e551]:
+            - generic [ref=e552]: 1:24
+            - generic [ref=e553]: 3:42
+          - generic [ref=e554]:
+            - button [ref=e555] [cursor=pointer]
+            - button [ref=e562] [cursor=pointer]
+            - button [ref=e566] [cursor=pointer]
+            - button [ref=e569] [cursor=pointer]
+            - button [ref=e573] [cursor=pointer]
+          - generic [ref=e579]:
+            - button "队列" [ref=e580] [cursor=pointer]
+            - generic [ref=e584]:
+              - button [ref=e585] [cursor=pointer]
+              - button [ref=e589] [cursor=pointer]
+          - generic [ref=e592]:
+            - generic [ref=e593]:
+              - generic [ref=e594]: 歌词
+              - generic [ref=e595]: 展开 ↓
+            - generic [ref=e596]:
+              - generic [ref=e597]: 微风拂过山间的清晨
+              - generic [ref=e598]: 落叶在光里慢慢旋转 ✨
+              - generic [ref=e599]: 时间像河水一样安静
+      - generic [ref=e600]:
+        - generic [ref=e601]: "11"
+        - text: 音乐预览
+      - generic [ref=e602]: 沉浸式封面 · 进度条 · 大圆播放
+    - generic [ref=e604]:
+      - generic [ref=e605]:
+        - generic [ref=e606]:
+          - generic [ref=e607]: 9:41
+          - generic [ref=e608]: "87"
+        - generic [ref=e620]:
+          - generic [ref=e621]: 传输
+          - generic [ref=e622]: 2 进行中 · 1 已完成
+        - generic [ref=e628]:
+          - generic [ref=e629]:
+            - button "全部" [ref=e630] [cursor=pointer]
+            - button "上传 ·2" [ref=e631] [cursor=pointer]
+            - button "下载 ·1" [ref=e632] [cursor=pointer]
+            - button "失败" [ref=e633] [cursor=pointer]
+          - generic [ref=e634]:
+            - generic [ref=e635]:
+              - generic [ref=e639]: RAW_京都樱花_原片.zip
+              - generic [ref=e640]: 上传中
+            - generic [ref=e643]:
+              - generic [ref=e644]: 62% · 158 MB / 256 MB
+              - generic [ref=e645]: 取消
+          - generic [ref=e646]:
+            - generic [ref=e647]:
+              - generic [ref=e651]: 电影 · 春之雪 (1080p).mp4
+              - generic [ref=e652]: 下载中
+            - generic [ref=e655]:
+              - generic [ref=e656]: 24% · 380 MB / 1.6 GB
+              - generic [ref=e657]: 取消
+          - generic [ref=e658]:
+            - generic [ref=e659]:
+              - generic [ref=e663]: 旧版备份.zip
+              - generic [ref=e664]: 失败
+            - generic [ref=e667]:
+              - generic [ref=e668]: 网络中断 · 仅完成 8%
+              - generic [ref=e669]: 重试 · 删除
+          - generic [ref=e670]:
+            - generic [ref=e671]:
+              - generic [ref=e675]: 设计稿 v3.pdf
+              - generic [ref=e676]: 已完成
+            - generic [ref=e679]:
+              - generic [ref=e680]: 2.1 MB · 5 分钟前
+              - generic [ref=e681]: 查看
+        - generic [ref=e682]:
+          - button "首页" [ref=e683] [cursor=pointer]
+          - button "文件" [ref=e688] [cursor=pointer]
+          - button "音乐" [ref=e694] [cursor=pointer]
+          - button "传输" [ref=e701] [cursor=pointer]
+          - button "设置" [ref=e706] [cursor=pointer]
+      - generic [ref=e712]:
+        - generic [ref=e713]: "05"
+        - text: 传输页
+      - generic [ref=e714]: 分段切换 · 任务行 · 进度可视化
+    - generic [ref=e716]:
+      - generic [ref=e717]:
+        - generic [ref=e718]:
+          - generic [ref=e719]: 9:41
+          - generic [ref=e720]: "87"
+        - generic [ref=e732]:
+          - generic [ref=e733]: 设置
+          - generic [ref=e734]: 管理你的小窝
+        - generic [ref=e736]:
+          - generic [ref=e737]:
+            - generic [ref=e738]: 柚
+            - generic [ref=e739]:
+              - generic [ref=e740]: 柚子 · admin
+              - generic [ref=e741]: 我的云端小屋 · 在线
+            - generic [ref=e742]: VIP
+          - generic [ref=e744]: 外观主题
+          - generic [ref=e746]:
+            - generic [ref=e747] [cursor=pointer]: 浅色
+            - generic [ref=e756] [cursor=pointer]: 深色
+            - generic [ref=e764] [cursor=pointer]: 跟随
+          - generic [ref=e773]: 存储源
+          - generic [ref=e774]:
+            - generic [ref=e781] [cursor=pointer]:
+              - generic [ref=e782]: 阿里云盘
+              - generic [ref=e783]: /aliyun · Aliyundrive
+            - generic [ref=e791] [cursor=pointer]:
+              - generic [ref=e792]: 夸克网盘
+              - generic [ref=e793]: /quark · Quark
+            - generic [ref=e803] [cursor=pointer]:
+              - generic [ref=e804]: 百度网盘
+              - generic [ref=e805]: /baidu · 已禁用
+          - generic [ref=e809]: 快速设置
+          - generic [ref=e810]:
+            - generic [ref=e815] [cursor=pointer]:
+              - generic [ref=e816]: 站点公告
+              - generic [ref=e817]: 欢迎来到我的云端小屋 ✨
+            - generic [ref=e825] [cursor=pointer]:
+              - generic [ref=e826]: 隐私与密码
+              - generic [ref=e827]: 指纹解锁 · 自动登录
+          - generic [ref=e829]: 维护
+          - generic [ref=e830]:
+            - generic [ref=e836] [cursor=pointer]:
+              - generic [ref=e837]: 清理临时预览文件
+              - generic [ref=e838]: 已使用 234 MB
+            - generic [ref=e847] [cursor=pointer]:
+              - generic [ref=e848]: 完整设置
+              - generic [ref=e849]: 全部站点设置项
+          - button "退出登录" [ref=e853] [cursor=pointer]
+          - generic [ref=e859]: Alist Client · v1.0.0 · made with 💙
+        - generic [ref=e860]:
+          - button "首页" [ref=e861] [cursor=pointer]
+          - button "文件" [ref=e866] [cursor=pointer]
+          - button "音乐" [ref=e872] [cursor=pointer]
+          - button "传输" [ref=e879] [cursor=pointer]
+          - button "设置" [ref=e884] [cursor=pointer]
+      - generic [ref=e890]:
+        - generic [ref=e891]: "06"
+        - text: 设置页
+      - generic [ref=e892]: 主题卡 · 分组列表 · 描边退登
+    - generic [ref=e894]:
+      - generic [ref=e895]:
+        - generic [ref=e896]:
+          - generic [ref=e897]: 9:41
+          - generic [ref=e898]: "87"
+        - generic [ref=e913]:
+          - generic [ref=e914]: 编辑存储
+          - generic [ref=e915]: 夸克网盘
+        - generic [ref=e917]:
+          - generic [ref=e919]:
+            - generic [ref=e923]:
+              - generic [ref=e924]: 夸克网盘
+              - generic [ref=e925]: 挂载路径 · /quark
+            - generic [ref=e926]: 已启用
+          - generic [ref=e928]:
+            - generic [ref=e929]: 驱动参数
+            - generic [ref=e930]:
+              - generic [ref=e931]: 备注
+              - generic [ref=e932]: 我的夸克网盘
+            - generic [ref=e934]:
+              - generic [ref=e935]: 挂载路径
+              - generic [ref=e936]: /quark
+            - generic [ref=e938]:
+              - generic [ref=e939]: Cookie
+              - generic [ref=e940]:
+                - generic [ref=e942]: 已设置 · 30 天前更新
+                - button "重新获取" [ref=e943] [cursor=pointer]
+            - generic [ref=e949]:
+              - generic [ref=e950]: 根目录路径
+              - generic [ref=e951]: /我的资源/
+            - generic [ref=e953]:
+              - generic [ref=e954]: 排序方式
+              - generic [ref=e955]: 按修改时间倒序
+            - generic [ref=e959]:
+              - generic [ref=e960]: 启用存储
+              - generic [ref=e961]: 禁用后文件将不再显示
+          - button "保存修改" [ref=e963] [cursor=pointer]
+          - generic [ref=e964]: 保存成功后将自动返回
+      - generic [ref=e965]:
+        - generic [ref=e966]: "07"
+        - text: 存储编辑
+      - generic [ref=e967]: 驱动参数表单 · Cookie 抓取
+    - generic [ref=e969]:
+      - generic [ref=e970]:
+        - generic [ref=e971]:
+          - generic [ref=e972]: 9:41
+          - generic [ref=e973]: "87"
+        - generic [ref=e988]:
+          - generic [ref=e989]: 完整设置
+          - generic [ref=e990]: 12 项 · 3 组
+        - generic [ref=e992]:
+          - generic [ref=e993]: 站点
+          - generic [ref=e994]:
+            - generic [ref=e995]:
+              - generic [ref=e996]: 站点标题
+              - generic [ref=e997]: 我的云端小屋
+            - generic [ref=e999]:
+              - generic [ref=e1000]: 站点公告
+              - generic [ref=e1001]: 欢迎来到我的云端小屋 ✨
+            - generic [ref=e1003]:
+              - generic [ref=e1004]: 站点图标
+              - generic [ref=e1005]: 未设置
+            - generic [ref=e1008]:
+              - generic [ref=e1009]: 隐藏公告
+              - generic [ref=e1010]: 登录后不可见
+          - generic [ref=e1012]: 预览
+          - generic [ref=e1013]:
+            - generic [ref=e1015]:
+              - generic [ref=e1016]: 启用预览
+              - generic [ref=e1017]: 允许在线查看文件
+            - generic [ref=e1020]:
+              - generic [ref=e1021]: 自动播放视频
+              - generic [ref=e1022]: 打开页面即播放
+            - generic [ref=e1025]:
+              - generic [ref=e1026]: 强制代理
+              - generic [ref=e1027]: 通过服务器中转预览
+          - generic [ref=e1029]: 安全
+          - generic [ref=e1030]:
+            - generic [ref=e1031]:
+              - generic [ref=e1032]: Token 有效期
+              - generic [ref=e1033]: 48 小时
+            - generic [ref=e1037]:
+              - generic [ref=e1038]: 签名直链
+              - generic [ref=e1039]: 防止直链被盗用
+          - button "保存全部" [ref=e1041] [cursor=pointer]
+      - generic [ref=e1042]:
+        - generic [ref=e1043]: "08"
+        - text: 完整设置
+      - generic [ref=e1044]: 分组表单 · 动态渲染
+    - generic [ref=e1046]:
+      - generic [ref=e1047]:
+        - generic [ref=e1048]:
+          - generic [ref=e1049]: 9:41
+          - generic [ref=e1050]: "87"
+        - generic [ref=e1065]:
+          - generic [ref=e1066]: 选择目标
+          - generic [ref=e1067]: 移动 2 项到…
+        - generic [ref=e1069]:
+          - generic [ref=e1070]:
+            - generic [ref=e1071]: 🏠 根目录
+            - generic [ref=e1072]: /
+            - generic [ref=e1073]: 📁 2024 春季合集
+            - generic [ref=e1074]: /
+            - generic [ref=e1075]: + 新建
+          - generic [ref=e1076]:
+            - generic [ref=e1077]: 📁
+            - textbox [ref=e1078]: 樱花合集_v2
+            - generic [ref=e1079]: ✓ 创建
+          - generic [ref=e1080]: 可移动到的位置
+          - generic [ref=e1085] [cursor=pointer]:
+            - generic [ref=e1086]: 备份目录
+            - generic [ref=e1087]: 8 项 · 1.2 GB
+          - generic [ref=e1093] [cursor=pointer]:
+            - generic [ref=e1094]: 工作文档
+            - generic [ref=e1095]: 23 项
+          - generic [ref=e1101] [cursor=pointer]:
+            - generic [ref=e1102]: 2024 春季合集
+            - generic [ref=e1103]: 12 项 · 当前目录
+          - generic [ref=e1111] [cursor=pointer]:
+            - generic [ref=e1112]: 家庭相册
+            - generic [ref=e1113]: 56 项
+          - generic [ref=e1119] [cursor=pointer]:
+            - generic [ref=e1120]: 下载缓存
+            - generic [ref=e1121]: 4 项 · 340 MB
+        - button "确认移动到 · 2024 春季合集" [ref=e1124] [cursor=pointer]
+      - generic [ref=e1125]:
+        - generic [ref=e1126]: "09"
+        - text: 选择目标目录
+      - generic [ref=e1127]: 面包屑 · 新建 · 单选确认
+    - generic [ref=e1129]:
+      - generic [ref=e1130]:
+        - generic [ref=e1131]:
+          - generic [ref=e1132]: 9:41
+          - generic [ref=e1133]: —
+        - generic [ref=e1148]:
+          - generic [ref=e1149]: 传输
+          - generic [ref=e1150]: 离线 · 任务已暂停
+        - generic [ref=e1153]:
+          - generic [ref=e1157]: 离线模式：传输操作已暂停
+          - button "重试" [ref=e1158] [cursor=pointer]
+        - generic [ref=e1159]:
+          - generic [ref=e1160]:
+            - generic [ref=e1172]: 这里空空如也 ✨
+            - generic [ref=e1173]: 失败的传输任务会出现在这里小窝正在安静等待你回来
+          - generic [ref=e1175]:
+            - generic [ref=e1179]:
+              - generic [ref=e1180]: 加载失败
+              - generic [ref=e1181]: 网络异常，请检查后重试
+            - button "↻ 重试" [ref=e1182] [cursor=pointer]
+          - generic [ref=e1183]: 加载中…
+          - generic [ref=e1202]:
+            - heading "确认删除 2 项？" [level=3] [ref=e1204]
+            - paragraph [ref=e1205]: 删除后将无法恢复，请谨慎操作🗑️ 小窝会帮你再想想…
+            - generic [ref=e1206]:
+              - button "再想想" [ref=e1207] [cursor=pointer]
+              - button "确认删除" [ref=e1208] [cursor=pointer]
+      - generic [ref=e1209]:
+        - generic [ref=e1210]: "10"
+        - text: 状态合集
+      - generic [ref=e1211]: 空态 · 错误 · 加载骨架 · 确认弹窗
+    - generic [ref=e1213]:
+      - generic [ref=e1214]:
+        - generic [ref=e1215]:
+          - generic [ref=e1216]: 9:41
+          - generic [ref=e1217]: "87"
+        - generic [ref=e1232]:
+          - generic [ref=e1233]: 音乐库
+          - generic [ref=e1234]: 328 首 · 12 位艺人
+        - generic [ref=e1244]:
+          - generic [ref=e1245]:
+            - button "全部 · 328" [ref=e1246]
+            - button "最近添加 · 24" [ref=e1247]
+            - button "最爱 · 56" [ref=e1248]
+            - button "下载 · 89" [ref=e1249]
+          - generic [ref=e1250] [cursor=pointer]:
+            - generic [ref=e1251]: 刚刚播放
+            - generic [ref=e1258]:
+              - generic [ref=e1259]: 春之声 · 第三乐章
+              - generic [ref=e1260]: 坂本龍一 · async · 3:42
+              - generic [ref=e1261]:
+                - button [ref=e1262]
+                - button [ref=e1265]
+                - button [ref=e1268]
+          - generic [ref=e1270]:
+            - generic [ref=e1271]: 最近添加
+            - generic [ref=e1273] [cursor=pointer]: 查看全部 →
+          - generic [ref=e1274]:
+            - generic [ref=e1275] [cursor=pointer]:
+              - generic [ref=e1284]: 夏日协奏
+              - generic [ref=e1285]: 久石让
+            - generic [ref=e1286] [cursor=pointer]:
+              - generic [ref=e1294]: 清晨微风
+              - generic [ref=e1295]: Joe Hisaishi
+            - generic [ref=e1296] [cursor=pointer]:
+              - generic [ref=e1304]: 夜半钢琴
+              - generic [ref=e1305]: 坂本龍一
+            - generic [ref=e1306] [cursor=pointer]:
+              - generic [ref=e1316]: 樱花飞舞
+              - generic [ref=e1317]: Yiruma
+          - generic [ref=e1318]:
+            - generic [ref=e1319]: 艺人
+            - generic [ref=e1321] [cursor=pointer]: 全部 12 位 →
+          - generic [ref=e1322]:
+            - generic [ref=e1323] [cursor=pointer]:
+              - generic [ref=e1324]: 久
+              - generic [ref=e1325]: 久石让
+              - generic [ref=e1326]: 42 首
+            - generic [ref=e1327] [cursor=pointer]:
+              - generic [ref=e1328]: 坂
+              - generic [ref=e1329]: 坂本龍一
+              - generic [ref=e1330]: 28 首
+            - generic [ref=e1331] [cursor=pointer]:
+              - generic [ref=e1332]: "Y"
+              - generic [ref=e1333]: Yiruma
+              - generic [ref=e1334]: 19 首
+            - generic [ref=e1335] [cursor=pointer]:
+              - generic [ref=e1336]: H
+              - generic [ref=e1337]: Hisaishi
+              - generic [ref=e1338]: 15 首
+          - generic [ref=e1339]:
+            - generic [ref=e1340]: 专辑
+            - generic [ref=e1342] [cursor=pointer]: 更多 →
+          - generic [ref=e1343]:
+            - generic [ref=e1344] [cursor=pointer]:
+              - generic [ref=e1352]: 千与千寻 OST
+              - generic [ref=e1353]: 久石让 · 2001
+            - generic [ref=e1354] [cursor=pointer]:
+              - generic [ref=e1363]: async
+              - generic [ref=e1364]: 坂本龍一 · 2017
+          - generic [ref=e1365]:
+            - generic [ref=e1366]: 全部歌曲
+            - button "随机播放" [ref=e1368] [cursor=pointer]
+          - generic [ref=e1377] [cursor=pointer]:
+            - generic [ref=e1378]: 春
+            - generic [ref=e1379]:
+              - generic [ref=e1380]: 春之声 · 第三乐章
+              - generic [ref=e1381]: 坂本龍一
+            - generic [ref=e1382]: 3:42
+          - generic [ref=e1388] [cursor=pointer]:
+            - generic [ref=e1389]: S
+            - generic [ref=e1390]:
+              - generic [ref=e1391]: Summer
+              - generic [ref=e1392]: 久石让
+            - generic [ref=e1393]: 4:15
+          - generic [ref=e1399] [cursor=pointer]:
+            - generic [ref=e1400]: R
+            - generic [ref=e1401]:
+              - generic [ref=e1402]: River Flows in You
+              - generic [ref=e1403]: Yiruma
+            - generic [ref=e1404]: 3:18
+          - generic [ref=e1410] [cursor=pointer]:
+            - generic [ref=e1411]: M
+            - generic [ref=e1412]:
+              - generic [ref=e1413]: Merry-Go-Round of Life
+              - generic [ref=e1414]: 久石让
+            - generic [ref=e1415]: 2:58
+          - generic [ref=e1421] [cursor=pointer]:
+            - generic [ref=e1422]: O
+            - generic [ref=e1423]:
+              - generic [ref=e1424]: One Summer's Day
+              - generic [ref=e1425]: 久石让
+            - generic [ref=e1426]: 4:05
+          - generic [ref=e1432] [cursor=pointer]:
+            - generic [ref=e1433]: P
+            - generic [ref=e1434]:
+              - generic [ref=e1435]: Ponyo · 崖の上のポニョ
+              - generic [ref=e1436]: 久石让
+            - generic [ref=e1437]: 3:24
+          - generic [ref=e1443] [cursor=pointer]:
+            - generic [ref=e1444]: B
+            - generic [ref=e1445]:
+              - generic [ref=e1446]: Bibo no Aozora
+              - generic [ref=e1447]: 坂本龍一 · 情熱大陸
+            - generic [ref=e1448]: 5:12
+          - generic [ref=e1454] [cursor=pointer]:
+            - generic [ref=e1455]: K
+            - generic [ref=e1456]:
+              - generic [ref=e1457]: Kiss the Rain
+              - generic [ref=e1458]: Yiruma
+            - generic [ref=e1459]: 4:32
+          - generic [ref=e1465] [cursor=pointer]:
+            - generic [ref=e1466]: A
+            - generic [ref=e1467]:
+              - generic [ref=e1468]: Aqua
+              - generic [ref=e1469]: Joe Hisaishi
+            - generic [ref=e1470]: 3:55
+        - generic [ref=e1476] [cursor=pointer]:
+          - generic [ref=e1477]: 春
+          - generic [ref=e1478]:
+            - generic [ref=e1479]: 春之声 · 第三乐章
+            - generic [ref=e1480]: 坂本龍一
+          - button [ref=e1486]
+        - generic [ref=e1490]:
+          - button "首页" [ref=e1491] [cursor=pointer]
+          - button "文件" [ref=e1496] [cursor=pointer]
+          - button "音乐" [ref=e1502] [cursor=pointer]
+          - button "传输" [ref=e1509] [cursor=pointer]
+          - button "设置" [ref=e1514] [cursor=pointer]
+      - generic [ref=e1520]:
+        - generic [ref=e1521]: "12"
+        - text: 音乐库
+      - generic [ref=e1522]: Hero 横幅 · 横滑 · 网格 · 紧凑列表 · Mini Player
+    - generic [ref=e1524]:
+      - generic [ref=e1525]:
+        - generic [ref=e1526]:
+          - generic [ref=e1527]: 9:41
+          - generic [ref=e1528]: "87"
+        - generic [ref=e1540]:
+          - generic [ref=e1541]: 资源库
+          - generic [ref=e1542]: 设计交付清单 · 供开发参考
+        - generic [ref=e1544]:
+          - generic [ref=e1546]:
+            - generic [ref=e1547]: 📦 占位资源说明
+            - text: 原型里所有渐变色块、SVG 装饰、几何插画都是 占位实现。 下方按类型分组列出，标注了 尺寸 / 用在哪 / 实现建议，开发可直接对照。
+          - generic [ref=e1548]:
+            - generic [ref=e1549]: 专辑封面
+            - generic [ref=e1551] [cursor=pointer]: 5 项
+          - generic [ref=e1552]:
+            - generic [ref=e1553]: 音乐相关屏用的封面占位
+            - generic [ref=e1556]:
+              - generic [ref=e1557]: 方形专辑卡（横滑）
+              - generic [ref=e1558]:
+                - generic [ref=e1559]: 105 × 105
+                - generic [ref=e1560]: 📍 屏 12 · 最近添加
+              - generic [ref=e1561]: CSS 渐变 + SVG 几何装饰；或：远程封面图（缩略图服务）
+            - generic [ref=e1564]:
+              - generic [ref=e1565]: 方形专辑卡（网格）
+              - generic [ref=e1566]:
+                - generic [ref=e1567]: 宽100% × 140
+                - generic [ref=e1568]: 📍 屏 12 · 专辑网格
+              - generic [ref=e1569]: 同上，可换更大尺寸封面图
+            - generic [ref=e1570]:
+              - generic [ref=e1571]: 春
+              - generic [ref=e1573]:
+                - generic [ref=e1574]: 歌曲行封面（紧凑）
+                - generic [ref=e1575]:
+                  - generic [ref=e1576]: 42 × 42
+                  - generic [ref=e1577]: 📍 屏 12 · 全部歌曲 + Mini Player
+                - generic [ref=e1578]: CSS 渐变 + 居中首字 (Fredoka)；可换：歌曲首字符 / 圆形头像 / Lottie
+            - generic [ref=e1581]:
+              - generic [ref=e1582]: Hero 横幅封面
+              - generic [ref=e1583]:
+                - generic [ref=e1584]: 高度 300px
+                - generic [ref=e1585]: 📍 屏 11 · 音乐预览
+              - generic [ref=e1586]: CSS 渐变 + SVG 大装饰；或：专辑大封面图 + 圆形裁切
+            - generic [ref=e1587]:
+              - generic [ref=e1588]: 春
+              - generic [ref=e1590]:
+                - generic [ref=e1591]: Mini Player 封面
+                - generic [ref=e1592]:
+                  - generic [ref=e1593]: 38 × 38
+                  - generic [ref=e1594]: 📍 底部 Mini Player
+                - generic [ref=e1595]: 同上，缩略图 + 居中首字
+          - generic [ref=e1596]:
+            - generic [ref=e1597]: 状态插画
+            - generic [ref=e1599] [cursor=pointer]: 3 项
+          - generic [ref=e1600]:
+            - generic [ref=e1601]: 空态/加载/错误用的整图
+            - generic [ref=e1613]:
+              - generic [ref=e1614]: 「这里空空如也」插画
+              - generic [ref=e1615]:
+                - generic [ref=e1616]: 96 × 96
+                - generic [ref=e1617]: 📍 屏 10 · 空态
+              - generic [ref=e1618]: SVG（蓝渐变底 + 文件盒 + 糖果点缀）；开发：复用此 SVG，或换 Lottie 动画
+            - generic [ref=e1624]:
+              - generic [ref=e1625]: 「加载失败」插画
+              - generic [ref=e1626]:
+                - generic [ref=e1627]: 40 × 40 icon
+                - generic [ref=e1628]: 📍 屏 10 · 加载失败
+              - generic [ref=e1629]: iconfont 警示图标 + 浅红圆底
+            - generic [ref=e1636]:
+              - generic [ref=e1637]: 樱花山预览图
+              - generic [ref=e1638]:
+                - generic [ref=e1639]: 340 × 340
+                - generic [ref=e1640]: 📍 屏 04 · 文件预览占位
+              - generic [ref=e1641]: SVG 几何山水 + 樱花；生产环境换：真实照片/缩略图
+          - generic [ref=e1642]:
+            - generic [ref=e1643]: 头像 & Logo
+            - generic [ref=e1645] [cursor=pointer]: 3 项
+          - generic [ref=e1646]:
+            - generic [ref=e1647]: 用户/品牌/装饰用的图像
+            - generic [ref=e1657]:
+              - generic [ref=e1658]: 登录页云朵 Logo
+              - generic [ref=e1659]:
+                - generic [ref=e1660]: 76 × 76
+                - generic [ref=e1661]: 📍 屏 01 · 登录页
+              - generic [ref=e1662]: SVG 渐变云朵 + 糖果点；生产环境：Alist 官方 logo
+            - generic [ref=e1663]:
+              - generic [ref=e1664]: 柚
+              - generic [ref=e1665]:
+                - generic [ref=e1666]: 用户头像（圆形首字）
+                - generic [ref=e1667]:
+                  - generic [ref=e1668]: 48 × 48
+                  - generic [ref=e1669]: 📍 屏 06 · 设置页用户卡
+                - generic [ref=e1670]: CSS 渐变 + 居中首字 (Fredoka)；可换：Gravatar / 用户上传头像
+            - generic [ref=e1671]:
+              - generic [ref=e1672]: 久
+              - generic [ref=e1673]:
+                - generic [ref=e1674]: 艺人头像（圆形首字）
+                - generic [ref=e1675]:
+                  - generic [ref=e1676]: 84 × 84
+                  - generic [ref=e1677]: 📍 屏 12 · 艺人横滑
+                - generic [ref=e1678]: 同上，加白色描边环；可换：艺人真实头像
+          - generic [ref=e1679]:
+            - generic [ref=e1680]: UI 图标
+            - generic [ref=e1682] [cursor=pointer]: 2 项
+          - generic [ref=e1683]:
+            - generic [ref=e1684]: 原型里的所有 inline SVG icon（共计 30+ 个）
+            - generic [ref=e1733]:
+              - generic [ref=e1734]: iconfont / Iconify 替换
+              - generic [ref=e1735]:
+                - generic [ref=e1736]: 16-28 px
+                - generic [ref=e1737]: 📍 全屏（顶栏/底栏/卡片/按钮）
+              - generic [ref=e1738]: "推荐 Material Symbols / Lucide / Phosphor；保留本套 stroke-width: 2.2、圆头线帽风格"
+            - generic [ref=e1770]:
+              - generic [ref=e1771]: deco 装饰图标
+              - generic [ref=e1772]:
+                - generic [ref=e1773]: 14-22 px
+                - generic [ref=e1774]: 📍 屏 12 · 专辑卡徽章
+              - generic [ref=e1775]: 保留为 SVG（爱豆/星星/唱片/音符等）；不参与主题切换，颜色固定糖果色
+          - generic [ref=e1776]:
+            - generic [ref=e1777]: 装饰背景
+            - generic [ref=e1779] [cursor=pointer]: 4 项
+          - generic [ref=e1780]:
+            - generic [ref=e1781]: 屏幕底色/装饰元素
+            - generic [ref=e1784]:
+              - generic [ref=e1785]: 页面底色
+              - generic [ref=e1786]:
+                - generic [ref=e1787]: 全屏
+                - generic [ref=e1788]: 📍 所有主屏背景
+              - generic [ref=e1789]: "CSS 渐变 #F4F9FF → #E7F2FF；深色主题：#0F2444 → #1F3A5F"
+            - generic [ref=e1792]:
+              - generic [ref=e1793]: 顶部云朵装饰
+              - generic [ref=e1794]:
+                - generic [ref=e1795]: 360 × 280
+                - generic [ref=e1796]: 📍 屏 01 / 屏 11 顶部
+              - generic [ref=e1797]: CSS radial-gradient 椭圆 + 糖果圆点；可换：纯背景色去掉装饰
+            - generic [ref=e1800]:
+              - generic [ref=e1801]: Hero 横幅底
+              - generic [ref=e1802]:
+                - generic [ref=e1803]: 全宽 × 180
+                - generic [ref=e1804]: 📍 屏 12 · 最近播放
+              - generic [ref=e1805]: "CSS 渐变 #FFA1BD → #7C5BC7；可换：专辑大封面图作为底"
+            - generic [ref=e1812]:
+              - generic [ref=e1813]: 装饰圆环/线条
+              - generic [ref=e1814]:
+                - generic [ref=e1815]: SVG inline
+                - generic [ref=e1816]: 📍 屏 04 / 屏 11 封面
+              - generic [ref=e1817]: 保留 SVG 实现（不用图片）
+          - generic [ref=e1819]:
+            - text: 所有图标 SVG 已抽出至
+            - code [ref=e1820]: prototype/alist-android/index.html
+            - text: 的
+            - code [ref=e1821]: "const I = {...}"
+            - text: 对象 开发可直接对照 SVG path 移植到 iconfont / Compose Vector / SwiftUI
+      - generic [ref=e1822]:
+        - generic [ref=e1823]: "13"
+        - text: 资源库 · 交付清单
+      - generic [ref=e1824]: 所有占位元素 · 尺寸/用途/实现

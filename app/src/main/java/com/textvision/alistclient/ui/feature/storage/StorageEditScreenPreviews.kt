@@ -3,7 +3,6 @@ package com.textvision.alistclient.ui.feature.storage
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,10 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.admin.form.FormItem
-import com.textvision.alistclient.network.dto.DriverInfo
 import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.ui.components.ActionButton
 import com.textvision.alistclient.ui.components.ButtonVariant
@@ -62,41 +60,15 @@ private fun StorageEditDisabledPreview() {
     }
 }
 
-/** Static body mirroring the wired screen — uses fake StorageInfo/DriverInfo. */
+/** Static body mirroring the wired screen — fake StorageInfo only. */
 @Composable
 private fun StorageEditPreviewBody(enabled: Boolean) {
     val storage = StorageInfo(
         id = 1,
-        mountPath = "/我的阿里云",
-        driver = "AliyunDrive",
+        mountPath = "/quark",
+        driver = "Quark",
         order = 0,
         status = if (enabled) "work" else "disabled",
-    )
-    val driver = DriverInfo(
-        common = emptyList(),
-        additional = listOf(
-            com.textvision.alistclient.network.dto.ConfigItem(
-                name = "root_folder_id",
-                type = "string",
-                default = kotlinx.serialization.json.JsonPrimitive("root"),
-                options = null,
-                label = "根目录路径",
-            ),
-            com.textvision.alistclient.network.dto.ConfigItem(
-                name = "order_by",
-                type = "select",
-                default = kotlinx.serialization.json.JsonPrimitive("name"),
-                options = null,
-                label = "排序方式",
-            ),
-        ),
-    )
-    val formItems = driver.additional.orEmpty().map { FormItem.fromConfigItem(it) }
-    val fieldValues: Map<String, Any?> = mapOf(
-        "root_folder_id" to "root",
-        "order_by" to "name",
-        "remark" to "我的私人云盘",
-        "mount_path" to "/我的阿里云",
     )
 
     Column {
@@ -105,59 +77,73 @@ private fun StorageEditPreviewBody(enabled: Boolean) {
             subtitle = storage.mountPath,
             onBack = {},
         )
-        StorageInfoCard(
-            storageName = storage.mountPath,
-            mountPath = storage.mountPath,
-            enabled = enabled,
-        )
-        Spacer(Modifier.height(10.dp))
-        SectionCard(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-            padding = PaddingValues(14.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
-            Text(
-                text = "驱动参数",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 10.dp),
+            StorageInfoCard(
+                storageName = "夸克网盘",
+                mountPath = storage.mountPath,
+                enabled = enabled,
             )
-            formItems.forEach { item ->
-                Text(
-                    text = "${item.label}：${(fieldValues[item.name] ?: "").toString()}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        SectionCard(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-            padding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-        ) {
-            Row(
+            Spacer(Modifier.height(16.dp))
+            SectionCard(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                padding = PaddingValues(16.dp),
             ) {
-                Text(
-                    text = "启用存储",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = if (enabled) "开" else "关",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column {
+                    Text(
+                        text = "驱动参数",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    Text("备注", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("我的夸克网盘", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+                    Text("挂载路径", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("/quark", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+                    Text("Cookie", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("已设置 · 30 天前更新 [重新获取]", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+                }
             }
+            Spacer(Modifier.height(10.dp))
+            SectionCard(
+                modifier = Modifier.fillMaxWidth(),
+                padding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "启用存储",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = if (enabled) "开" else "关",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            ActionButton(
+                text = "保存修改",
+                onClick = {},
+                modifier = Modifier.fillMaxWidth(),
+                variant = ButtonVariant.FILLED,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "保存成功后将自动返回",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                textAlign = TextAlign.Center,
+            )
         }
-        Spacer(Modifier.height(16.dp))
-        ActionButton(
-            text = "保存修改",
-            onClick = {},
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-            variant = ButtonVariant.FILLED,
-        )
     }
 }

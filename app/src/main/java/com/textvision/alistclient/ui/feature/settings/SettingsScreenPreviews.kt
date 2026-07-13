@@ -1,19 +1,15 @@
 package com.textvision.alistclient.ui.feature.settings
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CleaningServices
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.ui.components.ListItemRow
+import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.components.UserAvatarCard
 import com.textvision.alistclient.ui.foundation.AppTopBar
@@ -62,140 +58,102 @@ private fun SettingsScreenDarkPreview() {
     }
 }
 
-@Preview(name = "SettingsScreen Large Font", showBackground = true, widthDp = 400, heightDp = 900)
-@Composable
-private fun SettingsScreenLargeFontPreview() {
-    AlistTheme() {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            Column {
-                AppTopBar(title = "设置", subtitle = "管理你的小窝")
-                SettingsPreviewBody()
-            }
-        }
-    }
-}
-
 @Composable
 private fun SettingsPreviewBody() {
+    val storages = listOf(
+        StorageInfo(id = 1, mountPath = "/aliyun", driver = "AliyunDrive", order = 0, status = "work"),
+        StorageInfo(id = 2, mountPath = "/quark", driver = "Quark", order = 1, status = "work"),
+        StorageInfo(id = 3, mountPath = "/baidu", driver = "BaiduNetdisk", order = 2, status = "disabled"),
+    )
     LazyColumn(
-        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
-            SectionCard(modifier = Modifier.fillMaxWidth()) {
+            SectionCard(
+                modifier = Modifier.fillMaxWidth(),
+                padding = PaddingValues(14.dp),
+            ) {
                 UserAvatarCard(
-                    name = "晓源",
-                    role = "VIP",
+                    name = "柚子",
+                    role = "admin",
                     serverName = "我的云端小屋 · 在线",
                     status = "VIP",
                 )
             }
         }
         item {
-            SectionCard(modifier = Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SectionTitle("外观主题")
-                    androidx.compose.foundation.layout.Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        ThemeCard("浅色", AppIcons.sun, selected = true, onClick = {}, modifier = Modifier.weight(1f))
-                        ThemeCard("深色", AppIcons.moon, selected = false, onClick = {}, modifier = Modifier.weight(1f))
-                        ThemeCard("自动", AppIcons.auto, selected = false, onClick = {}, modifier = Modifier.weight(1f))
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                SectionTitle("外观主题")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ThemeCard("浅色", AppIcons.sun, selected = true, onClick = {}, swatchStops = LightSwatch, modifier = Modifier.weight(1f))
+                    ThemeCard("深色", AppIcons.moon, selected = false, onClick = {}, swatchStops = DarkSwatch, modifier = Modifier.weight(1f))
+                    ThemeCard("跟随", AppIcons.auto, selected = false, onClick = {}, swatchStops = SystemSwatch, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+        item {
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                SectionTitle("存储源")
+                SectionCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    padding = PaddingValues(vertical = 6.dp, horizontal = 14.dp),
+                ) {
+                    Column {
+                        StorageSourceRow("阿里云盘", "/aliyun · AliyunDrive", "AliyunDrive", onClick = {})
+                        Divider()
+                        StorageSourceRow("夸克网盘", "/quark · Quark", "Quark", onClick = {})
+                        Divider()
+                        StorageSourceRow("百度网盘", "/baidu · 已禁用", "BaiduNetdisk", onClick = {})
                     }
                 }
             }
         }
         item {
-            SectionCard(modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    SectionTitle("存储源")
-                    StorageSourceRow("本地存储", "Local", "Local", onClick = {})
-                    Divider()
-                    StorageSourceRow("阿里云盘", "AliyunDrive", "AliyunDrive", onClick = {})
-                    Divider()
-                    StorageSourceRow("Google Drive", "GoogleDrive", "GoogleDrive", onClick = {})
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                SectionTitle("快速设置")
+                SectionCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    padding = PaddingValues(vertical = 6.dp, horizontal = 14.dp),
+                ) {
+                    Column {
+                        QuickSettingRow(
+                            item = com.textvision.alistclient.network.dto.SettingItem(
+                                key = "announcement", value = "欢迎来到我的云端小屋 ✨", type = "string",
+                                options = null, help = "", group = 1,
+                            ),
+                            onEdit = {},
+                        )
+                        Divider()
+                        PrivacyPasswordRow()
+                    }
                 }
             }
         }
         item {
-            SectionCard(modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    SectionTitle("快速设置")
-                    ListItemRow(
-                        leading = {
-                            Icon(AppIcons.sparkle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        },
-                        title = "站点公告",
-                        subtitle = "欢迎使用 Alist",
-                        trailing = {
-                            Icon(
-                                AppIcons.chevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        onClick = {},
-                    )
-                    Divider()
-                    PrivacyPasswordRow()
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                SectionTitle("维护")
+                SectionCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    padding = PaddingValues(vertical = 6.dp, horizontal = 14.dp),
+                ) {
+                    Column {
+                        CleanPreviewRow(onClick = {})
+                        Divider()
+                        AdvancedSettingsRow(onClick = {})
+                    }
                 }
             }
         }
         item {
-            SectionCard(modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    SectionTitle("维护")
-                    ListItemRow(
-                        leading = {
-                            Icon(
-                                Icons.Outlined.CleaningServices,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        },
-                        title = "清理临时预览文件",
-                        subtitle = "释放本机预览缓存",
-                        trailing = {
-                            Icon(
-                                AppIcons.chevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        onClick = {},
-                    )
-                    Divider()
-                    ListItemRow(
-                        leading = {
-                            Icon(
-                                Icons.Outlined.Settings,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        },
-                        title = "完整设置",
-                        subtitle = "所有带表单的设置项",
-                        trailing = {
-                            Icon(
-                                AppIcons.chevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        onClick = {},
-                    )
-                }
-            }
-        }
-        item {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
             LogoutButton(onClick = {})
             Spacer(Modifier.height(8.dp))
         }
         item {
             Text(
                 text = "Alist Client · v1.0.0 · made with 💙",
-                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
