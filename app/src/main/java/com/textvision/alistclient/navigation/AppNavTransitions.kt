@@ -23,6 +23,7 @@ private val AppNavOffsetTween = AppMotion.OffsetTween
 private fun NavDestination?.isMainTab(): Boolean = this != null && (
     hasRoute(FilesDest::class) ||
         hasRoute(HomeDest::class) ||
+        hasRoute(MusicLibraryDest::class) ||
         hasRoute(TransfersDest::class) ||
         hasRoute(SettingsDest::class)
     )
@@ -32,7 +33,9 @@ internal fun NavDestination?.navDepth(): Int = when {
     this == null -> 1
     hasRoute(LoginDest::class) -> 0
     isMainTab() -> 1
-    hasRoute(MoveCopyPickerDest::class) || hasRoute(PreviewDest::class) -> 2
+    hasRoute(MoveCopyPickerDest::class) ||
+        hasRoute(PreviewDest::class) ||
+        hasRoute(MusicPreviewDest::class) -> 2
     else -> 1
 }
 

@@ -206,7 +206,7 @@ private fun FileRowPrototype(
 @Composable
 private fun FileIconBox(type: FileType) {
     val (grad, fg) = when (type) {
-        FileType.Folder  -> listOf(Brand300, CandyMintBg) to Brand600
+        FileType.Folder  -> listOf(Brand500, Brand500) to Color.White
         FileType.Image   -> listOf(CandyPinkBg, CandyPink) to Color(0xFFC46683)
         FileType.Video   -> listOf(CandyLilacBg, Color(0xFFDDD0FF)) to Color(0xFF7C5BC7)
         FileType.Audio   -> listOf(CandyMintBg, CandyMint) to Color(0xFF2D9B7C)
