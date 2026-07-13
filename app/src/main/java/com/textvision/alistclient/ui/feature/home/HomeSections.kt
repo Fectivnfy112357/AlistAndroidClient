@@ -33,6 +33,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.Chip
 import com.textvision.alistclient.ui.components.ChipKind
@@ -46,9 +48,11 @@ import com.textvision.alistclient.ui.feature.home.dto.SessionData
 import com.textvision.alistclient.ui.feature.home.dto.TaskBucket
 import com.textvision.alistclient.ui.feature.home.dto.TaskData
 import com.textvision.alistclient.ui.icons.AppIcons
+import com.textvision.alistclient.ui.theme.Brand200
 import com.textvision.alistclient.ui.theme.Brand300
 import com.textvision.alistclient.ui.theme.Brand500
 import com.textvision.alistclient.ui.theme.Brand600
+import com.textvision.alistclient.ui.theme.NumeralStyle
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Status chip
@@ -59,7 +63,23 @@ import com.textvision.alistclient.ui.theme.Brand600
 internal fun StatusChip(label: String, kind: ChipKind) = Chip(label, kind = kind, showDot = true)
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Hero server card
+//  Section title — uppercase Fredoka · ink-soft · 0.04em tracking
+//  Matches prototype `.card-title` and `.section-head .title` styles.
+// ═══════════════════════════════════════════════════════════════════════════
+
+@Composable
+internal fun HomeSectionTitle(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.08.em),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.SemiBold,
+        modifier = modifier,
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Hero server card — prototype `.card.solid` with cloud icon + name + chip
 // ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
@@ -67,24 +87,30 @@ internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) 
     val data = (public as? SectionResult.Ok)?.data
     val serverName = data?.siteTitle ?: "Alist"
     val version = data?.siteVersion
-    SectionCard(padding = PaddingValues(18.dp)) {
+    SectionCard(
+        modifier = Modifier.testTag("home_hero"),
+        padding = PaddingValues(14.dp),
+        solid = true,
+    ) {
         Box {
+            // Right-top decorative glow (prototype `.card` radial circle).
             Box(
                 Modifier
-                    .size(120.dp)
+                    .size(90.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 30.dp, y = (-30).dp)
+                    .offset(x = 22.dp, y = (-22).dp)
                     .clip(CircleShape)
                     .background(
-                        Brush.radialGradient(
+                        Brush.linearGradient(
                             listOf(Brand300.copy(alpha = 0.6f), Color.Transparent),
                         ),
                     ),
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Gradient cloud icon square (prototype `#6FB6FF → #4A98E8`).
                 Box(
                     Modifier
-                        .size(42.dp)
+                        .size(40.dp)
                         .clip(MaterialTheme.shapes.small)
                         .background(Brush.linearGradient(listOf(Brand500, Brand600))),
                     contentAlignment = Alignment.Center,
@@ -93,27 +119,26 @@ internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) 
                         AppIcons.cloud,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = serverName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    Spacer(Modifier.height(1.dp))
                     Text(
                         text = if (version != null) "当前服务器 · $version" else "当前服务器",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
                 StatusChip(
                     label = if (online) "在线" else "离线",
                     kind = if (online) ChipKind.MINT else ChipKind.GRAY,
@@ -124,7 +149,7 @@ internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) 
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Metric row (3 cards)
+//  Metric row (3 cards) — prototype `.metric` with Fredoka 26sp numerals
 // ═══════════════════════════════════════════════════════════════════════════
 
 internal enum class MetricAccent { BRAND, MINT, PINK }
@@ -187,11 +212,15 @@ internal fun MetricCard(
     retryTag: String = "",
 ) {
     val (bg, fg) = when (accent) {
-        MetricAccent.BRAND -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.primary
-        MetricAccent.MINT -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.secondary
-        MetricAccent.PINK -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.tertiary
+        MetricAccent.BRAND -> Brand200 to Brand600
+        MetricAccent.MINT  -> Color(0xFFDAF6EC) to Color(0xFF2D9B7C)
+        MetricAccent.PINK  -> Color(0xFFFFE4ED) to Color(0xFFC46683)
     }
-    SectionCard(modifier = modifier, padding = PaddingValues(14.dp)) {
+    SectionCard(
+        modifier = modifier.testTag("home_metric_$label"),
+        padding = PaddingValues(12.dp),
+        solid = true,
+    ) {
         Column {
             Box(
                 Modifier
@@ -203,11 +232,7 @@ internal fun MetricCard(
                 Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(16.dp))
             }
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            HomeSectionTitle(label)
             if (failed) {
                 TextButton(
                     onClick = onRetry,
@@ -215,10 +240,10 @@ internal fun MetricCard(
                     modifier = Modifier.testTag(retryTag),
                 ) { Text("重试", style = MaterialTheme.typography.labelSmall) }
             } else {
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = value ?: "—",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = NumeralStyle.value,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -227,12 +252,17 @@ internal fun MetricCard(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Background-task card (5 chips)
+//  Background-task card — prototype: section title outside + solid card
+//  with "进行中" row + Fredoka count + dot-prefix chips
 // ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
 internal fun TaskSection(task: SectionResult<TaskData>, onRetry: () -> Unit) {
-    SectionCard(modifier = Modifier.testTag("home_task_card"), padding = PaddingValues(14.dp)) {
+    SectionCard(
+        modifier = Modifier.testTag("home_task_card"),
+        padding = PaddingValues(12.dp),
+        solid = true,
+    ) {
         when (task) {
             is SectionResult.Ok -> TaskContent(task.data)
             is SectionResult.Failed -> SectionFailedHint(task.cause, onRetry)
@@ -246,24 +276,16 @@ private fun TaskContent(data: TaskData) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "后台任务",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "进行中",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
             Text(
                 text = data.runningCount.toString(),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = NumeralStyle.value.copy(fontSize = 18.sp, lineHeight = 22.sp),
                 color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        if (data.failedBucketIds.isNotEmpty()) {
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "部分类型加载失败：${data.failedBucketIds.joinToString(", ") { taskLabel(it) }}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.tertiary,
             )
         }
         if (data.buckets.isNotEmpty()) {
@@ -277,9 +299,13 @@ private fun TaskContent(data: TaskData) {
                     val (kind, dot) = when (i) {
                         0 -> ChipKind.PRIMARY to true
                         1 -> ChipKind.MINT to true
-                        else -> ChipKind.GRAY to false
+                        else -> ChipKind.GRAY to (bucket.running > 0)
                     }
-                    Chip("${taskLabel(bucket.type)} ${bucket.running}", kind = kind, showDot = dot)
+                    val label = if (bucket.running > 0)
+                        "${taskLabel(bucket.type)} · ${bucket.running}"
+                    else
+                        taskLabel(bucket.type)
+                    Chip(label, kind = kind, showDot = dot)
                 }
             }
         }

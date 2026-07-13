@@ -4,14 +4,13 @@ package com.textvision.alistclient.ui.feature.home
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,8 +33,6 @@ import com.textvision.alistclient.ui.feature.home.dto.StorageData
 import com.textvision.alistclient.ui.feature.home.dto.TaskBucket
 import com.textvision.alistclient.ui.feature.home.dto.TaskData
 import com.textvision.alistclient.ui.foundation.AppScaffold
-import com.textvision.alistclient.ui.foundation.AppTopBar
-import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.AlistTheme
 import com.textvision.alistclient.ui.theme.DarkMode
 
@@ -43,6 +40,7 @@ import com.textvision.alistclient.ui.theme.DarkMode
 fun HomeScreen(
     onStorageClick: (String) -> Unit = {},
     onManageStorage: () -> Unit = {},
+    onSearch: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -57,6 +55,7 @@ fun HomeScreen(
         onManageStorage = onManageStorage,
         onRetrySection = viewModel::retrySection,
         onRefresh = viewModel::refresh,
+        onSearch = onSearch,
     )
 }
 
@@ -69,27 +68,20 @@ internal fun HomeScreenContent(
     onManageStorage: () -> Unit = {},
     onRetrySection: (SectionKey) -> Unit,
     onRefresh: () -> Unit = {},
+    onSearch: () -> Unit = {},
 ) {
     val serverName = (state as? HomeUiState.Success)
         ?.data?.publicSection
         ?.let { (it as? SectionResult.Ok)?.data?.siteTitle }
+        ?: "Alist"
     AppScaffold(
         topBar = {
-            AppTopBar(
-                title = "早上好 ✨",
-                subtitle = if (isOnline) {
-                    "已连接" + (serverName?.let { " · $it" } ?: "")
-                } else {
-                    "离线"
-                },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(AppIcons.refresh, contentDescription = "刷新")
-                    }
-                    IconButton(onClick = {}) {
-                        Icon(AppIcons.search, contentDescription = "搜索")
-                    }
-                },
+            HomeGreeting(
+                serverTitle = serverName,
+                isOnline = isOnline,
+                onRefresh = onRefresh,
+                onSearch = onSearch,
+                modifier = Modifier.testTag("home_topbar"),
             )
         },
     ) { padding ->
@@ -136,8 +128,8 @@ private fun DashboardList(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item { HeroServerCard(data.publicSection, online = isOnline) }
             item {
@@ -149,10 +141,12 @@ private fun DashboardList(
                 )
             }
             item {
-                TaskSection(
-                    task = data.taskSection,
-                    onRetry = { onRetrySection(SectionKey.Task) },
-                )
+                Box(modifier = Modifier.testTag("home_task_section")) {
+                    TaskSection(
+                        task = data.taskSection,
+                        onRetry = { onRetrySection(SectionKey.Task) },
+                    )
+                }
             }
             item { StorageHeader(onManage = onManageStorage) }
             val storages = data.storages
@@ -185,19 +179,20 @@ private fun previewData() = HomeData(
             listOf(
                 StorageInfo(mountPath = "/aliyun", driver = "Aliyundrive", status = "work"),
                 StorageInfo(mountPath = "/quark", driver = "Quark", status = "work"),
-                StorageInfo(mountPath = "/local", driver = "Local", status = "disabled"),
+                StorageInfo(mountPath = "/baidu", driver = "BaiduNetDisk", status = "disabled"),
+                StorageInfo(mountPath = "/local", driver = "Local", status = "work"),
             ),
         ),
     ),
-    serverStatsSection = SectionResult.Ok(ServerStatsData(userCount = 5, roleCount = 3, disabledUserCount = 0)),
-    sessionSection = SectionResult.Ok(SessionData(totalCount = 4, activeCount = 2)),
+    serverStatsSection = SectionResult.Ok(ServerStatsData(userCount = 12, roleCount = 3, disabledUserCount = 0)),
+    sessionSection = SectionResult.Ok(SessionData(totalCount = 5, activeCount = 5)),
     taskSection = SectionResult.Ok(
         TaskData(
-            runningCount = 3,
+            runningCount = 2,
             finishedCount = 12,
             failedBucketIds = emptyList(),
             buckets = listOf(
-                TaskBucket("upload", 2),
+                TaskBucket("upload", 1),
                 TaskBucket("decompress", 1),
                 TaskBucket("copy", 0),
                 TaskBucket("offline_download", 0),
