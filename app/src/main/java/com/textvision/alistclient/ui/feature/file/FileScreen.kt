@@ -93,6 +93,8 @@ fun FileScreen(
     }
 
     AppScaffold(
+        transparentBase = true,
+        background = {},
         topBar = {
             AppTopBar(
                 title = "文件",

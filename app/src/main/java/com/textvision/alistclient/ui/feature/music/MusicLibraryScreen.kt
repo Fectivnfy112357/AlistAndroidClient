@@ -46,9 +46,8 @@ import com.textvision.alistclient.ui.components.music.MusicHeroCard
 import com.textvision.alistclient.ui.components.music.SongRow
 import com.textvision.alistclient.ui.components.ChipKind
 import com.textvision.alistclient.ui.components.Chip
+import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
-import com.textvision.alistclient.ui.foundation.CloudDecor
-import com.textvision.alistclient.ui.foundation.SkyBlueBackground
 import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.AlistTheme
 import com.textvision.alistclient.ui.theme.Brand500
@@ -73,9 +72,11 @@ fun MusicLibraryScreen(
     onBack: () -> Unit = {},
     onOpenPreview: () -> Unit = {},
 ) {
-    Box(Modifier.fillMaxSize()) {
-        SkyBlueBackground()
-        CloudDecor()
+    AppScaffold(
+        transparentBase = true,
+        background = {},
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
         Column(Modifier.fillMaxSize()) {
             AppTopBar(
                 title = "音乐库",
@@ -161,6 +162,7 @@ fun MusicLibraryScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         )
+        }
     }
 }
 

@@ -2,6 +2,7 @@ package com.textvision.alistclient.navigation
 
 import android.net.Uri
 import android.os.Bundle
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -9,6 +10,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -27,6 +29,8 @@ import com.textvision.alistclient.ui.feature.preview.PreviewScreen
 import com.textvision.alistclient.ui.feature.settings.SettingsScreen
 import com.textvision.alistclient.ui.feature.music.MusicLibraryScreen
 import com.textvision.alistclient.ui.feature.music.MusicPreviewScreen
+import com.textvision.alistclient.ui.foundation.CloudDecor
+import com.textvision.alistclient.ui.foundation.SkyBlueBackground
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.typeOf
@@ -57,11 +61,15 @@ fun AppNavHost(
 ) {
     val startDestination: Any = if (startAuthenticated) FilesDest() else LoginDest
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = { AppBottomNavBar(navController) },
-    ) { innerPadding ->
-        NavHost(
+    Box(Modifier.fillMaxSize()) {
+        SkyBlueBackground()
+        CloudDecor()
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = { AppBottomNavBar(navController) },
+        ) { innerPadding ->
+            NavHost(
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -69,7 +77,7 @@ fun AppNavHost(
             exitTransition = { hyperOsExitTransition() },
             popEnterTransition = { hyperOsPopEnterTransition() },
             popExitTransition = { hyperOsPopExitTransition() },
-        ) {
+            ) {
             composable<LoginDest> {
                 LoginScreen(onLoginSuccess = {
                     navController.navigate(FilesDest()) {
@@ -150,6 +158,7 @@ fun AppNavHost(
             }
             composable<MusicPreviewDest> {
                 MusicPreviewScreen(onBack = { navController.popBackStack() })
+            }
             }
         }
     }

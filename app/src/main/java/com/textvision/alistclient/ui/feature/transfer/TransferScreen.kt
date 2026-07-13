@@ -57,6 +57,8 @@ fun TransferScreen(viewModel: TransferViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     AppScaffold(
+        transparentBase = true,
+        background = {},
         topBar = {
             AppTopBar(
                 title = "传输",

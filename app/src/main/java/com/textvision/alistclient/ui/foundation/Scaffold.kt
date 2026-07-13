@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun AppScaffold(
     modifier: Modifier = Modifier,
+    transparentBase: Boolean = false,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
     background: @Composable () -> Unit = {
@@ -38,7 +39,7 @@ fun AppScaffold(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(if (transparentBase) Color.Transparent else MaterialTheme.colorScheme.background),
     ) {
         background()
         Scaffold(

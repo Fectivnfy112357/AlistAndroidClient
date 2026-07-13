@@ -3,14 +3,11 @@
 package com.textvision.alistclient.ui.feature.home
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,8 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,8 +34,6 @@ import com.textvision.alistclient.ui.feature.home.dto.StorageData
 import com.textvision.alistclient.ui.feature.home.dto.TaskBucket
 import com.textvision.alistclient.ui.feature.home.dto.TaskData
 import com.textvision.alistclient.ui.foundation.AppScaffold
-import com.textvision.alistclient.ui.foundation.CloudDecor
-import com.textvision.alistclient.ui.foundation.SkyBlueBackground
 import com.textvision.alistclient.ui.theme.AlistTheme
 import com.textvision.alistclient.ui.theme.DarkMode
 
@@ -83,11 +76,8 @@ internal fun HomeScreenContent(
         ?.let { (it as? SectionResult.Ok)?.data?.siteTitle }
         ?: "Alist"
     AppScaffold(
-        background = {
-            SkyBlueBackground()
-            CloudDecor()
-            HomeHeaderGradient()
-        },
+        transparentBase = true,
+        background = {},
         topBar = {
             HomeGreeting(
                 serverTitle = serverName,
@@ -254,23 +244,4 @@ private fun HomeLargeFontPreview() {
             onRetrySection = {},
         )
     }
-}
-
-/** 复刻原型首页顶部 240dp 的浅蓝到白色渐变带。 */
-@Composable
-private fun HomeHeaderGradient(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(240.dp)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        Color(0xFFE7F2FF).copy(alpha = 0.60f),
-                        Color.Transparent,
-                    ),
-                ),
-            ),
-    )
 }

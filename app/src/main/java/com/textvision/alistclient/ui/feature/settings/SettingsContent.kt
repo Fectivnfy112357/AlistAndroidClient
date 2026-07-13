@@ -1,6 +1,5 @@
 package com.textvision.alistclient.ui.feature.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +18,7 @@ import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.components.StatusBanner
+import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.theme.InkMute
 
 @Composable
@@ -31,11 +31,11 @@ internal fun SettingsContent(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
+    AppScaffold(
+        modifier = modifier,
+        transparentBase = true,
+        background = {},
+    ) { _ ->
         Column(modifier = Modifier.fillMaxSize()) {
             SettingsHeader()
             LazyColumn(
