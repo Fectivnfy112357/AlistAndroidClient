@@ -18,17 +18,22 @@ import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.SectionCard
 import com.textvision.alistclient.ui.components.StatusBanner
+import com.textvision.alistclient.ui.feature.music.MusicSettingsSection
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.theme.InkMute
 
 @Composable
 internal fun SettingsContent(
     uiState: SettingsUiState,
+    musicRoot: String,
+    musicCacheSize: Long,
     onStorageClick: (Long) -> Unit,
     onQuickSettingEdit: (SettingItem, String) -> Unit,
     onClearPreviewFiles: () -> Unit,
     onAdvancedSettings: () -> Unit,
     onLogout: () -> Unit,
+    onMusicRootChange: (String) -> Unit,
+    onClearMusicCache: suspend () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AppScaffold(
@@ -90,6 +95,16 @@ internal fun SettingsContent(
                             }
                         }
                     }
+                }
+
+                item(key = "music", contentType = "section") {
+                    MusicSettingsSection(
+                        currentRoot = musicRoot,
+                        cacheSizeBytes = musicCacheSize,
+                        onRootChange = onMusicRootChange,
+                        onClearCache = onClearMusicCache,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
 
                 item(key = "maintenance", contentType = "section") {

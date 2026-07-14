@@ -15,16 +15,22 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loggedOut by viewModel.loggedOut.collectAsStateWithLifecycle()
+    val musicRoot by viewModel.musicRoot.collectAsStateWithLifecycle()
+    val musicCacheSize by viewModel.musicCacheSize.collectAsStateWithLifecycle()
 
     LaunchedEffect(loggedOut) { if (loggedOut) onLoggedOut() }
     LaunchedEffect(Unit) { viewModel.loadAdminData() }
 
     SettingsContent(
         uiState = uiState,
+        musicRoot = musicRoot,
+        musicCacheSize = musicCacheSize,
         onStorageClick = onStorageClick,
         onQuickSettingEdit = { item, value -> viewModel.saveQuickSetting(item.key, value) },
         onClearPreviewFiles = { viewModel.clearPreviewFiles() },
         onAdvancedSettings = onAdvancedSettings,
         onLogout = viewModel::logout,
+        onMusicRootChange = viewModel::onMusicRootChange,
+        onClearMusicCache = viewModel::onClearMusicCache,
     )
 }

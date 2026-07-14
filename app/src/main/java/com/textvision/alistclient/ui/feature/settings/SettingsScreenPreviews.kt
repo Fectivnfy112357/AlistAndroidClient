@@ -34,10 +34,14 @@ private fun SettingsPreviewBody() {
                 SettingItem(key = "announcement", value = "欢迎来到我的云端小屋 ✨"),
             ),
         ),
+        musicRoot = "/我的音乐",
+        musicCacheSize = 0L,
         onStorageClick = {},
         onQuickSettingEdit = { _, _ -> },
         onClearPreviewFiles = {},
         onAdvancedSettings = {},
         onLogout = {},
+        onMusicRootChange = {},
+        onClearMusicCache = {},
     )
 }

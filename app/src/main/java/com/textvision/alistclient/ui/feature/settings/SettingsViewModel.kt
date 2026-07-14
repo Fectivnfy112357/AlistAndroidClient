@@ -7,6 +7,8 @@ import com.textvision.alistclient.admin.settings.SettingsRepositoryContract
 import com.textvision.alistclient.admin.storage.StorageRepositoryContract
 import com.textvision.alistclient.auth.AuthRepository
 import com.textvision.alistclient.auth.SessionManager
+import com.textvision.alistclient.music.MusicLibraryRootStore
+import com.textvision.alistclient.music.playback.MusicCache
 import com.textvision.alistclient.network.dto.SettingItem
 import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.network.dto.StoragePatch
@@ -14,7 +16,9 @@ import com.textvision.alistclient.preview.PreviewFileStore
 import com.textvision.alistclient.transfer.TransferManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,6 +38,8 @@ class SettingsViewModel @Inject constructor(
     private val storageRepository: StorageRepositoryContract,
     private val settingsRepository: SettingsRepositoryContract,
     private val sessionManager: SessionManager,
+    private val musicRootStore: MusicLibraryRootStore,
+    private val musicCache: MusicCache,
 ) : ViewModel() {
     private val _loggedOut = MutableStateFlow(false)
     val loggedOut: StateFlow<Boolean> = _loggedOut
@@ -111,6 +117,28 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearPreviewFiles(): Int = previewFileStore.clearPreviewFiles()
+
+    val musicRoot: StateFlow<String> = musicRootStore.rootPath.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = MusicLibraryRootStore.DEFAULT_ROOT,
+    )
+
+    private val _musicCacheSize = MutableStateFlow(0L)
+    val musicCacheSize: StateFlow<Long> = _musicCacheSize
+
+    init {
+        viewModelScope.launch { _musicCacheSize.value = musicCache.sizeBytes }
+    }
+
+    fun onMusicRootChange(path: String) = viewModelScope.launch {
+        musicRootStore.setRoot(path)
+    }
+
+    fun onClearMusicCache() = viewModelScope.launch {
+        musicCache.clear()
+        _musicCacheSize.value = musicCache.sizeBytes
+    }
 
     companion object {
         val QUICK_KEYS = setOf("site_title", "logo", "login_background", "announcement")
