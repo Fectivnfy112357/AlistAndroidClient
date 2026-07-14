@@ -64,17 +64,22 @@ music/
 │   ├── MusicDao.kt                 # 查询 + upsert + clearAll
 │   ├── MusicScanner.kt            # fs/list 递归三层 + 文件名解析 → 扫描结果
 │   ├── LrcParser.kt                # .lrc 文本 → List<LrcLine(timeMs, text)>
+│   ├── SignProvider.kt             # path → sign 内存缓存 + fsGet 调用器
 │   ├── MusicIndexRepository.kt     # 扫描落库 + 读缓存 + 重扫；暴露 IndexState
 │   └── model/                      # Artist / Album / Song / LrcLine 领域模型
 ├── playback/
-│   ├── PlaybackController.kt       # @Singleton，封装 ExoPlayer + 队列/随机/循环，暴露 StateFlow<PlaybackState>
+│   ├── MusicPlaybackService.kt     # 前台 Service（MediaSessionService）+ ExoPlayer + 通知栏
+│   ├── PlaybackController.kt       # @Singleton，封装 MediaController 命令 + state StateFlow
+│   ├── PlaybackIntents.kt          # ACTION_PLAY_QUEUE / ACTION_PAUSE 等 Intent action 常量
 │   └── MusicCache.kt               # @Singleton，SimpleCache（LRU 512MB）+ CacheDataSource.Factory
 ├── MusicLibraryViewModel.kt        # 索引状态 + 库数据流 → UI
 ├── MusicPlayerViewModel.kt         # 当前曲目 + 进度 + 歌词同步行
 └── (ui/feature/music/ 下改造两个 Screen + 接 MiniPlayer)
 ```
 
-Hilt 绑定加入 `di/AppModule.kt`（或新建 `MusicModule`）：`MusicDao`（从 AppDatabase 提供）、`MusicCache`、`PlaybackController`。
+Hilt 绑定加入 `di/AppModule.kt`（或新建 `MusicModule`）：`MusicDao`（从 AppDatabase 提供）、`MusicCache`、`PlaybackController`。Service 用 `@AndroidEntryPoint` 自动注入。
+
+**AndroidManifest**：注册 `MusicPlaybackService`，声明 `android:foregroundServiceType="mediaPlayback"`（Android 14+ 必需）+ `android:exported="false"` + `intent-filter` 接收 `androidx.media3.session.MediaSessionService`。
 
 ## 5. 数据层设计
 
@@ -158,35 +163,36 @@ data class SongEntity(
 - `fun sizeBytes(): Long` / `suspend fun clear()`（供设置页）。
 - 上游用 `OkHttpDataSource.Factory(existingOkHttpClient)`（media3-datasource-okhttp）。
 
-### 6.2 PlaybackController
+### 6.2 MusicPlaybackService（前台 Service）
 
-- `@Singleton`，注入 `@ApplicationScope` 作用域 + `MusicCache` + `@ApplicationContext`。
-- 内部 `ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(cacheDataSourceFactory)).build()`。
-- 暴露 `val state: StateFlow<PlaybackState>`：
+> **2026-07-14 修订**：用户要求后台播放 + 通知栏控制。ExoPlayer 必须放在前台 `Service` 里而不是 ApplicationScope 单例，这样才能在 App 退到后台后继续播放，并显示 MediaStyle 通知栏。
 
-```kotlin
-data class PlaybackState(
-    val current: Song?,
-    val queue: List<Song>,
-    val index: Int,
-    val isPlaying: Boolean,
-    val positionMs: Long,
-    val durationMs: Long,
-    val shuffle: Boolean,
-    val repeat: RepeatMode,        // OFF / ONE / ALL
-    val isBuffering: Boolean,
-)
-```
+- 继承 `androidx.media3.session.MediaSessionService`（Media3 提供的 Service 基类，已经处理 MediaSession 生命周期 + AudioFocus + 通知栏）。
+- `@AndroidEntryPoint`，Hilt 注入 `SignProvider`、`MusicCache`、`MusicIndexRepository`。
+- `onCreate` 中：
+  - 创建 `ExoPlayer.Builder(this).setMediaSourceFactory(DefaultMediaSourceFactory(cacheDataSourceFactory)).setHandleAudioBecomingNoisy(true).build()`。
+  - 创建 `MediaSession.Builder(this, exoPlayer).build()`，持有 session 让系统管理通知栏。
+  - 设置 `Player.Listener` 更新 StateFlow（与原方案一致）。
+- `onGetSession` 返回 MediaSession（系统用此与 Service 通信）。
+- 通知栏：Media3 MediaSessionService 自动提供（基于 `playback_state`、专辑封面、曲名、艺人、前后台控制按钮）。无需手写 Notification。
+- **音频焦点**：Media3 默认通过 `MediaSession` 处理音频焦点变更（其他 App 播歌时自动暂停、来电暂停等）。
+- 启动方式：从播放入口（库页点歌、播放器页/MiniPlayer 控制）调 `ContextCompat.startForegroundService(...)` + `Intent` + 携带 `action = ACTION_PLAY_QUEUE` + 队列 + startIndex；Service `onStartCommand` 解析 → `playQueue(...)`。
+- 与 ApplicationScope 关系：Service 自身生命周期决定播放，**不再用 ApplicationScope 单例**。`PlaybackController` 改为 Service 持有的内部状态暴露器（仍提供 `StateFlow<PlaybackState>`），但实际 ExoPlayer 在 Service 里。
 
-- API：`playQueue(songs, startIndex)` / `togglePlayPause()` / `next()` / `prev()` / `seekTo(ms)` / `toggleShuffle()` / `cycleRepeat()`。
-- 队列直接用 ExoPlayer 原生：`setMediaItems(songs.map { MediaItem })` + `seekTo(index,0)`、`seekToNext/Previous`、`shuffleModeEnabled`、`repeatMode`。
-- 状态同步：`Player.Listener`（`onIsPlayingChanged` / `onPlaybackStateChanged` / `onMediaItemTransition` / `onPositionDiscontinuity`）更新 StateFlow；播放中一个 `while(isPlaying){ position=..; delay(250) }` 协程刷新 positionMs。
-- **单例 + ApplicationScope** → MiniPlayer 与播放器页共享同一状态，跨页保持播放。ViewModel 只读 state、转发意图，不持 player。
-- 线程：ExoPlayer 必须主线程调用；Controller 内部切主线程。
+### 6.3 PlaybackController（轻量化）
 
-### 6.3 MVP 限制
+- `@Singleton`，提供**对 Service 的引用接口**：
+  - `val state: StateFlow<PlaybackState>`（绑定 Service 生命周期，Service 启动时开始发射，停止时保持最后状态）。
+  - `fun playQueue(context: Context, songs: List<Song>, startIndex: Int)`：启动 Service + 投递意图。
+  - `fun togglePlayPause()`：通过 `MediaController`（Media3）发命令（`controller.play() / pause()`），不用直接持 player 引用。
+  - `fun next() / prev() / seekTo(ms) / toggleShuffle() / cycleRepeat()`：同样通过 MediaController。
+- UI 层不直接拿 ExoPlayer；用 MediaController 走 IPC 通道调用 MediaSession。
 
-不做前台 Service / 通知栏 / 锁屏控制 / 后台播放（与 `docs/testing/known-limitations.md` 一致，音频仅 App 前台）。App 退到后台由系统常规行为处理。
+### 6.4 MVP 限制
+
+- **支持后台播放**（前台 Service + 通知栏）。App 完全退后台仍能播。
+- 不做锁屏控制（Android 8+ 锁屏控制由 MediaSession 通知栏投影自动提供，但样式依赖系统）。
+- 不做蓝牙/耳机线控特定处理（Media3 默认通过 AudioFocus + MediaSession 处理基础 case）。
 
 ## 7. UI 设计
 
@@ -202,7 +208,7 @@ data class PlaybackState(
 - 删除 `StubData`，接 `MusicLibraryViewModel`。
 - 按 `indexState` 分支：
   - `Scanning(artists, songs)` → **构建动画**：居中 `WaveIndicator`/进度圈 + "正在建立音乐索引…" + "已扫描 N 位歌手 · M 首歌曲"。
-  - `Ready` → 现有 6 段布局，真实数据填充。封面用 Coil 加载 `coverUrl`，无则回退渐变 + `CoverLetter`（首字）。空库 → `EmptyState`。
+  - `Ready` → 现有 6 段布局，真实数据填充。封面用 Coil + SignProvider 拼直链加载，无则回退渐变 + `CoverLetter`（首字）。空库 → `EmptyState`。
   - `NotIndexed` → 进入即触发 `ensureIndexed()`（→ Scanning）。
   - `Failed` → `ErrorState` + 重试。
 - 顶栏 action：「重新扫描」（调 `rescan()`）+ 搜索（本地过滤，可选）。
@@ -224,14 +230,15 @@ data class PlaybackState(
 | `LrcParserTest` | 单/多时间标签、元数据忽略、offset、空文件、非法行、时间排序、边界（0/超长） |
 | `MusicScannerTest` | 三层遍历、文件名解析成功/失败跳过、封面/歌词匹配、目录 list 失败容错（MockWebServer） |
 | `MusicIndexRepositoryTest` | 空库触发扫描、读缓存、rescan 清表重建、Failed 状态（MockK + Room in-memory） |
-| `PlaybackControllerTest` | 队列设置、next/prev、shuffle、repeat 三态、边界（队首 prev / 队尾 next）。ExoPlayer 用 Robolectric 或抽象接口 mock |
+| `PlaybackControllerTest` | playQueue 启动 Service、命令通过 MediaController 转发（mock MediaController 验证）。Service 启动在 androidTest 覆盖（启动后断言 ExoPlayer 状态）。 |
 | `MusicLibraryRootStoreTest` | 默认值、读写 |
 | Compose UI + Roborazzi | 库页（Scanning / Ready / Empty）+ 播放器页（播放中 + 歌词）亮/暗快照 |
 
 ## 9. 已知限制与后续
 
 - **sign 永远实时取**（通过 SignProvider + fsGet），索引不依赖 sign 永不过期；重新扫描只为发现文件变更（新增/删除）。
-- 无后台播放 / 通知栏（同项目既有 MVP 限制）。
+- **支持后台播放**：前台 Service + MediaSession 通知栏（Android 14+ 已声明 foregroundServiceType=mediaPlayback）。
+- 不做锁屏自定义样式（依赖系统 MediaSession 投影）。
 - 缓存容量 512MB 硬编码，后续可做成设置项。
 - 搜索为本地内存过滤（若做），不调服务器 search。
 
@@ -240,7 +247,9 @@ data class PlaybackState(
 ```toml
 media3 = "1.4.1"
 androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
+androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 androidx-media3-datasource-okhttp = { group = "androidx.media3", name = "media3-datasource-okhttp", version.ref = "media3" }
+androidx-media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
 ```
 
-（version 以实现时兼容 minSdk 26 / compileSdk 34 的最新稳定版为准。）
+（version 以实现时兼容 minSdk 26 / compileSdk 34 / targetSdk 34 的最新稳定版为准。`media3-ui` 用于可选的 PlayerView 控件，不强制使用。）
