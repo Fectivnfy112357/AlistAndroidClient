@@ -1,8 +1,5 @@
 package com.textvision.alistclient.ui.feature.music
 
-import android.content.res.Configuration
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,244 +12,112 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.textvision.alistclient.ui.components.ChipKind
-import com.textvision.alistclient.ui.components.SectionCard
-import com.textvision.alistclient.ui.feature.home.StatusChip
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.textvision.alistclient.ui.feature.music.components.LyricsView
+import com.textvision.alistclient.ui.feature.music.components.PlayerControls
 import com.textvision.alistclient.ui.foundation.AppTopBar
-import com.textvision.alistclient.ui.foundation.CloudDecor
-import com.textvision.alistclient.ui.foundation.SkyBlueBackground
-import com.textvision.alistclient.ui.icons.AppIcons
-import com.textvision.alistclient.ui.theme.AlistTheme
-import com.textvision.alistclient.ui.theme.DarkMode
-import com.textvision.alistclient.ui.theme.MusicMagenta
-import com.textvision.alistclient.ui.theme.MusicPink
-import com.textvision.alistclient.ui.theme.MusicViolet
 
-/**
- * 音乐预览屏 — full-bleed immersive placeholder for the future player.
- *
- * Visual-only (no playback, no API — spec §1.2 YAGNI). Lays out the prototype
- * 300dp pink→violet cover, "即将推出" headline + body, HIRES/FLAC chips, and
- * two skeleton containers (`AppMusicPlayerControlsPlaceholder` /
- * `AppLyricsCardPlaceholder`) so the chrome shape matches the eventual
- * real player screen.
- */
 @Composable
-fun MusicPreviewScreen(onBack: () -> Unit = {}) {
-    Box(Modifier.fillMaxSize()) {
-        SkyBlueBackground()
-        CloudDecor()
-        Column(Modifier.fillMaxSize().statusBarsPadding()) {
-            AppTopBar(
-                title = "正在播放",
-                subtitle = "来自「音乐库」",
-                onBack = onBack,
-                actions = {
-                    IconButton(onClick = {}) { Icon(AppIcons.heart, "收藏") }
-                    IconButton(onClick = {}) { Icon(AppIcons.more, "更多") }
-                },
-            )
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                val scroll = rememberScrollState()
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(scroll)
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                // 300dp 渐变封面 + 几何 SVG 占位
+fun MusicPreviewScreen(
+    onBack: () -> Unit = {},
+    viewModel: MusicPlayerViewModel = hiltViewModel(),
+) {
+    val ui by viewModel.state.collectAsStateWithLifecycle()
+    val current = ui.playback.current
+
+    Column(
+        modifier = Modifier.fillMaxSize().statusBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        AppTopBar(title = "正在播放", subtitle = current?.album.orEmpty(), onBack = onBack)
+        Box(modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Cover placeholder — Coil load is a future enhancement once the cover URL
+                // provider (Task 8) is plumbed into this screen.
                 Box(
-                    Modifier.size(300.dp)
-                        .clip(MaterialTheme.shapes.extraLarge)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(MusicPink, MusicMagenta, MusicViolet),
-                            ),
-                        ),
-                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(300.dp)
+                        .clip(MaterialTheme.shapes.extraLarge),
                 ) {
-                    Icon(
-                        AppIcons.musicNote,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(80.dp),
+                    Text(
+                        text = current?.title?.take(1) ?: "♪",
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.displayLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
                 Text(
-                    "音乐功能即将推出",
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = current?.title ?: "—",
+                    style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    "目前为占位界面，敬请期待",
+                    text = current?.artist.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
                 )
                 Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    StatusChip("HIRES", kind = ChipKind.LILAC)
-                    StatusChip("FLAC · 24bit", kind = ChipKind.MINT)
+                var draggingTo by remember(current?.path) { mutableStateOf<Float?>(null) }
+                val duration = ui.playback.durationMs.coerceAtLeast(1L).toFloat()
+                val displayed = (draggingTo ?: ui.playback.positionMs.toFloat())
+                    .coerceIn(0f, duration)
+                Slider(
+                    value = displayed,
+                    valueRange = 0f..duration,
+                    onValueChange = { draggingTo = it },
+                    onValueChangeFinished = {
+                        draggingTo?.toLong()?.let(viewModel::onSeekTo)
+                        draggingTo = null
+                    },
+                )
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    Text(formatTime(displayed.toLong()), style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = formatTime(ui.playback.durationMs),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+                Spacer(Modifier.height(12.dp))
+                PlayerControls(
+                    isPlaying = ui.playback.isPlaying,
+                    shuffleEnabled = ui.playback.shuffle,
+                    repeatMode = ui.playback.repeatMode,
+                    onPlayPause = viewModel::onTogglePlayPause,
+                    onPrev = viewModel::onPrev,
+                    onNext = viewModel::onNext,
+                    onToggleShuffle = viewModel::onToggleShuffle,
+                    onCycleRepeat = viewModel::onCycleRepeat,
+                )
                 Spacer(Modifier.height(24.dp))
-                AppMusicPlayerControlsPlaceholder()
-                Spacer(Modifier.height(16.dp))
-                AppLyricsCardPlaceholder()
-                Spacer(Modifier.height(16.dp))
-                }
+                LyricsView(lines = ui.lyrics, currentIndex = ui.currentLineIndex)
+                Spacer(Modifier.height(32.dp))
             }
         }
     }
 }
 
-/**
- * Skeleton container matching the prototype player chrome:
- * progress bar (6dp gradient) + 5 round control buttons (shuffle / prev / play / next / repeat).
- */
-@Composable
-private fun AppMusicPlayerControlsPlaceholder() {
-    SectionCard(modifier = Modifier.fillMaxWidth()) {
-        Column {
-            // progress bar placeholder
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(MaterialTheme.colorScheme.outlineVariant),
-            )
-            Spacer(Modifier.height(8.dp))
-            // time row
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Box(
-                    Modifier
-                        .height(8.dp)
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .size(width = 32.dp, height = 8.dp),
-                )
-                Box(
-                    Modifier
-                        .size(width = 32.dp, height = 8.dp)
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-            // 5 round control buttons row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    Modifier.size(36.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                )
-                Box(
-                    Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                )
-                Box(
-                    Modifier.size(64.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                )
-                Box(
-                    Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                )
-                Box(
-                    Modifier.size(36.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                )
-            }
-        }
-    }
-}
-
-/**
- * Skeleton container matching the prototype lyrics preview card:
- * title row + 3 lyric lines (middle line uses primary color / font weight).
- */
-@Composable
-private fun AppLyricsCardPlaceholder() {
-    SectionCard(modifier = Modifier.fillMaxWidth()) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "歌词",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    "展开 ↓",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            // 3 lyric lines — placeholder boxes
-            Box(
-                Modifier
-                    .fillMaxWidth(0.6f)
-                    .height(10.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
-            Spacer(Modifier.height(8.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(10.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-            )
-            Spacer(Modifier.height(8.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth(0.5f)
-                    .height(10.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
-        }
-    }
-}
-
-// ─── Previews ──────────────────────────────────────────────────────────────
-
-@Preview(name = "MusicPreview Light", showBackground = true)
-@Composable
-private fun MusicPreviewScreenLightPreview() {
-    AlistTheme { MusicPreviewScreen() }
-}
-
-@Preview(name = "MusicPreview Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun MusicPreviewScreenDarkPreview() {
-    AlistTheme(darkMode = DarkMode.DARK) { MusicPreviewScreen() }
-}
-
-@Preview(name = "MusicPreview LargeFont", showBackground = true, fontScale = 1.4f)
-@Composable
-private fun MusicPreviewScreenLargeFontPreview() {
-    AlistTheme { MusicPreviewScreen() }
+private fun formatTime(ms: Long): String {
+    val total = ms / 1000
+    val m = total / 60
+    val s = total % 60
+    return "%d:%02d".format(m, s)
 }
