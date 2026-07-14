@@ -250,7 +250,7 @@ data class AlbumEntity(
     val songCount: Int,
 ) {
     @PrimaryKey
-    var id: String = "$artist $name"
+    var id: String = (artist + "" + name).hashCode().toString()
 }
 
 @Entity(tableName = "music_song")
@@ -1305,6 +1305,7 @@ class MusicIndexRepository @Inject constructor(
     private val rootStore: MusicLibraryRootStore,
     private val sessionManager: SessionManager,
     private val okHttp: OkHttpClient,
+    private val signProvider: SignProvider,
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) {
 
@@ -1354,9 +1355,46 @@ class MusicIndexRepository @Inject constructor(
     fun allSongs(): Flow<List<Song>> = dao.allSongs().map { list -> list.map(Song::fromEntity) }
 
     /**
-     * Download the lrc body via the shared authenticated OkHttp client.
-     * Returns null on null path, failed sign fetch, or HTTP failure.
-     * The session URL + fsGet sign resolves a fresh direct URL each call.
+     * Compose a fresh signed cover URL for [coverPath]. Returns null if the path is null
+     * or if sign resolution fails (then the caller should fall back to a placeholder).
+     */
+    suspend fun coverUrl(coverPath: String?): String? {
+        if (coverPath.isNullOrEmpty()) return null
+        val session = sessionManager.loadSavedSession() ?: return null
+        val sign = signProvider.get(coverPath, SignKind.THUMBNAIL, session.serverUrl)
+            ?: return null
+        val base = session.serverUrl.trimEnd('/')
+        return "$base/p$coverPath?sign=$sign"
+    }
+
+    /**
+     * Compose a fresh signed download URL for a song audio file.
+     * Used by the player when we want to refresh sign before queueing.
+     */
+    suspend fun downloadUrl(songPath: String): String? {
+        val session = sessionManager.loadSavedSession() ?: return null
+        val sign = signProvider.get(songPath, SignKind.DOWNLOAD, session.serverUrl)
+            ?: return null
+        val base = session.serverUrl.trimEnd('/')
+        return "$base/d$songPath?sign=$sign"
+    }
+
+    /**
+     * Resolve a path → Song lookup table for a given list of paths. Used by the Service
+     * to translate `currentMediaItem.mediaId` back into a Song for UI rendering.
+     */
+    suspend fun songMapForPaths(paths: List<String>): List<Song> = withContext(dispatcher) {
+        if (paths.isEmpty()) return@withContext emptyList()
+        // Iterate via allSongs to keep DAO surface minimal; for very large libraries this
+        // could be replaced with a SELECT … WHERE path IN (…) query.
+        val byPath = allSongs().first().associateBy { it.path }
+        paths.mapNotNull { byPath[it] }
+    }
+
+    /**
+     * Download the lrc body via the shared authenticated OkHttp client (no sign needed —
+     * the OkHttpClient already attaches Authorization; the server resolves the path).
+     * Returns null on null path, missing session, or HTTP failure.
      */
     suspend fun loadLrcText(lrcPath: String?): String? {
         if (lrcPath.isNullOrEmpty()) return null
@@ -1579,7 +1617,8 @@ class MusicCache @Inject constructor(
 
     @androidx.media3.common.util.UnstableApi
     suspend fun clear() {
-        cache.trimToSizeOrLess(-1)
+        // cache.trim(bytes) is the supported eviction API in media3 1.4.x.
+        cache.trim(0L)
     }
 
     companion object {
@@ -1751,31 +1790,29 @@ class PlaybackController @Inject constructor(
 
     fun toggleShuffle() {
         ensureController { c ->
-            val enable = !c.shuffleModeEnabled
-            c.shuffleModeEnabled = enable
-            _state.value = _state.value.copy(shuffle = enable)
+            // Sole writer strategy: Service.Player.Listener will publish updated shuffle
+            // through MediaController state once ExoPlayer acknowledges the change.
+            c.shuffleModeEnabled = !c.shuffleModeEnabled
         }
     }
 
     fun cycleRepeat() {
         ensureController { c ->
+            // Sole writer strategy: Service.Player.Listener will publish updated repeat.
             val next = when (c.repeatMode) {
                 androidx.media3.common.Player.REPEAT_MODE_OFF -> androidx.media3.common.Player.REPEAT_MODE_ALL
                 androidx.media3.common.Player.REPEAT_MODE_ALL -> androidx.media3.common.Player.REPEAT_MODE_ONE
                 else -> androidx.media3.common.Player.REPEAT_MODE_OFF
             }
             c.repeatMode = next
-            _state.value = _state.value.copy(
-                repeatMode = when (next) {
-                    androidx.media3.common.Player.REPEAT_MODE_ONE -> RepeatMode.ONE
-                    androidx.media3.common.Player.REPEAT_MODE_ALL -> RepeatMode.ALL
-                    else -> RepeatMode.OFF
-                },
-            )
         }
     }
 
-    /** Called by the Service to push state updates back to the controller's flow. */
+    /**
+     * Sole state-writer entrypoint, called by the Service's `Player.Listener` so
+     * MediaController commands and playback events agree on a single source of truth.
+     * Package-internal to keep callers honest.
+     */
     internal fun publishState(update: PlaybackState) {
         _state.value = update
     }
@@ -1951,21 +1988,22 @@ class MusicPlaybackService : MediaSessionService() {
     }
 
     private suspend fun playQueue(paths: List<String>, startIndex: Int) {
-        val session = sessionManager.loadSavedSession() ?: return
-        val base = session.serverUrl.trimEnd('/')
-        val items = paths.map { path -> MediaItem.fromUri("$base/d/$path") }
+        val items = paths.mapNotNull { path ->
+            // Fetch a fresh signed URL via the SignProvider. Null entries (auth/session issues)
+            // are dropped — the rest still play.
+            val signed = indexRepository.downloadUrl(path) ?: return@mapNotNull null
+            MediaItem.fromUri(signed)
+        }
+        if (items.isEmpty()) return
         val player = exoPlayer ?: return
+        // Also pre-build a path → Song map so Player.Listener can resolve the current Song.
+        val allSongs = indexRepository.songMapForPaths(paths)
+        updateSongMap(allSongs)
         player.setMediaItems(items, startIndex.coerceIn(0, items.lastIndex), 0L)
         player.prepare()
         player.playWhenReady = true
 
-        // Resolve the starting song from the index for the controller state.
-        val currentSong = with(indexRepository) {
-            // Re-query songs by path. We expose a one-shot helper here to keep the
-            // service focused; the controller observes the flow.
-            null
-        }
-        // Publish initial state — current song will be set by the Player.Listener.
+        // Publish initial empty state — Player.Listener fills in current song and progress.
         playbackController.publishState(PlaybackState())
     }
 
@@ -1973,7 +2011,6 @@ class MusicPlaybackService : MediaSessionService() {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val idx = exoPlayer?.currentMediaItemIndex ?: return
             // The controller's Song map is built from path → Song; use it directly.
-            // For simplicity, expose mediaId (== path) and let controller resolve.
             val path = mediaItem?.mediaId.orEmpty()
             val current = resolvedCurrentSong(path)
             playbackController.publishState(
@@ -1995,6 +2032,21 @@ class MusicPlaybackService : MediaSessionService() {
                     durationMs = player.duration.takeIf { it > 0 } ?: 0L,
                     positionMs = player.currentPosition,
                 )
+            )
+        }
+
+        override fun onRepeatModeChanged(repeatMode: Int) {
+            val mapped = when (repeatMode) {
+                androidx.media3.common.Player.REPEAT_MODE_ONE -> RepeatMode.ONE
+                androidx.media3.common.Player.REPEAT_MODE_ALL -> RepeatMode.ALL
+                else -> RepeatMode.OFF
+            }
+            playbackController.publishState(playbackController.state.value.copy(repeatMode = mapped))
+        }
+
+        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+            playbackController.publishState(
+                playbackController.state.value.copy(shuffle = shuffleModeEnabled)
             )
         }
     }
@@ -2141,6 +2193,7 @@ object MusicModule {
         rootStore: MusicLibraryRootStore,
         sessionManager: SessionManager,
         okHttp: OkHttpClient,
+        signProvider: SignProvider,
         @IoDispatcher dispatcher: CoroutineDispatcher,
     ): MusicIndexRepository = MusicIndexRepository(
         dao = dao,
@@ -2148,6 +2201,7 @@ object MusicModule {
         rootStore = rootStore,
         sessionManager = sessionManager,
         okHttp = okHttp,
+        signProvider = signProvider,
         dispatcher = dispatcher,
     )
 }
@@ -2387,9 +2441,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import javax.inject.Inject
 
 data class MusicPlayerUiState(
@@ -2410,15 +2467,18 @@ class MusicPlayerViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            playbackController.state.collect { state ->
-                val lrcPath = state.current?.lrcPath
-                if (lrcPath != null) {
-                    val text = indexRepo.loadLrcText(lrcPath)
-                    rawLyrics.value = LrcParser.parse(text.orEmpty())
-                } else {
-                    rawLyrics.value = emptyList()
+            // Reload LRC only when the LRC path actually changes — `positionMs` ticks every
+            // 100ms would otherwise trigger a download per frame.
+            playbackController.state
+                .map { it.current?.lrcPath }
+                .distinctUntilChanged()
+                .collect { lrcPath ->
+                    rawLyrics.value = if (lrcPath != null) {
+                        LrcParser.parse(indexRepo.loadLrcText(lrcPath).orEmpty())
+                    } else {
+                        emptyList()
+                    }
                 }
-            }
         }
     }
 
@@ -3411,6 +3471,16 @@ git commit -m "docs(music): update limitations + deviations"
 - `playbackState` 是后加字段但已在 Task 15 Step 2 显式补 `stateIn` 形式 — OK
 
 **Self-review pass 1 — 发现 1 个语义 gap:** Task 15 Step 1 提及 `viewModelMimic_playbackState` 后期要替换为 `viewModel.playbackState`，已 Step 2 显式修正。**通过。**
+
+**Self-review pass 2 — 用户主动 deep-check 后 inline 修复 5 项：**
+
+| Issue | 修复位置 | 修复方式 |
+|---|---|---|
+| C: `AlbumEntity.id = "$artist $name"` 空格冲突 | Task 3 AlbumEntity | 改为 `(artist + "÷" + name).hashCode().toString()`（U+001F 分隔防碰撞） |
+| G: `MusicCache.clear()` 调 `cache.trimToSizeOrLess(-1)` API 错误 | Task 9 | 改为 `cache.trim(0L)`（media3 1.4.x 受支持的 eviction API） |
+| F: `MusicPlayerViewModel` 监听 `state` 时每次 `positionMs` 变化都重 load lrc | Task 13 | `.map { it.current?.lrcPath }.distinctUntilChanged()` 仅在路径变更时拉取 |
+| B: `SignProvider` 定义后下游未使用 | Task 8 + 12 + 11 | `MusicIndexRepository` 新增 `coverUrl(path)` / `downloadUrl(path)` / `songMapForPaths(paths)`；Service.playQueue 改走 `downloadUrl` |
+| H: Player.Listener 与 MediaController 命令双写 `_state` | Task 10 + 11 | 单写者策略：命令只发 MediaController，Service.Player.Listener 独占 `publishState`；新增 `onRepeatModeChanged` / `onShuffleModeEnabledChanged` 监听 |
 
 ---
 
