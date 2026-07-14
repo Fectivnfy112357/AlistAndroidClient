@@ -166,12 +166,23 @@ class MusicScanner @Inject constructor(
 
     private suspend fun listSafely(base: String, path: String): Pair<List<AlistFileDto>, Throwable?> {
         return try {
-            val resp = api.list("$base/api/fs/list", FsListRequest(path = path))
-            if (resp.code == 200 && resp.data != null) {
-                resp.data.content to null
-            } else {
-                emptyList<AlistFileDto>() to IllegalStateException("code=${resp.code}")
+            val collected = mutableListOf<AlistFileDto>()
+            var page = 1
+            while (true) {
+                val resp = api.list(
+                    "$base/api/fs/list",
+                    FsListRequest(path = path, page = page, perPage = PAGE_SIZE),
+                )
+                if (resp.code != 200 || resp.data == null) {
+                    return collected to IllegalStateException("code=${resp.code}")
+                }
+                val chunk = resp.data.content
+                collected += chunk
+                // Alist returns fewer than per_page on the final page; stop there.
+                if (chunk.size < PAGE_SIZE) break
+                page += 1
             }
+            collected to null
         } catch (t: Throwable) {
             emptyList<AlistFileDto>() to t
         }
@@ -229,5 +240,8 @@ class MusicScanner @Inject constructor(
     private companion object {
         const val MAX_ARTWORK_EDGE = 256
         const val ARTWORK_QUALITY = 82
+        // Alist's `per_page=0` is treated as a 200-row cap; request a large
+        // explicit page size so 330+ artist directories come back in one shot.
+        const val PAGE_SIZE = 1000
     }
 }
