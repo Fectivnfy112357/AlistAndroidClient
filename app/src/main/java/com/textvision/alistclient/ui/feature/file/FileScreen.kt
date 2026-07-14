@@ -19,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.textvision.alistclient.LocalSnackbarHostState
 import com.textvision.alistclient.file.model.FileItem
@@ -86,10 +86,12 @@ fun FileScreen(
         }
     }
 
-    LaunchedEffect(initialPath) {
-        if (state.path != initialPath || state.files.isEmpty() && state.error == null && !state.isLoading) {
-            vm.onIntent(FileIntent.Load(initialPath))
-        }
+    // 每次页面 RESUMED 时重新拉取当前目录：包括首次进入、从子页面返回、
+    // 以及底部 tab 切回本页（BottomNavBar 用 saveState/restoreState 会复用旧
+    // state，若不主动刷新，启用/禁用存储后文件页不会更新）。
+    LifecycleResumeEffect(initialPath) {
+        vm.onIntent(FileIntent.Load(initialPath))
+        onPauseOrDispose { }
     }
 
     AppScaffold(
