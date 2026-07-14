@@ -1,5 +1,8 @@
 package com.textvision.alistclient.music.data
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.network.api.AlistApi
 import com.textvision.alistclient.network.dto.AlistFileDto
@@ -32,8 +35,11 @@ data class ScanProgress(
 @Singleton
 class MusicScanner @Inject constructor(
     private val api: AlistApi,
+    private val signProvider: SignProvider? = null,
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) {
+
+    constructor(api: AlistApi, dispatcher: CoroutineDispatcher) : this(api, null, dispatcher)
 
     private val audioExtensions = setOf(
         "mp3", "flac", "m4a", "wav", "ogg", "aac", "ape", "wma",
@@ -88,11 +94,15 @@ class MusicScanner @Inject constructor(
         val albumCountByArtist = albumRows.groupBy { it.artist }
             .mapValues { entry -> entry.value.size }
         val artistRows = artistsRaw.map { dir ->
+            val artistArtwork = albumRows.firstOrNull {
+                it.artist == dir.name && it.artworkData != null
+            }?.artworkData
             ArtistEntity(
                 name = dir.name,
                 path = filePath(rootPath, dir),
                 albumCount = albumCountByArtist[dir.name] ?: 0,
                 songCount = artistMap[dir.name] ?: 0,
+                artworkData = artistArtwork,
             )
         }
         ScanResult(artistRows, albumRows, songRows)
@@ -123,8 +133,8 @@ class MusicScanner @Inject constructor(
             val lrcs = files
                 .filter { !it.isDir && it.extensionLower() == "lrc" }
                 .associate { it.name.substringBeforeLast('.') to filePath(albumPath, it) }
-            files.filter { !it.isDir && audioExtensions.contains(it.extensionLower()) }
-                .forEach { audioFile ->
+            val albumSongs = files.filter { !it.isDir && audioExtensions.contains(it.extensionLower()) }
+            albumSongs.forEach { audioFile ->
                     val parsed = parseFileName(audioFile.name) ?: return@forEach
                     val lrcPath = lrcs[audioFile.name.substringBeforeLast('.')]
                     songsHere += SongEntity(
@@ -139,12 +149,16 @@ class MusicScanner @Inject constructor(
                         sizeBytes = audioFile.size,
                     )
                 }
+            val artworkData = albumSongs.firstNotNullOfOrNull { audioFile ->
+                extractArtwork(base, filePath(albumPath, audioFile))
+            }
             albumsHere += AlbumEntity(
                 artist = artistDir.name,
                 name = albumDir.name,
                 path = albumPath,
                 coverPath = cover,
                 songCount = songsHere.count { it.artist == artistDir.name && it.album == albumDir.name },
+                artworkData = artworkData,
             )
         }
         return ArtistScan(albumsHere, songsHere)
@@ -160,6 +174,33 @@ class MusicScanner @Inject constructor(
             }
         } catch (t: Throwable) {
             emptyList<AlistFileDto>() to t
+        }
+    }
+
+    private suspend fun extractArtwork(baseUrl: String, audioPath: String): ByteArray? {
+        val sign = signProvider?.get(audioPath, SignKind.DOWNLOAD, baseUrl) ?: return null
+        val source = "${baseUrl.trimEnd('/')}/d$audioPath?sign=$sign"
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(source, emptyMap())
+            retriever.embeddedPicture?.let(::compressArtwork)
+        } catch (_: Throwable) {
+            null
+        } finally {
+            retriever.release()
+        }
+    }
+
+    private fun compressArtwork(bytes: ByteArray): ByteArray? {
+        val source = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+        val scale = (MAX_ARTWORK_EDGE.toFloat() / maxOf(source.width, source.height)).coerceAtMost(1f)
+        val bitmap = if (scale < 1f) {
+            Bitmap.createScaledBitmap(source, (source.width * scale).toInt(), (source.height * scale).toInt(), true)
+        } else source
+        return java.io.ByteArrayOutputStream().use { output ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, ARTWORK_QUALITY, output)
+            if (bitmap !== source) bitmap.recycle()
+            output.toByteArray()
         }
     }
 
@@ -184,4 +225,9 @@ class MusicScanner @Inject constructor(
 
     private fun AlistFileDto.extensionLower(): String =
         name.substringAfterLast('.', missingDelimiterValue = "").lowercase()
+
+    private companion object {
+        const val MAX_ARTWORK_EDGE = 256
+        const val ARTWORK_QUALITY = 82
+    }
 }

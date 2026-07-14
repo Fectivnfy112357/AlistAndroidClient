@@ -9,9 +9,10 @@ data class Artist(
     val path: String,
     val albumCount: Int,
     val songCount: Int,
+    val artworkData: ByteArray? = null,
 ) {
     companion object {
-        fun fromEntity(e: ArtistEntity) = Artist(e.name, e.path, e.albumCount, e.songCount)
+        fun fromEntity(e: ArtistEntity) = Artist(e.name, e.path, e.albumCount, e.songCount, e.artworkData)
     }
 }
 
@@ -21,9 +22,10 @@ data class Album(
     val path: String,
     val coverPath: String?,
     val songCount: Int,
+    val artworkData: ByteArray? = null,
 ) {
     companion object {
-        fun fromEntity(e: AlbumEntity) = Album(e.artist, e.name, e.path, e.coverPath, e.songCount)
+        fun fromEntity(e: AlbumEntity) = Album(e.artist, e.name, e.path, e.coverPath, e.songCount, e.artworkData)
     }
 }
 

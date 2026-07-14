@@ -9,6 +9,7 @@ data class ArtistEntity(
     val path: String,
     val albumCount: Int,
     val songCount: Int,
+    val artworkData: ByteArray? = null,
 )
 
 @Entity(tableName = "music_album")
@@ -18,6 +19,7 @@ data class AlbumEntity(
     val path: String,
     val coverPath: String?,
     val songCount: Int,
+    val artworkData: ByteArray? = null,
 ) {
     @PrimaryKey
     var id: String = (artist + "" + name).hashCode().toString()

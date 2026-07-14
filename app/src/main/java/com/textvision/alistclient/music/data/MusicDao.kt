@@ -38,6 +38,15 @@ interface MusicDao {
     @Query("SELECT * FROM music_song ORDER BY artist, album, trackNoInt ASC, trackNo ASC")
     fun allSongs(): Flow<List<SongEntity>>
 
+    @Query(
+        """
+        SELECT a.artworkData FROM music_album a
+        INNER JOIN music_song s ON s.artist = a.artist AND s.album = a.name
+        WHERE s.path = :songPath LIMIT 1
+        """,
+    )
+    suspend fun artworkForSong(songPath: String): ByteArray?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertArtists(items: List<ArtistEntity>)
 

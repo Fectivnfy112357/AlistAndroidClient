@@ -166,11 +166,18 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE music_artist ADD COLUMN artworkData BLOB")
+            db.execSQL("ALTER TABLE music_album ADD COLUMN artworkData BLOB")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "transfer_tasks.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
     @Provides
     fun provideTransferDao(database: AppDatabase): TransferDao = database.transferDao()

@@ -35,6 +35,7 @@ fun SongRow(
     artist: String,
     duration: String,
     gradient: Brush,
+    artworkData: ByteArray? = null,
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
     onClick: (() -> Unit)? = null,
@@ -57,7 +58,7 @@ fun SongRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            CoverLetter(name = name, gradient = gradient, size = 42.dp)
+            ArtworkCover(name, artworkData, gradient, 42.dp)
             Column(Modifier.weight(1f)) {
                 Text(
                     text = name,

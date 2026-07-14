@@ -14,9 +14,10 @@ data class UiSong(
     val coverPath: String?,
     val lrcPath: String?,
     val sizeBytes: Long,
+    val artworkData: ByteArray? = null,
 ) {
     companion object {
-        fun fromDomain(s: Song) = UiSong(
+        fun fromDomain(s: Song, artworkData: ByteArray? = null) = UiSong(
             path = s.path,
             title = s.title,
             artist = s.artist,
@@ -26,6 +27,7 @@ data class UiSong(
             coverPath = s.coverPath,
             lrcPath = s.lrcPath,
             sizeBytes = s.sizeBytes,
+            artworkData = artworkData,
         )
     }
 }
@@ -36,10 +38,11 @@ data class UiAlbum(
     val path: String,
     val coverPath: String?,
     val songCount: Int,
+    val artworkData: ByteArray? = null,
 ) {
     companion object {
         fun fromDomain(a: DomainAlbum) = UiAlbum(
-            a.artist, a.name, a.path, a.coverPath, a.songCount,
+            a.artist, a.name, a.path, a.coverPath, a.songCount, a.artworkData,
         )
     }
 }
@@ -49,10 +52,11 @@ data class UiArtist(
     val path: String,
     val albumCount: Int,
     val songCount: Int,
+    val artworkData: ByteArray? = null,
 ) {
     companion object {
         fun fromDomain(a: DomainArtist) = UiArtist(
-            a.name, a.path, a.albumCount, a.songCount,
+            a.name, a.path, a.albumCount, a.songCount, a.artworkData,
         )
     }
 }

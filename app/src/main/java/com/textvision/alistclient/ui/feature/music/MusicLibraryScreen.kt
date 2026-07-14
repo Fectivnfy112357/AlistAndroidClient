@@ -166,7 +166,7 @@ private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(ui.recentAlbums, key = { "${it.artist}/${it.name}" }) { album ->
-                        AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyPink, CandyLilac)), size = AlbumCardSize.LARGE)
+                        AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyPink, CandyLilac)), artworkData = album.artworkData, size = AlbumCardSize.LARGE)
                     }
                 }
             }
@@ -174,7 +174,7 @@ private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int
         if (ui.songs.isNotEmpty()) {
             item { SectionHeader("继续聆听", "从你的音乐里开始") }
             items(ui.songs.take(5), key = { it.path }) { song ->
-                SongRow(song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)), onClick = {
+                SongRow(song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)), artworkData = song.artworkData, onClick = {
                     onPlayQueue(ui.songs, ui.songs.indexOf(song))
                 })
             }
@@ -201,6 +201,7 @@ private fun SongsTab(ui: MusicLibraryUiState, playingPath: String?, onPlayQueue:
         items(visible, key = { it.path }) { song ->
             SongRow(
                 song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)),
+                artworkData = song.artworkData,
                 isPlaying = song.path == playingPath,
                 onClick = { onPlayQueue(ui.songs, ui.songs.indexOf(song)) },
             )
@@ -226,7 +227,7 @@ private fun AlbumsTab(ui: MusicLibraryUiState) {
     ) {
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { SectionHeader("全部专辑", "已显示 ${visible.size} / ${ui.albums.size}") }
         items(visible, key = { "${it.artist}/${it.name}" }) { album ->
-            AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyLemon, MusicMagenta)), size = AlbumCardSize.LARGE)
+            AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyLemon, MusicMagenta)), artworkData = album.artworkData, size = AlbumCardSize.LARGE)
         }
         if (visible.size < ui.albums.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { LoadingMore() }
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { Spacer(Modifier.height(120.dp)) }
@@ -249,7 +250,7 @@ private fun ArtistsTab(ui: MusicLibraryUiState) {
     ) {
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { SectionHeader("艺人", "已显示 ${visible.size} / ${ui.artists.size}") }
         items(visible, key = { it.path }) { artist ->
-            ArtistCard(artist.name, artist.songCount, Brush.linearGradient(listOf(CandyMint, Brand500)), modifier = Modifier.fillMaxWidth())
+            ArtistCard(artist.name, artist.songCount, Brush.linearGradient(listOf(CandyMint, Brand500)), artworkData = artist.artworkData, modifier = Modifier.fillMaxWidth())
         }
         if (visible.size < ui.artists.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { LoadingMore() }
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { Spacer(Modifier.height(120.dp)) }

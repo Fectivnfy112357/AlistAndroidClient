@@ -48,12 +48,13 @@ class MusicLibraryViewModel @Inject constructor(
         indexRepo.recentAlbums(8),
         indexRepo.allSongs(),
     ) { indexState, artists, albums, recent, songs ->
+        val albumArtwork = albums.associate { (it.artist to it.name) to it.artworkData }
         MusicLibraryUiState(
             indexState = UiIndexState.fromDomain(indexState),
             artists = artists.map(UiArtist::fromDomain),
             albums = albums.map(UiAlbum::fromDomain),
             recentAlbums = recent.map(UiAlbum::fromDomain),
-            songs = songs.map(UiSong::fromDomain),
+            songs = songs.map { song -> UiSong.fromDomain(song, albumArtwork[song.artist to song.album]) },
         )
     }.stateIn(
         scope = viewModelScope,

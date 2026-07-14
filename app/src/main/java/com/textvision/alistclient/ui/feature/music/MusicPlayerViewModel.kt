@@ -36,6 +36,7 @@ class MusicPlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val rawLyrics = MutableStateFlow<List<LrcLine>>(emptyList())
+    private val rawArtwork = MutableStateFlow<ByteArray?>(null)
 
     init {
         viewModelScope.launch {
@@ -52,14 +53,20 @@ class MusicPlayerViewModel @Inject constructor(
                     }
                 }
         }
+        viewModelScope.launch {
+            playbackController.state.map { it.current?.path }.distinctUntilChanged().collect { path ->
+                rawArtwork.value = path?.let(indexRepo::artworkForSong)
+            }
+        }
     }
 
     val state: StateFlow<MusicPlayerUiState> = combine(
         playbackController.state,
         rawLyrics,
-    ) { playback, lyrics ->
+        rawArtwork,
+    ) { playback, lyrics, artwork ->
         val index = binarySearchCurrentLine(lyrics, playback.positionMs)
-        MusicPlayerUiState(playback, lyrics, index)
+        MusicPlayerUiState(playback.copy(artworkData = artwork ?: playback.artworkData), lyrics, index)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

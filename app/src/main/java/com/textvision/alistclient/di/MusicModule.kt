@@ -32,8 +32,9 @@ object MusicModule {
     @Singleton
     fun provideScanner(
         api: AlistApi,
+        signProvider: SignProvider,
         @IoDispatcher dispatcher: CoroutineDispatcher,
-    ): MusicScanner = MusicScanner(api, dispatcher)
+    ): MusicScanner = MusicScanner(api, signProvider, dispatcher)
 
     @Provides
     @Singleton

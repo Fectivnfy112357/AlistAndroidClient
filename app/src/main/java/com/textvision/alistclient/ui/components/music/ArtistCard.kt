@@ -29,14 +29,16 @@ fun ArtistCard(
     name: String,
     count: Int,
     gradient: Brush,
+    artworkData: ByteArray? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.width(84.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CoverLetter(
+        ArtworkCover(
             name = name,
+            artworkData = artworkData,
             gradient = gradient,
             size = 84.dp,
             modifier = Modifier.clip(CircleShape),

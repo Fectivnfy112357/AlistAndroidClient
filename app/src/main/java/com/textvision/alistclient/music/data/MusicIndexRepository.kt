@@ -75,6 +75,10 @@ class MusicIndexRepository @Inject constructor(
         dao.songsByAlbum(artist, album).map { list -> list.map(Song::fromEntity) }
     fun allSongs(): Flow<List<Song>> = dao.allSongs().map { list -> list.map(Song::fromEntity) }
 
+    suspend fun artworkForSong(songPath: String): ByteArray? = withContext(dispatcher) {
+        dao.artworkForSong(songPath)
+    }
+
     /**
      * Compose a fresh signed cover URL for [coverPath]. Returns null if the path is null
      * or if sign resolution fails (then the caller should fall back to a placeholder).

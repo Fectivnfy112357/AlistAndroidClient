@@ -48,13 +48,14 @@ fun AlbumCard(
     name: String,
     artist: String,
     gradient: Brush,
+    artworkData: ByteArray? = null,
     modifier: Modifier = Modifier,
     decoBadge: AlbumDecoBadge? = null,
     size: AlbumCardSize = AlbumCardSize.SMALL,
 ) {
     Column(modifier = modifier.width(size.cover)) {
         Box(Modifier.size(size.cover)) {
-            CoverLetter(name = name, gradient = gradient, size = size.cover)
+            ArtworkCover(name, artworkData, gradient, size.cover)
             if (decoBadge != null) {
                 DecoBadge(
                     icon = decoBadge.icon,
