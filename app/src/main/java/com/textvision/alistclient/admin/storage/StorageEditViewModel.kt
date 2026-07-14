@@ -93,6 +93,11 @@ class StorageEditViewModel @Inject constructor(
         val state = _uiState.value as? StorageEditUiState.Form ?: return
         val base = sessionManager.loadSavedSession()?.serverUrl ?: return
         viewModelScope.launch {
+            val mountPath = readCommonString(state.fieldValues, "mount_path", state.storage.mountPath)
+            if (mountPath.isNullOrBlank()) {
+                _uiState.value = state.copy(isSaving = false, errorMessage = "挂载路径不能为空")
+                return@launch
+            }
             _uiState.value = state.copy(isSaving = true, errorMessage = null)
             val additionalItems = state.driver?.additional ?: emptyList()
             val additionalNames = additionalItems.map { it.name }.toSet()
@@ -125,10 +130,10 @@ class StorageEditViewModel @Inject constructor(
             )
             when (val r = storageRepository.update(base, patch)) {
                 is AdminResult.Ok -> _uiState.value = state.copy(isSaving = false, saved = true)
-                is AdminResult.ServerError -> _uiState.value = state.copy(
-                    isSaving = false,
-                    errorMessage = r.message?.takeIf { it.isNotBlank() } ?: "保存失败 (HTTP ${r.code})",
-                )
+                is AdminResult.ServerError -> {
+                    val raw = r.message?.takeIf { it.isNotBlank() } ?: "保存失败 (HTTP ${r.code})"
+                    _uiState.value = state.copy(isSaving = false, errorMessage = localizeStorageError(raw))
+                }
                 AdminResult.Unauthorized -> _uiState.value = state.copy(
                     isSaving = false,
                     errorMessage = "未登录或登录已过期",
@@ -236,3 +241,23 @@ class StorageEditViewModel @Inject constructor(
 
 private val kotlinx.serialization.json.JsonElement.jsonObject: kotlinx.serialization.json.JsonObject
     get() = this as kotlinx.serialization.json.JsonObject
+
+/**
+ * Translate known English server errors into Chinese hints for the storage edit screen.
+ * Pass-through anything not recognised so unexpected messages still surface.
+ */
+private fun localizeStorageError(raw: String): String {
+    val lower = raw.lowercase()
+    return when {
+        // Alist 卸载旧挂载后按新配置重挂失败(通常是 Local 的 root_folder_path 指向不存在的目录),
+        // 该存储会脱离内存挂载表,之后 update/disable/enable 都会连锁失败,只能重启 Alist 服务恢复。
+        "no mount path" in lower ->
+            "重新挂载失败:请检查根目录路径(root_folder_path)是否指向服务器上真实存在的目录。" +
+                "若该存储已无法启用/禁用,需重启 Alist 服务后再修改。"
+        "no mount" in lower -> "挂载路径无效,请确认挂载路径不为空"
+        "driver" in lower && ("invalid" in lower || "not found" in lower) -> "存储驱动无效或未安装,请在 Alist 后台检查驱动配置"
+        "have enabled" in lower -> "该存储已处于启用状态"
+        "permission" in lower || "forbidden" in lower -> "权限不足,请用管理员账号登录"
+        else -> raw
+    }
+}
