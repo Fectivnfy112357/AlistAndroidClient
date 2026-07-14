@@ -2,10 +2,12 @@ package com.textvision.alistclient.network.api
 
 import com.textvision.alistclient.network.SkipAuthRetry
 import com.textvision.alistclient.network.dto.AlistFsList
+import com.textvision.alistclient.network.dto.AlistFsGetData
 import com.textvision.alistclient.network.dto.AlistLoginData
 import com.textvision.alistclient.network.dto.AlistResponse
 import com.textvision.alistclient.network.dto.CopyMovePathRequest
 import com.textvision.alistclient.network.dto.DriverInfo
+import com.textvision.alistclient.network.dto.FsGetRequest
 import com.textvision.alistclient.network.dto.FsListRequest
 import com.textvision.alistclient.network.dto.FsSearchRequest
 import com.textvision.alistclient.network.dto.LoginRequest
@@ -34,6 +36,9 @@ interface AlistApi {
 
     @POST
     suspend fun list(@Url url: String, @Body request: FsListRequest): AlistResponse<AlistFsList>
+
+    @POST
+    suspend fun fsGet(@Url url: String, @Body request: FsGetRequest): AlistResponse<AlistFsGetData>
 
     @POST
     suspend fun search(@Url url: String, @Body request: FsSearchRequest): AlistResponse<AlistFsList>
