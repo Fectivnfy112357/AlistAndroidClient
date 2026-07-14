@@ -19,6 +19,7 @@ data class StorageInfo(
     @SerialName("used_bytes") val usedBytes: Long = 0,
     @SerialName("total_bytes") val totalBytes: Long = 0,
     @SerialName("addition") val addition: String? = null,
+    @SerialName("modified") val modified: String? = null,
     // Common fields needed for full-patch update
     @SerialName("order") val order: Int = 0,
     @SerialName("remark") val remark: String? = null,
@@ -110,6 +111,8 @@ data class StoragePatch(
     val id: Long,
     @SerialName("mount_path") val mountPath: String,
     val driver: String,
+    @SerialName("status") val status: String? = null,
+    @SerialName("modified") val modified: String? = null,
     val order: Int = 0,
     val remark: String? = null,
     @SerialName("disabled") val disabled: Boolean = false,

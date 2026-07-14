@@ -66,7 +66,7 @@ internal fun StorageEditContent(
     form: StorageEditUiState.Form,
     onBack: () -> Unit,
     onFieldValueChange: (String, String) -> Unit,
-    onEnabledChange: (Boolean) -> Unit,
+    onToggleEnabled: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -89,7 +89,7 @@ internal fun StorageEditContent(
             StorageParametersCard(
                 form = form,
                 onFieldValueChange = onFieldValueChange,
-                onEnabledChange = onEnabledChange,
+                onToggleEnabled = onToggleEnabled,
             )
             form.errorMessage?.let {
                 Spacer(Modifier.height(10.dp))
@@ -174,7 +174,7 @@ private fun StorageSummaryCard(storageName: String, mountPath: String, enabled: 
 private fun StorageParametersCard(
     form: StorageEditUiState.Form,
     onFieldValueChange: (String, String) -> Unit,
-    onEnabledChange: (Boolean) -> Unit,
+    onToggleEnabled: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.88f)).padding(16.dp),
@@ -189,7 +189,7 @@ private fun StorageParametersCard(
             )
             Spacer(Modifier.height(12.dp))
         }
-        StorageEnabledRow(enabled = form.enabled, onEnabledChange = onEnabledChange)
+        StorageEnabledRow(enabled = form.enabled, isSaving = form.isSaving, onToggleEnabled = onToggleEnabled)
     }
 }
 
@@ -252,20 +252,25 @@ private fun CookieField(value: String, onCookieCaptured: (String) -> Unit) {
 }
 
 @Composable
-private fun StorageEnabledRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
+private fun StorageEnabledRow(enabled: Boolean, isSaving: Boolean, onToggleEnabled: () -> Unit) {
     Row(Modifier.fillMaxWidth().height(48.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column {
             Text("启用存储", style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium), color = Ink)
             Text("禁用后文件将不再显示", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = InkMute)
         }
-        PrototypeSwitch(enabled, onEnabledChange)
+        PrototypeSwitch(checked = enabled, enabled = !isSaving, onClick = onToggleEnabled)
     }
 }
 
 @Composable
-private fun PrototypeSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun PrototypeSwitch(checked: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    val bg = when {
+        !enabled -> InkMute.copy(alpha = 0.3f)
+        checked -> Brand500
+        else -> InkMute.copy(alpha = 0.5f)
+    }
     Box(
-        Modifier.size(width = 40.dp, height = 22.dp).clip(RoundedCornerShape(99.dp)).background(if (checked) Brand500 else InkMute.copy(alpha = 0.5f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onCheckedChange(!checked) }.padding(2.dp),
+        Modifier.size(width = 40.dp, height = 22.dp).clip(RoundedCornerShape(99.dp)).background(bg).clickable(enabled = enabled, interactionSource = remember { MutableInteractionSource() }, indication = null) { onClick() }.padding(2.dp),
     ) {
         Box(Modifier.size(18.dp).align(if (checked) Alignment.CenterEnd else Alignment.CenterStart).clip(CircleShape).background(Color.White))
     }

@@ -26,6 +26,14 @@ class StorageRepository @Inject constructor(
             adminRepository.runAdmin(base) { api.updateStorage("${base}api/admin/storage/update", patch) }
         }
 
+    override suspend fun setEnabled(base: String, id: Long, enabled: Boolean): AdminResult<Unit> =
+        withContext(dispatcher) {
+            adminRepository.runAdmin(base) {
+                if (enabled) api.enableStorage("${base}api/admin/storage/enable", id)
+                else api.disableStorage("${base}api/admin/storage/disable", id)
+            }
+        }
+
     override suspend fun listDrivers(base: String): AdminResult<Map<String, DriverInfo>> =
         when (val r = adminRepository.runAdmin(base) { api.listDrivers("${base}api/admin/driver/list") }) {
             is AdminResult.Ok -> AdminResult.Ok(r.data.orEmpty())

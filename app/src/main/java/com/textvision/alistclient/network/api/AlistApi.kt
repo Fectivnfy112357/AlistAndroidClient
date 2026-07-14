@@ -74,6 +74,12 @@ interface AlistApi {
     @POST
     suspend fun updateStorage(@Url url: String, @Body body: StoragePatch): AlistResponse<Unit>
 
+    @POST
+    suspend fun enableStorage(@Url url: String, @Query("id") id: Long): AlistResponse<Unit>
+
+    @POST
+    suspend fun disableStorage(@Url url: String, @Query("id") id: Long): AlistResponse<Unit>
+
     @GET
     suspend fun listDrivers(@Url url: String, @Query("page") page: Int = 1, @Query("per_page") perPage: Int = 0): AlistResponse<Map<String, DriverInfo>>
 

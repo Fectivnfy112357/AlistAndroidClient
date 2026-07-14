@@ -72,7 +72,9 @@ class StorageEditViewModel @Inject constructor(
                 driver = driver,
                 formItems = formItems,
                 fieldValues = merged,
-                enabled = s.status != "disabled",
+                // 用 disabled 布尔字段判定,不要用 status 字符串（status 是运行时挂载态,
+                // 已禁用但最近未挂载过的存储 status="work",会误判为启用）。
+                enabled = !s.disabled,
             )
         }
     }
@@ -85,8 +87,47 @@ class StorageEditViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 启用/禁用切换：单独走专用端点，与 update 完全分离。
+     * 不调 save()，不调用 update 端点，不会触发"卸载→重挂"副作用。
+     */
+    fun toggleEnabled() {
+        val state = _uiState.value as? StorageEditUiState.Form ?: return
+        val base = sessionManager.loadSavedSession()?.serverUrl ?: return
+        val storageId = state.storage.id ?: return
+        val newEnabled = !state.enabled
+        viewModelScope.launch {
+            _uiState.value = state.copy(isSaving = true, errorMessage = null)
+            val r = storageRepository.setEnabled(base, storageId, newEnabled)
+            _uiState.value = when (r) {
+                is AdminResult.Ok -> state.copy(
+                    isSaving = false,
+                    enabled = newEnabled,
+                    // 同时更新底层 storage 的 disabled,让 flatStorageFields 对齐,
+                    // 否则下次 save() 计算"字段是否改动"会用旧的 disabled 起点。
+                    storage = state.storage.copy(disabled = !newEnabled),
+                )
+                is AdminResult.ServerError -> state.copy(
+                    isSaving = false,
+                    errorMessage = r.message?.takeIf { it.isNotBlank() } ?: "操作失败 (HTTP ${r.code})",
+                )
+                AdminResult.Unauthorized -> state.copy(
+                    isSaving = false,
+                    errorMessage = "未登录或登录已过期",
+                )
+                is AdminResult.Network -> state.copy(
+                    isSaving = false,
+                    errorMessage = "网络错误：无法连接服务器",
+                )
+            }
+        }
+    }
+
+    /** @deprecated 仅保留兼容性，新 UI 不要再调用 — 请改用 toggleEnabled()。 */
     fun setEnabled(enabled: Boolean) {
-        _uiState.update { state -> if (state is StorageEditUiState.Form) state.copy(enabled = enabled) else state }
+        val state = _uiState.value as? StorageEditUiState.Form ?: return
+        if (state.enabled == enabled) return
+        toggleEnabled()
     }
 
     fun save() {
@@ -99,6 +140,15 @@ class StorageEditViewModel @Inject constructor(
                 return@launch
             }
             _uiState.value = state.copy(isSaving = true, errorMessage = null)
+
+            // 保存前先拉取最新 storage:启用/禁用可能刚通过专用端点改过,
+            // state.storage 里的 disabled/status/modified 可能是进页面时的旧值。
+            // 用最新值填 patch,避免把旧 status(如已禁用后仍是 "work")原样回写覆盖后端。
+            val storageId = state.storage.id ?: 0L
+            val latest = (storageRepository.list(base) as? AdminResult.Ok)
+                ?.data?.content?.firstOrNull { it.id == storageId }
+                ?: state.storage
+
             val additionalItems = state.driver?.additional ?: emptyList()
             val additionalNames = additionalItems.map { it.name }.toSet()
             // 把 fieldValues 按 ConfigItem.type 还原为正确 JSON 类型（bool/number/string）
@@ -109,10 +159,13 @@ class StorageEditViewModel @Inject constructor(
             val addition = serializeAddition(additionOnly)
             val v = state.fieldValues
             val patch = StoragePatch(
-                id = state.storage.id ?: 0L,
+                id = storageId,
                 mountPath = readCommonString(v, "mount_path", state.storage.mountPath) ?: state.storage.mountPath,
                 driver = state.storage.driver,
-                disabled = !state.enabled,
+                // 启用/禁用走专用端点;update 用最新的 disabled/status/modified,不覆盖刚切换的状态。
+                disabled = latest.disabled,
+                status = latest.status,
+                modified = latest.modified,
                 order = readCommonInt(v, "order", state.storage.order),
                 remark = readCommonString(v, "remark", state.storage.remark),
                 cacheExpiration = readCommonInt(v, "cache_expiration", state.storage.cacheExpiration),
@@ -207,7 +260,7 @@ class StorageEditViewModel @Inject constructor(
         m["extract_folder"] = s.extractFolder ?: ""
         m["disable_index"] = s.disableIndex
         m["enable_sign"] = s.enableSign
-        m["disabled"] = s.status == "disabled"
+        m["disabled"] = s.disabled
         return m
     }
 

@@ -98,7 +98,7 @@ class StorageEditContentTest {
                         form = state,
                         onBack = {},
                         onFieldValueChange = onFieldValueChange,
-                        onEnabledChange = {},
+                        onToggleEnabled = {},
                         onSave = onSave,
                     )
                 }

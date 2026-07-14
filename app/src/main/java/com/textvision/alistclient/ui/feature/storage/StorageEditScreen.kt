@@ -43,7 +43,7 @@ fun StorageEditScreen(
             form = screenState,
             onBack = onBack,
             onFieldValueChange = viewModel::updateField,
-            onEnabledChange = viewModel::setEnabled,
+            onToggleEnabled = viewModel::toggleEnabled,
             onSave = viewModel::save,
         )
     }
