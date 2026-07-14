@@ -120,14 +120,62 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `music_artist` (
+                    `name` TEXT NOT NULL,
+                    `path` TEXT NOT NULL,
+                    `albumCount` INTEGER NOT NULL,
+                    `songCount` INTEGER NOT NULL,
+                    PRIMARY KEY(`name`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `music_album` (
+                    `artist` TEXT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `path` TEXT NOT NULL,
+                    `coverPath` TEXT,
+                    `songCount` INTEGER NOT NULL,
+                    `id` TEXT NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `music_song` (
+                    `path` TEXT NOT NULL,
+                    `trackNo` TEXT NOT NULL,
+                    `trackNoInt` INTEGER,
+                    `artist` TEXT NOT NULL,
+                    `album` TEXT NOT NULL,
+                    `title` TEXT NOT NULL,
+                    `lrcPath` TEXT,
+                    `coverPath` TEXT,
+                    `sizeBytes` INTEGER NOT NULL,
+                    PRIMARY KEY(`path`)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "transfer_tasks.db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
     @Provides
     fun provideTransferDao(database: AppDatabase): TransferDao = database.transferDao()
+
+    @Provides
+    fun provideMusicDao(database: AppDatabase): MusicDao = database.musicDao()
 }
 
 @Module
