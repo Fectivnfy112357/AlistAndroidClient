@@ -55,7 +55,7 @@ class MusicPlayerViewModel @Inject constructor(
         }
         viewModelScope.launch {
             playbackController.state.map { it.current?.path }.distinctUntilChanged().collect { path ->
-                rawArtwork.value = path?.let(indexRepo::artworkForSong)
+                rawArtwork.value = if (path != null) indexRepo.artworkForSong(path) else null
             }
         }
     }
