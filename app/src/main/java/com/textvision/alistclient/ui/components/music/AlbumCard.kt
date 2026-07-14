@@ -3,6 +3,9 @@ package com.textvision.alistclient.ui.components.music
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -40,8 +43,12 @@ data class AlbumDecoBadge(
 )
 
 /**
- * 专辑卡 — square [CoverLetter] cover with an optional bottom-right [DecoBadge],
- * followed by album name + artist. Visual placeholder (no playback).
+ * 专辑卡 — square [ArtworkCover] cover with an optional bottom-right [DecoBadge],
+ * followed by album name + artist.
+ *
+ * Two layout modes:
+ *  - [fill] = false (default): fixed-width column sized by [size], for horizontal carousels.
+ *  - [fill] = true: cover fills the parent width as a square (`aspectRatio(1f)`), for grid cells.
  */
 @Composable
 fun AlbumCard(
@@ -52,15 +59,22 @@ fun AlbumCard(
     modifier: Modifier = Modifier,
     decoBadge: AlbumDecoBadge? = null,
     size: AlbumCardSize = AlbumCardSize.SMALL,
+    fill: Boolean = false,
 ) {
-    Column(modifier = modifier.width(size.cover)) {
-        Box(Modifier.size(size.cover)) {
-            ArtworkCover(name, artworkData, gradient, size.cover)
+    val columnModifier = if (fill) modifier.fillMaxWidth() else modifier.width(size.cover)
+    Column(modifier = columnModifier) {
+        val coverModifier = if (fill) {
+            Modifier.fillMaxWidth().aspectRatio(1f)
+        } else {
+            Modifier.size(size.cover)
+        }
+        Box(coverModifier) {
+            ArtworkCover(name, artworkData, gradient, modifier = Modifier.fillMaxSize())
             if (decoBadge != null) {
                 DecoBadge(
                     icon = decoBadge.icon,
                     position = DecoPosition.BR,
-                    size = if (size == AlbumCardSize.LARGE) DecoSize.LG else DecoSize.MD,
+                    size = if (size == AlbumCardSize.LARGE || fill) DecoSize.LG else DecoSize.MD,
                     color = decoBadge.color,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -73,7 +87,8 @@ fun AlbumCard(
             text = name,
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
+            maxLines = 2,
+            minLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
@@ -85,6 +100,8 @@ fun AlbumCard(
         )
     }
 }
+
+// size() comes from foundation.layout.size import above.
 
 @Preview(name = "AlbumCard small")
 @Composable

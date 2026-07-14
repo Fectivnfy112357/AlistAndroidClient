@@ -222,15 +222,17 @@ private fun AlbumsTab(ui: MusicLibraryUiState) {
             .distinctUntilChanged().filter { it }.collect { requested += PageSize }
     }
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2), state = state,
-        contentPadding = PaddingValues(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
+        columns = GridCells.Adaptive(minSize = 116.dp), state = state,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { SectionHeader("全部专辑", "已显示 ${visible.size} / ${ui.albums.size}") }
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { SectionHeader("全部专辑", "已显示 ${visible.size} / ${ui.albums.size}") }
         items(visible, key = { "${it.artist}/${it.name}" }) { album ->
-            AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyLemon, MusicMagenta)), artworkData = album.artworkData, size = AlbumCardSize.LARGE)
+            AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyLemon, MusicMagenta)), artworkData = album.artworkData, fill = true)
         }
-        if (visible.size < ui.albums.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { LoadingMore() }
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { Spacer(Modifier.height(120.dp)) }
+        if (visible.size < ui.albums.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { LoadingMore() }
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(120.dp)) }
     }
 }
 
