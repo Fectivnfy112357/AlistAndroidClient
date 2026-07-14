@@ -14,7 +14,7 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@OptIn(UnstableApi::class)
+@androidx.annotation.OptIn(markerClass = [UnstableApi::class])
 @Singleton
 class MusicCache @Inject constructor(
     @ApplicationContext private val context: Context,

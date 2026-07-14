@@ -43,6 +43,16 @@ class PlaybackControllerTest {
     }
 
     @Test
+    fun playbackStartState_selectsRequestedSong_beforeServiceIsReady() {
+        val songs = listOf(
+            Song("/a.mp3", "1", 1, "x", "y", "first", null, null, 0L),
+            Song("/b.mp3", "2", 2, "x", "y", "second", null, null, 0L),
+        )
+
+        assertEquals(songs[1], playbackStartState(songs, 1).current)
+    }
+
+    @Test
     fun playQueue_intentHasCorrectExtras() {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
         val songs = listOf(

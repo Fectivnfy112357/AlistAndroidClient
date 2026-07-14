@@ -3,6 +3,7 @@ package com.textvision.alistclient.music.playback
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
@@ -29,7 +30,11 @@ data class PlaybackState(
     val shuffle: Boolean = false,
 )
 
+internal fun playbackStartState(songs: List<Song>, startIndex: Int): PlaybackState =
+    PlaybackState(current = songs.getOrNull(startIndex))
+
 @Singleton
+@androidx.annotation.OptIn(markerClass = [UnstableApi::class])
 class PlaybackController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val indexRepo: MusicIndexRepository,
@@ -59,6 +64,7 @@ class PlaybackController @Inject constructor(
     }
 
     fun playQueue(context: Context, songs: List<Song>, startIndex: Int) {
+        publishState(playbackStartState(songs, startIndex))
         val paths = songs.map { it.path }
         val intent = Intent(context, MusicPlaybackService::class.java).apply {
             action = PlaybackIntents.ACTION_PLAY_QUEUE

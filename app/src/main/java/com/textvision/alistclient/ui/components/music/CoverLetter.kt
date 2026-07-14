@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+internal fun coverLabel(name: String): String =
+    name.firstOrNull { it.isLetter() }?.toString()?.uppercase() ?: "♪"
+
 /**
  * 居中首字封面 — gradient background + first Unicode character of `name` rendered large.
  */
@@ -26,7 +29,7 @@ fun CoverLetter(
     size: Dp = 42.dp,
     modifier: Modifier = Modifier,
 ) {
-    val firstChar = name.firstOrNull { !it.isWhitespace() }?.toString()?.uppercase() ?: "♪"
+    val firstChar = coverLabel(name)
     val fontSize = (size.value * 0.52f).sp
     Box(
         modifier = modifier

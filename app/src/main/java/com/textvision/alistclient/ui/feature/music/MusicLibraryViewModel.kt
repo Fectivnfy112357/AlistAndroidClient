@@ -28,6 +28,9 @@ data class MusicLibraryUiState(
     val songs: List<UiSong> = emptyList(),
 )
 
+internal fun visibleItemCount(total: Int, requested: Int): Int =
+    requested.coerceIn(0, total)
+
 @HiltViewModel
 class MusicLibraryViewModel @Inject constructor(
     private val indexRepo: MusicIndexRepository,
@@ -68,6 +71,8 @@ class MusicLibraryViewModel @Inject constructor(
     fun onRescanClick() {
         viewModelScope.launch { indexRepo.rescan() }
     }
+
+    fun onTogglePlayPause() = playbackController.togglePlayPause()
 
     fun onPlayQueueClick(context: Context, songs: List<UiSong>, index: Int) {
         val domainSongs = songs.map { s ->

@@ -91,7 +91,6 @@ class MusicPlaybackService : MediaSessionService() {
         player.setMediaItems(items, firstIndex, 0L)
         player.prepare()
         player.playWhenReady = true
-        playbackController.publishState(PlaybackState())
     }
 
     private val playerListener = object : Player.Listener {

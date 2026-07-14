@@ -13,18 +13,34 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,6 +52,7 @@ import com.textvision.alistclient.ui.components.music.MiniPlayer
 import com.textvision.alistclient.ui.components.music.MusicHeroCard
 import com.textvision.alistclient.ui.components.music.SongRow
 import com.textvision.alistclient.ui.feature.music.dto.UiIndexState
+import com.textvision.alistclient.ui.feature.music.model.UiSong
 import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.foundation.AppScaffold
 import com.textvision.alistclient.ui.foundation.AppTopBar
@@ -46,7 +63,15 @@ import com.textvision.alistclient.ui.theme.CandyMint
 import com.textvision.alistclient.ui.theme.CandyPink
 import com.textvision.alistclient.ui.theme.MusicMagenta
 import com.textvision.alistclient.ui.theme.MusicPink
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 
+private const val PageSize = 40
+private const val LoadAhead = 8
+private val LibraryTabs = listOf("概览", "歌曲", "专辑", "艺人")
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicLibraryScreen(
     onOpenPreview: () -> Unit = {},
@@ -56,13 +81,14 @@ fun MusicLibraryScreen(
     val ui by viewModel.state.collectAsStateWithLifecycle()
     val playback by viewModel.playbackState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     AppScaffold(transparentBase = true, background = {}) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             Column(Modifier.fillMaxSize()) {
                 AppTopBar(
                     title = "音乐库",
-                    subtitle = "${ui.songs.size} 首 · ${ui.artists.size} 位艺人",
+                    subtitle = "${ui.artists.size} 位艺人 · ${ui.albums.size} 张专辑 · ${ui.songs.size} 首歌",
                     onBack = onBack,
                     actions = {
                         IconButton(onClick = viewModel::onRescanClick) {
@@ -70,38 +96,48 @@ fun MusicLibraryScreen(
                         }
                     },
                 )
-
-                when (val s = ui.indexState) {
+                when (val index = ui.indexState) {
                     UiIndexState.NotIndexed -> ScanningBlock(0, 0)
-                    is UiIndexState.Scanning -> ScanningBlock(s.artistsDone, s.songsFound)
-                    UiIndexState.Ready -> LibraryBody(
-                        ui = ui,
-                        onPlayQueue = { songs, idx ->
-                            viewModel.onPlayQueueClick(context, songs, idx)
-                            onOpenPreview()
-                        },
-                    )
+                    is UiIndexState.Scanning -> ScanningBlock(index.artistsDone, index.songsFound)
+                    UiIndexState.Ready -> {
+                        PrimaryTabRow(selectedTabIndex = selectedTab) {
+                            LibraryTabs.forEachIndexed { index, title ->
+                                Tab(
+                                    selected = selectedTab == index,
+                                    onClick = { selectedTab = index },
+                                    text = { Text(title) },
+                                )
+                            }
+                        }
+                        when (selectedTab) {
+                            0 -> OverviewTab(ui) { songs, start ->
+                                viewModel.onPlayQueueClick(context, songs, start)
+                                onOpenPreview()
+                            }
+                            1 -> SongsTab(ui, playback.current?.path) { songs, start ->
+                                viewModel.onPlayQueueClick(context, songs, start)
+                                onOpenPreview()
+                            }
+                            2 -> AlbumsTab(ui)
+                            else -> ArtistsTab(ui)
+                        }
+                    }
                     is UiIndexState.Failed -> ErrorState(
-                        message = s.message,
+                        message = index.message,
                         onRetry = viewModel::onRescanClick,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
-
-            val currentSong = playback.current
-            if (currentSong != null) {
+            playback.current?.let { current ->
                 MiniPlayer(
-                    name = currentSong.title,
-                    artist = currentSong.artist,
-                    gradient = MusicPinkHeroGradient,
+                    name = current.title,
+                    artist = current.artist,
+                    gradient = Brush.linearGradient(listOf(CandyPink, MusicMagenta, MusicPink)),
                     isPlaying = playback.isPlaying,
-                    onPlayPause = { /* Play/pause from mini player is intentionally a no-op
-                        here; the player screen owns that control. */ },
+                    onPlayPause = { viewModel.onTogglePlayPause() },
                     onClick = onOpenPreview,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
+                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }
@@ -109,133 +145,135 @@ fun MusicLibraryScreen(
     }
 }
 
-private val MusicPinkHeroGradient = Brush.linearGradient(
-    listOf(CandyPink, MusicMagenta, MusicPink),
-)
-
 @Composable
-private fun ScanningBlock(artistsDone: Int, songsFound: Int) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        CircularProgressIndicator()
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = if (artistsDone == 0) "准备扫描..."
-            else "扫描中：$artistsDone 位艺人 · $songsFound 首歌曲",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun LibraryBody(
-    ui: MusicLibraryUiState,
-    onPlayQueue: (List<com.textvision.alistclient.ui.feature.music.model.UiSong>, Int) -> Unit,
-) {
+private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int) -> Unit) {
     LazyColumn(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item("hero") {
+        item {
             MusicHeroCard(
                 title = "我的音乐库",
-                subtitle = "${ui.artists.size} 位艺人 · ${ui.albums.size} 张专辑 · ${ui.songs.size} 首歌曲",
+                subtitle = "${ui.artists.size} 位艺人 · ${ui.albums.size} 张专辑 · ${ui.songs.size} 首歌",
                 isPlaying = false,
-                onPlayPause = {
-                    if (ui.songs.isNotEmpty()) onPlayQueue(ui.songs, 0)
-                },
+                onPlayPause = { if (ui.songs.isNotEmpty()) onPlayQueue(ui.songs, 0) },
                 onFavorite = {},
                 onQueue = {},
             )
         }
-
         if (ui.recentAlbums.isNotEmpty()) {
-            item("recent_header") { SectionHeader("最近添加") }
-            item("recent_row") {
+            item { SectionHeader("最近添加", "新入库的专辑") }
+            item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(ui.recentAlbums, key = { "${it.artist}/${it.name}" }) { album ->
-                        AlbumCard(
-                            name = album.name,
-                            artist = album.artist,
-                            gradient = Brush.linearGradient(listOf(CandyPink, CandyLilac)),
-                            size = AlbumCardSize.LARGE,
-                        )
+                        AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyPink, CandyLilac)), size = AlbumCardSize.LARGE)
                     }
                 }
             }
         }
-
-        if (ui.artists.isNotEmpty()) {
-            item("artists_header") { SectionHeader("艺人") }
-            item("artists_row") {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(ui.artists, key = { it.path }) { artist ->
-                        ArtistCard(
-                            name = artist.name,
-                            count = artist.albumCount,
-                            gradient = Brush.linearGradient(listOf(CandyMint, Brand500)),
-                        )
-                    }
-                }
-            }
-        }
-
-        if (ui.albums.isNotEmpty()) {
-            item("albums_header") { SectionHeader("全部专辑") }
-            ui.albums.chunked(2).forEachIndexed { idx, pair ->
-                item("albums_row_$idx") {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        pair.forEach { album ->
-                            Box(modifier = Modifier.weight(1f)) {
-                                AlbumCard(
-                                    name = album.name,
-                                    artist = album.artist,
-                                    gradient = Brush.linearGradient(listOf(CandyLemon, MusicMagenta)),
-                                    size = AlbumCardSize.LARGE,
-                                )
-                            }
-                        }
-                        if (pair.size == 1) {
-                            Box(modifier = Modifier.weight(1f)) {}
-                        }
-                    }
-                }
-            }
-        }
-
         if (ui.songs.isNotEmpty()) {
-            item("songs_header") { SectionHeader("所有歌曲") }
-            items(ui.songs, key = { it.path }) { song ->
-                SongRow(
-                    name = song.title,
-                    artist = song.artist,
-                    duration = "",
-                    gradient = Brush.linearGradient(listOf(CandyPink, Brand500)),
-                    onClick = {
-                        val idx = ui.songs.indexOf(song)
-                        onPlayQueue(ui.songs, idx)
-                    },
-                )
+            item { SectionHeader("继续聆听", "从你的音乐里开始") }
+            items(ui.songs.take(5), key = { it.path }) { song ->
+                SongRow(song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)), onClick = {
+                    onPlayQueue(ui.songs, ui.songs.indexOf(song))
+                })
             }
         }
-
-        item("spacer") { Spacer(Modifier.height(72.dp)) }
+        item { Spacer(Modifier.height(120.dp)) }
     }
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-    )
+private fun SongsTab(ui: MusicLibraryUiState, playingPath: String?, onPlayQueue: (List<UiSong>, Int) -> Unit) {
+    var requested by rememberSaveable { mutableIntStateOf(PageSize) }
+    val state = rememberLazyListState()
+    val visible = ui.songs.take(visibleItemCount(ui.songs.size, requested))
+    LaunchedEffect(state, visible.size, ui.songs.size) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .map { it >= visible.lastIndex - LoadAhead && visible.size < ui.songs.size }
+            .distinctUntilChanged().filter { it }.collect { requested += PageSize }
+    }
+    PagedList(
+        title = "所有歌曲",
+        subtitle = "按索引顺序 · 已显示 ${visible.size} / ${ui.songs.size}",
+        state = state,
+    ) {
+        items(visible, key = { it.path }) { song ->
+            SongRow(
+                song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)),
+                isPlaying = song.path == playingPath,
+                onClick = { onPlayQueue(ui.songs, ui.songs.indexOf(song)) },
+            )
+        }
+        if (visible.size < ui.songs.size) item { LoadingMore() }
+        item { Spacer(Modifier.height(120.dp)) }
+    }
+}
+
+@Composable
+private fun AlbumsTab(ui: MusicLibraryUiState) {
+    var requested by rememberSaveable { mutableIntStateOf(PageSize) }
+    val state = rememberLazyGridState()
+    val visible = ui.albums.take(visibleItemCount(ui.albums.size, requested))
+    LaunchedEffect(state, visible.size, ui.albums.size) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .map { it >= visible.lastIndex - LoadAhead && visible.size < ui.albums.size }
+            .distinctUntilChanged().filter { it }.collect { requested += PageSize }
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2), state = state,
+        contentPadding = PaddingValues(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { SectionHeader("全部专辑", "已显示 ${visible.size} / ${ui.albums.size}") }
+        items(visible, key = { "${it.artist}/${it.name}" }) { album ->
+            AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyLemon, MusicMagenta)), size = AlbumCardSize.LARGE)
+        }
+        if (visible.size < ui.albums.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { LoadingMore() }
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) { Spacer(Modifier.height(120.dp)) }
+    }
+}
+
+@Composable
+private fun ArtistsTab(ui: MusicLibraryUiState) {
+    var requested by rememberSaveable { mutableIntStateOf(PageSize) }
+    val state = rememberLazyGridState()
+    val visible = ui.artists.take(visibleItemCount(ui.artists.size, requested))
+    LaunchedEffect(state, visible.size, ui.artists.size) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .map { it >= visible.lastIndex - LoadAhead && visible.size < ui.artists.size }
+            .distinctUntilChanged().filter { it }.collect { requested += PageSize }
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3), state = state,
+        contentPadding = PaddingValues(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { SectionHeader("艺人", "已显示 ${visible.size} / ${ui.artists.size}") }
+        items(visible, key = { it.path }) { artist ->
+            ArtistCard(artist.name, artist.songCount, Brush.linearGradient(listOf(CandyMint, Brand500)), modifier = Modifier.fillMaxWidth())
+        }
+        if (visible.size < ui.artists.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { LoadingMore() }
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { Spacer(Modifier.height(120.dp)) }
+    }
+}
+
+@Composable
+private fun PagedList(title: String, subtitle: String, state: androidx.compose.foundation.lazy.LazyListState, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
+    LazyColumn(state = state, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        item { SectionHeader(title, subtitle) }
+        content()
+    }
+}
+
+@Composable private fun LoadingMore() = Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+    CircularProgressIndicator(Modifier.height(20.dp))
+    Text("正在加载更多", modifier = Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable private fun ScanningBlock(artistsDone: Int, songsFound: Int) = Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+    CircularProgressIndicator(); Spacer(Modifier.height(16.dp)); Text(if (artistsDone == 0) "准备扫描..." else "扫描中：$artistsDone 位艺人 · $songsFound 首歌曲", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable private fun SectionHeader(title: String, subtitle: String) = Column {
+    Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }

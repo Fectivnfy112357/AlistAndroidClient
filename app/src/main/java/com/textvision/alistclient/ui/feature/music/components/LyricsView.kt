@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.textvision.alistclient.music.data.model.LrcLine
 
 @Composable
@@ -24,6 +25,7 @@ fun LyricsView(
     lines: List<LrcLine>,
     currentIndex: Int,
     modifier: Modifier = Modifier,
+    height: Dp = 360.dp,
 ) {
     val listState = rememberLazyListState()
 
@@ -49,7 +51,7 @@ fun LyricsView(
 
     LazyColumn(
         state = listState,
-        modifier = modifier.fillMaxWidth().height(360.dp),
+        modifier = modifier.fillMaxWidth().height(height),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         contentPadding = PaddingValues(vertical = 120.dp),

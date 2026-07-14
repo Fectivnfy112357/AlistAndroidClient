@@ -46,4 +46,11 @@ class MusicLibraryViewModelTest {
         assertEquals(UiIndexState.Ready, s.indexState)
         assertEquals(1, s.artists.size)
     }
+
+    @Test
+    fun visibleItemCount_growsInFixedPages_withoutExceedingTotal() {
+        assertEquals(40, visibleItemCount(total = 95, requested = 40))
+        assertEquals(80, visibleItemCount(total = 95, requested = 80))
+        assertEquals(95, visibleItemCount(total = 95, requested = 120))
+    }
 }
