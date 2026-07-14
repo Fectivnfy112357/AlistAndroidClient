@@ -14,7 +14,10 @@ import com.textvision.alistclient.music.data.model.Song
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,6 +34,7 @@ class MusicPlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pathToSong: Map<String, Song> = emptyMap()
+    private var progressJob: Job? = null
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -57,6 +61,7 @@ class MusicPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        progressJob?.cancel()
         mediaSession?.run {
             player.release()
             release()
@@ -93,6 +98,28 @@ class MusicPlaybackService : MediaSessionService() {
         player.playWhenReady = true
     }
 
+    private fun startProgressUpdates() {
+        progressJob?.cancel()
+        progressJob = serviceScope.launch {
+            while (isActive) {
+                val player = exoPlayer ?: break
+                if (!player.isPlaying) break
+                publishProgress(player)
+                delay(PROGRESS_UPDATE_MS)
+            }
+        }
+    }
+
+    private fun publishProgress(player: Player) {
+        playbackController.publishState(
+            playbackProgressState(
+                state = playbackController.state.value,
+                positionMs = player.currentPosition,
+                durationMs = player.duration.takeIf { it > 0 } ?: 0L,
+            ),
+        )
+    }
+
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val path = mediaItem?.mediaId.orEmpty()
@@ -106,15 +133,17 @@ class MusicPlaybackService : MediaSessionService() {
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             playbackController.publishState(playbackController.state.value.copy(isPlaying = isPlaying))
+            if (isPlaying) startProgressUpdates() else progressJob?.cancel()
         }
 
         override fun onPlaybackStateChanged(state: Int) {
             val player = exoPlayer ?: return
+            publishProgress(player)
+        }
+
+        override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) {
             playbackController.publishState(
-                playbackController.state.value.copy(
-                    durationMs = player.duration.takeIf { it > 0 } ?: 0L,
-                    positionMs = player.currentPosition,
-                ),
+                playbackController.state.value.copy(artworkData = mediaMetadata.artworkData),
             )
         }
 
@@ -132,5 +161,9 @@ class MusicPlaybackService : MediaSessionService() {
                 playbackController.state.value.copy(shuffle = shuffleModeEnabled),
             )
         }
+    }
+
+    private companion object {
+        const val PROGRESS_UPDATE_MS = 500L
     }
 }

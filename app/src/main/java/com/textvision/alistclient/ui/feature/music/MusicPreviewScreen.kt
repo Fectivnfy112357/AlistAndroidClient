@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.feature.music
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,9 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.textvision.alistclient.ui.components.music.CoverLetter
@@ -50,6 +54,11 @@ fun MusicPreviewScreen(
     val ui by viewModel.state.collectAsStateWithLifecycle()
     val current = ui.playback.current
     val coverGradient = Brush.linearGradient(listOf(CandyPink, MusicMagenta, MusicViolet))
+    val artwork = remember(ui.playback.artworkData) {
+        ui.playback.artworkData?.let { data ->
+            BitmapFactory.decodeByteArray(data, 0, data.size)?.asImageBitmap()
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
@@ -72,12 +81,21 @@ fun MusicPreviewScreen(
                     modifier = Modifier.fillMaxSize().background(coverGradient),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CoverLetter(
-                        name = current?.title ?: "音乐",
-                        gradient = coverGradient,
-                        size = 164.dp,
-                        modifier = Modifier.clip(RoundedCornerShape(36.dp)),
-                    )
+                    if (artwork != null) {
+                        Image(
+                            bitmap = artwork,
+                            contentDescription = "专辑封面",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        CoverLetter(
+                            name = current?.title ?: "音乐",
+                            gradient = coverGradient,
+                            size = 164.dp,
+                            modifier = Modifier.clip(RoundedCornerShape(36.dp)),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(24.dp))

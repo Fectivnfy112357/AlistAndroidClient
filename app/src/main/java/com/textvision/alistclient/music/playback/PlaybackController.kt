@@ -28,10 +28,17 @@ data class PlaybackState(
     val durationMs: Long = 0L,
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val shuffle: Boolean = false,
+    val artworkData: ByteArray? = null,
 )
 
 internal fun playbackStartState(songs: List<Song>, startIndex: Int): PlaybackState =
     PlaybackState(current = songs.getOrNull(startIndex))
+
+internal fun playbackProgressState(
+    state: PlaybackState,
+    positionMs: Long,
+    durationMs: Long,
+): PlaybackState = state.copy(positionMs = positionMs, durationMs = durationMs)
 
 @Singleton
 @androidx.annotation.OptIn(markerClass = [UnstableApi::class])

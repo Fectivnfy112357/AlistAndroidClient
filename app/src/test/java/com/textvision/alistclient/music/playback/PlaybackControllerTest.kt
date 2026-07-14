@@ -53,6 +53,16 @@ class PlaybackControllerTest {
     }
 
     @Test
+    fun playbackProgressState_updatesPosition_withoutLosingCurrentSong() {
+        val song = Song("/a.mp3", "1", 1, "x", "y", "first", null, null, 0L)
+        val state = playbackProgressState(PlaybackState(current = song), 1_500L, 4_000L)
+
+        assertEquals(song, state.current)
+        assertEquals(1_500L, state.positionMs)
+        assertEquals(4_000L, state.durationMs)
+    }
+
+    @Test
     fun playQueue_intentHasCorrectExtras() {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
         val songs = listOf(

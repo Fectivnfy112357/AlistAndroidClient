@@ -83,8 +83,8 @@ fun MusicLibraryScreen(
     val context = LocalContext.current
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
-    AppScaffold(transparentBase = true, background = {}) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+    AppScaffold(transparentBase = true, background = {}) {
+        Box(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize()) {
                 AppTopBar(
                     title = "音乐库",
