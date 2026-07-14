@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,19 +26,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.icons.AppIcons
+import com.textvision.alistclient.ui.theme.Brand500
 import com.textvision.alistclient.ui.theme.Corner
-import com.textvision.alistclient.ui.theme.MusicLilac
-import com.textvision.alistclient.ui.theme.MusicPink
+import com.textvision.alistclient.ui.theme.CandyLilac
 import com.textvision.alistclient.ui.theme.MusicViolet
 
-/** Pink → purple → violet artistic gradient for the music hero banner. */
+/** Soft blue → lilac gradient that harmonizes with the app's light-blue theme. */
 private val HeroGradient = Brush.linearGradient(
-    listOf(MusicPink, MusicLilac, MusicViolet),
+    listOf(Brand500, CandyLilac),
 )
 
 /**
- * 音乐横幅 — 180dp gradient banner: "刚刚播放" label + [WaveIndicator] + Fredoka title +
- * round play/favorite/queue buttons. Visual placeholder (no playback).
+ * 音乐横幅 — 148dp gradient banner with Fredoka title + subtitle + round play/favorite/queue buttons.
+ * Visual placeholder (no playback).
  */
 @Composable
 fun MusicHeroCard(
@@ -54,22 +53,11 @@ fun MusicHeroCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(180.dp)
+            .height(148.dp)
             .clip(androidx.compose.foundation.shape.RoundedCornerShape(Corner.ExtraLarge))
             .background(HeroGradient)
             .padding(20.dp),
     ) {
-        Column(Modifier.align(Alignment.TopStart)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "刚刚播放",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.9f),
-                )
-                Spacer(Modifier.width(10.dp))
-                WaveIndicator(isPlaying = isPlaying, color = Color.White, barHeight = 14.dp)
-            }
-        }
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth()) {
             Text(
                 text = title,

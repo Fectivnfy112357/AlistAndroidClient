@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.feature.music
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -38,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -148,7 +152,7 @@ fun MusicLibraryScreen(
 @Composable
 private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int) -> Unit) {
     LazyColumn(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
@@ -173,13 +177,17 @@ private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int
         }
         if (ui.songs.isNotEmpty()) {
             item { SectionHeader("继续聆听", "从你的音乐里开始") }
-            items(ui.songs.take(5), key = { it.path }) { song ->
-                SongRow(song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)), artworkData = song.artworkData, onClick = {
-                    onPlayQueue(ui.songs, ui.songs.indexOf(song))
-                })
+            item {
+                Column {
+                    ui.songs.take(5).forEach { song ->
+                        SongRow(song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)), artworkData = song.artworkData, onClick = {
+                            onPlayQueue(ui.songs, ui.songs.indexOf(song))
+                        })
+                    }
+                }
             }
         }
-        item { Spacer(Modifier.height(120.dp)) }
+        item { Spacer(Modifier.height(16.dp)) }
     }
 }
 
@@ -276,7 +284,16 @@ private fun PagedList(title: String, subtitle: String, state: androidx.compose.f
     CircularProgressIndicator(); Spacer(Modifier.height(16.dp)); Text(if (artistsDone == 0) "准备扫描..." else "扫描中：$artistsDone 位艺人 · $songsFound 首歌曲", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
-@Composable private fun SectionHeader(title: String, subtitle: String) = Column {
-    Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+@Composable private fun SectionHeader(title: String, subtitle: String) = Row(verticalAlignment = Alignment.CenterVertically) {
+    Box(
+        Modifier
+            .size(width = 4.dp, height = 18.dp)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(2.dp))
+            .background(MaterialTheme.colorScheme.primary)
+    )
+    Spacer(Modifier.width(10.dp))
+    Column {
+        Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
