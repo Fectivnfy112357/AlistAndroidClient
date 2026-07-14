@@ -63,6 +63,7 @@ class FileRepositoryTest {
         }
 
         override suspend fun search(url: String, request: FsSearchRequest): AlistResponse<AlistFsList> = throw UnsupportedOperationException("search is not used by this test")
+        override suspend fun fsGet(url: String, request: com.textvision.alistclient.network.dto.FsGetRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsGetData> = throw UnsupportedOperationException("fsGet is not used by this test")
         override suspend fun mkdir(url: String, request: MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException("mkdir is not used by this test")
         override suspend fun rename(url: String, request: RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException("rename is not used by this test")
         override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
@@ -119,6 +120,7 @@ class FileRepositoryTest {
             )))
         override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> = throw UnsupportedOperationException()
         override suspend fun search(url: String, request: FsSearchRequest): AlistResponse<AlistFsList> = throw UnsupportedOperationException()
+        override suspend fun fsGet(url: String, request: com.textvision.alistclient.network.dto.FsGetRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsGetData> = throw UnsupportedOperationException()
         override suspend fun mkdir(url: String, request: MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
         override suspend fun rename(url: String, request: RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
         override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
@@ -168,6 +170,7 @@ class FileRepositoryTest {
             if (loginCode == 200) AlistResponse(200, "success", AlistLoginData("new-token"))
             else AlistResponse(loginCode, "unauthorized", null)
         override suspend fun search(url: String, request: FsSearchRequest): AlistResponse<AlistFsList> = throw UnsupportedOperationException()
+        override suspend fun fsGet(url: String, request: com.textvision.alistclient.network.dto.FsGetRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsGetData> = throw UnsupportedOperationException()
         override suspend fun mkdir(url: String, request: MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
         override suspend fun rename(url: String, request: RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
         override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
@@ -232,6 +235,7 @@ class FileRepositoryTest {
                 AlistResponse(403, "forbidden", null)
             override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> = throw UnsupportedOperationException()
             override suspend fun search(url: String, request: FsSearchRequest): AlistResponse<AlistFsList> = throw UnsupportedOperationException()
+            override suspend fun fsGet(url: String, request: com.textvision.alistclient.network.dto.FsGetRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsGetData> = throw UnsupportedOperationException()
             override suspend fun mkdir(url: String, request: MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
             override suspend fun rename(url: String, request: RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException()
             override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException()

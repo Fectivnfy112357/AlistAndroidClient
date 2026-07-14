@@ -42,6 +42,7 @@ class AuthRepositoryTest {
         override suspend fun login(url: String, skipAuthRetry: String, request: LoginRequest): AlistResponse<AlistLoginData> = response
         override suspend fun list(url: String, request: FsListRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsList> = throw UnsupportedOperationException("list is not used by this test")
         override suspend fun search(url: String, request: com.textvision.alistclient.network.dto.FsSearchRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsList> = throw UnsupportedOperationException("search is not used by this test")
+        override suspend fun fsGet(url: String, request: com.textvision.alistclient.network.dto.FsGetRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsGetData> = throw UnsupportedOperationException("fsGet is not used by this test")
         override suspend fun mkdir(url: String, request: com.textvision.alistclient.network.dto.MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException("mkdir is not used by this test")
         override suspend fun rename(url: String, request: com.textvision.alistclient.network.dto.RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException("rename is not used by this test")
         override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
@@ -67,6 +68,7 @@ class AuthRepositoryTest {
         }
         override suspend fun list(url: String, request: FsListRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsList> = throw UnsupportedOperationException("list is not used by this test")
         override suspend fun search(url: String, request: com.textvision.alistclient.network.dto.FsSearchRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsList> = throw UnsupportedOperationException("search is not used by this test")
+        override suspend fun fsGet(url: String, request: com.textvision.alistclient.network.dto.FsGetRequest): AlistResponse<com.textvision.alistclient.network.dto.AlistFsGetData> = throw UnsupportedOperationException("fsGet is not used by this test")
         override suspend fun mkdir(url: String, request: com.textvision.alistclient.network.dto.MkdirRequest): AlistResponse<Unit> = throw UnsupportedOperationException("mkdir is not used by this test")
         override suspend fun rename(url: String, request: com.textvision.alistclient.network.dto.RenameRequest): AlistResponse<Unit> = throw UnsupportedOperationException("rename is not used by this test")
         override suspend fun remove(url: String, request: RemoveRequest): AlistResponse<Unit> = throw UnsupportedOperationException("remove is not used by this test")
