@@ -100,11 +100,15 @@ class SettingsContentTest {
                 Surface {
                     SettingsContent(
                         uiState = state,
+                        musicRoot = "/我的音乐",
+                        musicCacheSize = 0L,
                         onStorageClick = onStorageClick,
                         onQuickSettingEdit = { _: SettingItem, _: String -> },
                         onClearPreviewFiles = {},
                         onAdvancedSettings = {},
                         onLogout = {},
+                        onMusicRootChange = {},
+                        onClearMusicCache = {},
                     )
                 }
             }

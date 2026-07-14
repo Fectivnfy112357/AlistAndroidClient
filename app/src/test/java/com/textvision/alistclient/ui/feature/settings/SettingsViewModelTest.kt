@@ -48,6 +48,10 @@ class SettingsViewModelTest {
         storageRepository = storage,
         settingsRepository = settings,
         sessionManager = session,
+        musicRootStore = mockk(relaxed = true),
+        musicCache = mockk(relaxed = true) {
+            io.mockk.every { sizeBytes } returns 0L
+        },
     )
 
     @Test fun toggleStorageCallsRepo() = runTest {

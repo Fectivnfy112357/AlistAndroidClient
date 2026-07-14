@@ -25,6 +25,7 @@ import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.transfer.RealTransferExecutor
 import com.textvision.alistclient.transfer.TransferExecutor
 import com.textvision.alistclient.transfer.data.TransferDao
+import com.textvision.alistclient.music.data.MusicDao
 import dagger.Binds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
