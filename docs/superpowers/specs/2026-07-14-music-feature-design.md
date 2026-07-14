@@ -2,7 +2,7 @@
 
 > 状态：待评审 · 日期 2026-07-14 · 作者 Claude + 用户
 
-把当前**纯占位**的音乐库页 / 音乐播放器页接上真实数据：从可配置的音乐库存储（默认 `/我的音乐`）扫描 `歌手/专辑/歌曲` 三层结构，建 Room 索引，实现完整播放器（ExoPlayer）、同步滚动歌词、自动播放缓存、全局常驻 MiniPlayer。
+把当前**纯占位**的音乐库页 / 音乐播放器页接上真实数据：从可配置的音乐库存储（默认 `/我的音乐`）扫描 `歌手/专辑/歌曲` 三层结构，建 Room 索引（仅路径），实现完整播放器（ExoPlayer）、同步滚动歌词、自动播放缓存、全局常驻 MiniPlayer。sign 不存索引、播放时实时取 — 索引永远不过期。
 
 ## 1. 背景与现状
 
@@ -15,9 +15,10 @@
 
 ### 1.2 已具备的基础设施（复用）
 
-- `AlistApi.list(url, FsListRequest(path))` → `api/fs/list` 返回目录内容。
-- `FileDtos.toFileItem`：用返回的 `sign` 构建 `/d/<path>?sign=<sign>` 下载直链、`/p/<path>?sign=<sign>` 缩略图链。
+- `AlistApi.list(url, FsListRequest(path))` → `api/fs/list` 返回目录内容（只用 name/isDir，不依赖 sign）。
+- `FileDtos.toFileItem`：当前版本会顺手构造 sign URL，本设计**不使用其 downloadUrl/thumbnailUrl 字段**，只取 `name/isDir/size` 等基础字段（封装一个轻量 `toFileItemBasic` 或复用 toFileItem 后丢弃 URL 字段均可）。
 - 带鉴权的 `OkHttpClient`（`di/AppModule.NetworkModule`）+ `AuthInterceptor`。
+- **新增** `AlistApi.fsGet(path)`：`POST api/fs/get` → 返回 `{ name, size, sign }`，供 SignProvider 用（Alist v3 现有接口；需新增 Retrofit 方法 + DTO + 测试）。
 - Room 单库 `AppDatabase`（`transfer_tasks.db`，当前 version 2），已有 KSP + Room 配置。
 - DataStore prefs 模式（`ThemeRepository` 用 `preferencesDataStore`）。
 - `PreviewAudio.kt` 里已验证的 MediaPlayer 生命周期模式（本设计改用 ExoPlayer，仅作参考）。
@@ -79,6 +80,8 @@ Hilt 绑定加入 `di/AppModule.kt`（或新建 `MusicModule`）：`MusicDao`（
 
 ### 5.1 Room 实体（加入现有 AppDatabase，version 2 → 3）
 
+> **设计原则：Room 只存 path，不存 sign。** sign 是 Alist 服务端时效性参数，会过期；索引不应该依赖它过期才能刷新。所有封面/音频/歌词直链在播放或加载时**实时拼**（`$base/p/<path>?sign=<latest>` 或 `/d/...`），sign 通过新增的 `fsGet` 接口 + `SignProvider` 缓存层提供。这样索引永远有效，「重新扫描」只为发现新增/删除，不为修 sign。
+
 ```kotlin
 @Entity(tableName = "music_artist")
 data class ArtistEntity(
@@ -93,7 +96,7 @@ data class AlbumEntity(
     val artist: String,
     val name: String,                    // 专辑目录名
     val path: String,
-    val coverUrl: String?,               // /d/.../cover.jpg?sign=... ；无则 null
+    val coverPath: String?,              // 封面文件路径（无则 null）
     val songCount: Int,
 )
 
@@ -105,42 +108,46 @@ data class SongEntity(
     val artist: String,
     val album: String,
     val title: String,                   // 歌曲名
-    val downloadUrl: String,             // /d/.../xxx.mp3?sign=...
-    val lrcUrl: String?,                 // 同名 .lrc 直链，无则 null
-    val coverUrl: String?,               // 继承专辑封面
+    val lrcPath: String?,                // 同名 .lrc 路径，无则 null
+    val coverPath: String?,              // 继承专辑封面
     val sizeBytes: Long,
 )
 ```
 
-> 注：`sign` 会随 Alist 配置变化而过期。索引存 URL 简单，但签名过期会导致直链失效。**MVP 接受此限制**：直链失效时播放/加载失败，用户点「重新扫描」即可刷新签名。（后续可改存 path，播放时实时取 sign —— 见 §9 已知限制。）
+### 5.2 SignProvider（新模块）
 
-### 5.2 MusicScanner
+- `@Singleton`，内存缓存 `Map<path, SignEntry(path, sign, expiresAtMs)>`。
+- `suspend fun get(path: String, kind: SignKind /* THUMBNAIL / DOWNLOAD */): String?`：先查缓存，未命中或过期 → 调 `AlistApi.fsGet(path)` → 拿 `sign` → 存入缓存返回。
+- `suspend fun primeThumbnails(paths: List<String>)`：批量预热封面 sign（库页首次进入时调）。
+- 专辑封面、播放器封面、歌词加载都通过此 provider 拼 URL；ExoPlayer 准备失败（401）时调用方回调 → 让 SignProvider 强制 refresh 该 path → 重试。
+
+### 5.2 MusicScanner（移位，原编号改为 §5.3 后统一调整）
 
 - 输入：音乐库根路径。
-- 流程（全部走 `AlistApi.list` + `toFileItem` 拿 sign）：
+- 流程（全部走 `AlistApi.list`，不取 sign）：
   1. `list(根)` → 目录项 = 歌手列表。
   2. 对每个歌手 `list(歌手路径)` → 目录项 = 专辑列表。
   3. 对每个专辑 `list(专辑路径)` → 文件项，分类：
-     - 封面：名（去扩展名）== `cover` 且为图片 → 记 coverUrl。
+     - 封面：名（去扩展名）== `cover` 且为图片 → 记 coverPath。
      - 歌词：`.lrc` → 存进 map（key = 去扩展名文件名）。
-     - 音频：扩展名 ∈ 音频集 → 解析文件名 `序号-歌手-歌名`；成功则建 SongEntity（lrcUrl 从 map 按同名取），失败跳过。
+     - 音频：扩展名 ∈ 音频集 → 解析文件名 `序号-歌手-歌名`；成功则建 SongEntity（lrcPath 从 map 按同名取），失败跳过。
 - 进度回调：`onProgress(artistsScanned, albumsScanned, songsFound)` → 驱动构建动画。
 - 并发：歌手层可用有限并发（如 `Semaphore(4)`）加速，避免打爆服务器。错误容忍：单个目录 list 失败记 log 跳过，不中断整体扫描。
-- 输出：`ScanResult(artists, albums, songs)`。
+- 输出：`ScanResult(artists, albums, songs)`。所有路径为相对服务端根的绝对路径（如 `/我的音乐/周杰伦/晴天/01-周杰伦-晴天.mp3`）。
 
-### 5.3 LrcParser
+### 5.3 LrcParser（移位）
 
-- 输入：.lrc 文本。解析 `[mm:ss.xx]歌词` 行（一行可有多个时间标签）。忽略 `[ti:][ar:][al:][by:][offset:]` 等元数据标签（offset 可选支持：整体时移毫秒）。
+- 输入：.lrc 文本（通过 SignProvider 拿到直链后 OkHttp 下载）。解析 `[mm:ss.xx]歌词` 行（一行可有多个时间标签）。忽略 `[ti:][ar:][al:][by:][offset:]` 等元数据标签（offset 可选支持：整体时移毫秒）。
 - 输出：`List<LrcLine(timeMs: Long, text: String)>`，按 timeMs 升序。空/无有效行 → 空列表。
 - 纯函数，易单测。
 
-### 5.4 MusicIndexRepository
+### 5.4 MusicIndexRepository（移位）
 
 - `val indexState: StateFlow<IndexState>`，`IndexState = NotIndexed | Scanning(artists, songs) | Ready | Failed(msg)`。
 - `suspend fun ensureIndexed()`：若 Room 空 → 触发 `rescan()`；否则置 Ready。
 - `suspend fun rescan()`：置 Scanning → 调 Scanner（转发进度）→ `clearAll()` + 批量 upsert → 置 Ready（失败置 Failed）。
 - 读缓存查询（Flow）：`artists()` / `albumsByArtist(artist)` / `allAlbums()` / `songsByAlbum(...)` / `allSongs()` / `recentAlbums(limit)`。
-- 下载 lrc 文本：`suspend fun loadLrc(url): String?`（走 OkHttp，供播放器页解析）。
+- 下载 lrc 文本：`suspend fun loadLrc(path): String?`（先查 SignProvider 拿直链 → OkHttp 下载，供播放器页解析）。
 
 ## 6. 播放层设计
 
@@ -205,10 +212,10 @@ data class PlaybackState(
 ### 7.3 MusicPreviewScreen（改造为真实播放器）
 
 - 接 `MusicPlayerViewModel`（读 `PlaybackController.state` + 歌词）。
-- 封面（Coil，回退渐变）+ 曲名/歌手。
+- 封面（Coil，通过 SignProvider 拼直链，无则回退渐变）+ 曲名/歌手。
 - 进度条：真实 `positionMs/durationMs`，可拖动 `seekTo`；时间标签。
 - 5 键控制：随机（高亮态）/ 上一首 / 播放暂停 / 下一首 / 循环（关-单曲-列表 三态图标）。
-- **同步歌词**：`MusicPlayerViewModel` 用 `MusicIndexRepository.loadLrc(current.lrcUrl)` → `LrcParser` → 行列表；按 `positionMs` 定位当前行索引；`LazyColumn` 高亮当前行（primary 色 + 加粗），`LaunchedEffect(currentLine)` `animateScrollToItem` 居中。无 lrcUrl / 空 → "暂无歌词"。
+- **同步歌词**：`MusicPlayerViewModel` 用 `MusicIndexRepository.loadLrc(current.lrcPath)` → `LrcParser` → 行列表；按 `positionMs` 定位当前行索引；`LazyColumn` 高亮当前行（primary 色 + 加粗），`LaunchedEffect(currentLine)` `animateScrollToItem` 居中。无 lrcPath / 空 → "暂无歌词"。
 
 ## 8. 测试
 
@@ -223,7 +230,7 @@ data class PlaybackState(
 
 ## 9. 已知限制与后续
 
-- **签名过期**：索引存的 `/d/?sign=` 直链会随 Alist 签名配置过期而失效；MVP 靠「重新扫描」刷新。后续可改存 path、播放时实时取 sign。
+- **sign 永远实时取**（通过 SignProvider + fsGet），索引不依赖 sign 永不过期；重新扫描只为发现文件变更（新增/删除）。
 - 无后台播放 / 通知栏（同项目既有 MVP 限制）。
 - 缓存容量 512MB 硬编码，后续可做成设置项。
 - 搜索为本地内存过滤（若做），不调服务器 search。
