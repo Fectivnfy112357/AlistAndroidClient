@@ -100,6 +100,10 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.security.crypto)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.datasource.okhttp)
+    implementation(libs.androidx.media3.ui)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
