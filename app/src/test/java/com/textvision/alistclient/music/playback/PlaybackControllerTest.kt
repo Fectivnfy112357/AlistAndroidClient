@@ -43,6 +43,16 @@ class PlaybackControllerTest {
     }
 
     @Test
+    fun publishProgress_updatesProgressFlow_withoutReplacingPlaybackState() = runTest {
+        controller.publishProgress(positionMs = 1_000L, durationMs = 4_000L)
+
+        val progress = controller.progress.first()
+
+        assertEquals(1_000L, progress.positionMs)
+        assertEquals(4_000L, progress.durationMs)
+    }
+
+    @Test
     fun playbackStartState_selectsRequestedSong_beforeServiceIsReady() {
         val songs = listOf(
             Song("/a.mp3", "1", 1, "x", "y", "first", null, null, 0L),

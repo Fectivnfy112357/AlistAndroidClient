@@ -9,9 +9,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.compose.ui.unit.IntOffset
 import com.textvision.alistclient.ui.theme.AppMotion
 
 internal const val AppNavMotionDurationMillis = AppMotion.DurationMediumMillis
@@ -19,6 +22,11 @@ internal const val AppNavMotionDurationMillis = AppMotion.DurationMediumMillis
 private val AppNavTween = AppMotion.FloatTween
 
 private val AppNavOffsetTween = AppMotion.OffsetTween
+
+private val MusicPreviewOffsetTween = tween<IntOffset>(
+    durationMillis = 180,
+    easing = FastOutSlowInEasing,
+)
 
 private fun NavDestination?.isMainTab(): Boolean = this != null && (
     hasRoute(FilesDest::class) ||
@@ -48,14 +56,7 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTrans
                 slideInVertically(AppNavOffsetTween) { it / 28 }
         from.isMainTab() && to.isMainTab() ->
             EnterTransition.None
-        // Library ↔ Preview is the hottest path: a 240 ms slide+fade while
-        // ExoPlayer starts to buffer makes the transition feel like a frame
-        // freeze. Drop the animation entirely — the destination screen pops
-        // in cleanly and Service/ExoPlayer loading is no longer masked by a
-        // slide that blocks user attention.
-        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
-            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
-            EnterTransition.None
+        to.hasRoute(MusicPreviewDest::class) -> musicPreviewEnterTransition()
         to.navDepth() > from.navDepth() ->
             fadeIn(AppNavTween, initialAlpha = 0.86f) +
                 slideInHorizontally(AppNavOffsetTween) { width -> width / 8 }
@@ -70,13 +71,7 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsExitTransi
     return when {
         from.isMainTab() && to.isMainTab() ->
             ExitTransition.None
-        // Same reasoning as hyperOsEnterTransition: Library ↔ Preview pairs
-        // need no exit animation either — a fade out on the source page while
-        // the destination is already on screen creates the "double exposure"
-        // frame the user described as "very uncomfortable".
-        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
-            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
-            ExitTransition.None
+        to.hasRoute(MusicPreviewDest::class) -> ExitTransition.None
         to.navDepth() > from.navDepth() ->
             fadeOut(AppNavTween, targetAlpha = 0.9f)
         to.hasRoute(LoginDest::class) ->
@@ -91,11 +86,9 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopEnterTr
     val from = initialState.destination
     val to = targetState.destination
     return when {
+        from.hasRoute(MusicPreviewDest::class) -> EnterTransition.None
         to.navDepth() < from.navDepth() ->
             fadeIn(AppNavTween, initialAlpha = 0.94f)
-        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
-            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
-            EnterTransition.None
         else -> hyperOsEnterTransition()
     }
 }
@@ -104,12 +97,17 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopExitTra
     val from = initialState.destination
     val to = targetState.destination
     return when {
+        from.hasRoute(MusicPreviewDest::class) -> musicPreviewExitTransition()
         to.navDepth() < from.navDepth() ->
             fadeOut(AppNavTween, targetAlpha = 0.88f) +
                 slideOutHorizontally(AppNavOffsetTween) { width -> width / 8 }
-        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
-            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
-            ExitTransition.None
         else -> hyperOsExitTransition()
     }
 }
+
+/** A solid playback page sweeps over the source without blending both page trees. */
+private fun musicPreviewEnterTransition(): EnterTransition =
+    slideInHorizontally(MusicPreviewOffsetTween) { width -> width }
+
+private fun musicPreviewExitTransition(): ExitTransition =
+    slideOutHorizontally(MusicPreviewOffsetTween) { width -> width }

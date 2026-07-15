@@ -58,7 +58,10 @@ fun MusicPreviewScreen(
     val coverGradient = PreviewCoverGradient
 
     Column(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AppTopBar(title = "正在播放", subtitle = current?.album.orEmpty(), onBack = onBack)
