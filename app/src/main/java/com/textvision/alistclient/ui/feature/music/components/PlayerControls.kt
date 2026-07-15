@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,11 @@ fun PlayerControls(
     onNext: () -> Unit,
     onToggleShuffle: () -> Unit,
     onCycleRepeat: () -> Unit,
+    // True while the playback Service is fetching bytes for the first track.
+    // We swap the play/pause glyph for a spinner in the centre button so the
+    // user sees "the app is doing something" instead of a screen that looks
+    // frozen between the moment a song is tapped and the moment audio starts.
+    preparing: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -62,17 +68,26 @@ fun PlayerControls(
         }
         Surface(
             onClick = onPlayPause,
+            enabled = !preparing,
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(64.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "暂停" else "播放",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(32.dp),
-                )
+                if (preparing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(28.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.5.dp,
+                    )
+                } else {
+                    Icon(
+                        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "暂停" else "播放",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
             }
         }
         IconButton(onClick = onNext) {

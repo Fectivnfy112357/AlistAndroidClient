@@ -12,6 +12,7 @@ import com.textvision.alistclient.ui.feature.music.model.UiAlbum
 import com.textvision.alistclient.ui.feature.music.model.UiArtist
 import com.textvision.alistclient.ui.feature.music.model.UiSong
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,12 +34,20 @@ internal fun visibleItemCount(total: Int, requested: Int): Int =
 
 @HiltViewModel
 class MusicLibraryViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val indexRepo: MusicIndexRepository,
     private val playbackController: PlaybackController,
 ) : ViewModel() {
 
     init {
         viewModelScope.launch { indexRepo.ensureIndexed() }
+        // A2: pre-create the playback Service so the first `playQueue` click
+        // doesn't pay the Service-cold-start + ExoPlayer-construction cost
+        // (typically 200-500 ms on a real device, observed as "3-4 seconds of
+        // silence" before the first track begins). Connecting the MediaController
+        // boots the Service in the background; by the time the user taps a row
+        // the player thread is alive and waiting on Intent.ACTION_PLAY_QUEUE.
+        playbackController.warmUp(appContext)
     }
 
     val state: StateFlow<MusicLibraryUiState> = combine(

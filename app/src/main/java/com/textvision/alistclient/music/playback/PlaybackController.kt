@@ -76,6 +76,17 @@ class PlaybackController @Inject constructor(
         )
     }
 
+    /**
+     * Pre-create the playback Service and ExoPlayer without actually queuing any
+     * media. Called early (e.g. when entering the music library) so the first
+     * user-initiated `playQueue` doesn't pay the 200-500 ms cold-start cost on
+     * top of signing + prepare. Safe to invoke multiple times — once the Service
+     * is alive, MediaController is bound and subsequent calls are no-ops.
+     */
+    fun warmUp(context: Context) {
+        ensureController { /* no-op: just want the Service up */ }
+    }
+
     fun playQueue(context: Context, songs: List<Song>, startIndex: Int) {
         publishState(playbackStartState(songs, startIndex))
         val paths = songs.map { it.path }
