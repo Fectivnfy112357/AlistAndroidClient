@@ -73,7 +73,10 @@ fun PlayerControls(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(64.dp),
         ) {
-            Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.size(48.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 if (preparing) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(28.dp),

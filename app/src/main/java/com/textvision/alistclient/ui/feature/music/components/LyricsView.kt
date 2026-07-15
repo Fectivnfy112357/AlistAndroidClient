@@ -12,6 +12,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,6 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.textvision.alistclient.music.data.model.LrcLine
+
+internal fun nextLyricScrollTarget(previous: Int, current: Int, lineCount: Int): Int? =
+    current.takeIf { it in 0 until lineCount && it != previous }
 
 @Composable
 fun LyricsView(
@@ -28,14 +33,17 @@ fun LyricsView(
     height: Dp = 360.dp,
 ) {
     val listState = rememberLazyListState()
+    val lastRequestedIndex = remember(lines) { mutableIntStateOf(-1) }
+    val scrollTarget = nextLyricScrollTarget(
+        previous = lastRequestedIndex.intValue,
+        current = currentIndex,
+        lineCount = lines.size,
+    )
 
-    LaunchedEffect(currentIndex) {
-        if (currentIndex >= 0) {
-            listState.animateScrollToItem(
-                index = currentIndex.coerceIn(0, (lines.lastIndex).coerceAtLeast(0)),
-                scrollOffset = -120,
-            )
-        }
+    LaunchedEffect(scrollTarget) {
+        val target = scrollTarget ?: return@LaunchedEffect
+        lastRequestedIndex.intValue = target
+        listState.animateScrollToItem(index = target, scrollOffset = -120)
     }
 
     if (lines.isEmpty()) {

@@ -7,9 +7,12 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.textvision.alistclient.ui.feature.music.components.LyricsView
 import com.textvision.alistclient.ui.feature.music.components.PlayerControls
+import com.textvision.alistclient.ui.feature.music.components.nextLyricScrollTarget
 import com.textvision.alistclient.music.data.model.LrcLine
 import com.textvision.alistclient.music.playback.RepeatMode
 import org.junit.Rule
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -20,6 +23,13 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class MusicComposableSmokeTest {
+
+    @Test
+    fun lyricScrollTargetIgnoresInvalidAndRepeatedIndex() {
+        assertNull(nextLyricScrollTarget(previous = 4, current = 4, lineCount = 20))
+        assertNull(nextLyricScrollTarget(previous = 4, current = -1, lineCount = 20))
+        assertEquals(7, nextLyricScrollTarget(previous = 4, current = 7, lineCount = 20))
+    }
 
     @get:Rule
     val composeRule = createComposeRule()
