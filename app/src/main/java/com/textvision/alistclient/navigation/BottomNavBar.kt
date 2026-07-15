@@ -16,6 +16,9 @@ private const val TAB_MUSIC = "music"
 private const val TAB_TRANSFERS = "transfers"
 private const val TAB_SETTINGS = "settings"
 
+internal fun shouldNavigateToTab(currentTab: String, targetTab: String): Boolean =
+    currentTab != targetTab
+
 /**
  * Bottom navigation bar for the five top-level tabs. Decides its own visibility:
  * it only renders when the current destination is one of
@@ -42,6 +45,7 @@ fun AppBottomNavBar(
         AppBottomBar(
             currentRoute = currentTab,
             onNavigate = { route ->
+                if (!shouldNavigateToTab(currentTab, route)) return@AppBottomBar
                 val target: Any = when (route) {
                     TAB_HOME -> HomeDest
                     TAB_FILES -> FilesDest()

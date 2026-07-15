@@ -34,6 +34,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.icons.AppIcons
 
+private val BottomItems = listOf(
+    BottomItem("home", "首页", AppIcons.home),
+    BottomItem("files", "文件", AppIcons.file),
+    BottomItem("music", "音乐", AppIcons.musicNote),
+    BottomItem("transfers", "传输", AppIcons.transfer),
+    BottomItem("settings", "设置", AppIcons.settings),
+)
+
 /**
  * Sticky-style top bar — title + subtitle + optional back + trailing actions.
  * Mimics prototype glass-white background with optional elevation.
@@ -113,13 +121,6 @@ fun AppBottomBar(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val items = listOf(
-        BottomItem("home",      "首页", AppIcons.home),
-        BottomItem("files",     "文件", AppIcons.file),
-        BottomItem("music",     "音乐", AppIcons.musicNote),
-        BottomItem("transfers", "传输", AppIcons.transfer),
-        BottomItem("settings",  "设置", AppIcons.settings),
-    )
     Surface(
         modifier = modifier.fillMaxWidth(),
         // Opaque surface + tonal elevation instead of shadow + alpha. The
@@ -138,7 +139,7 @@ fun AppBottomBar(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            items.forEach { item ->
+            BottomItems.forEach { item ->
                 val selected = currentRoute == item.id
                 val interactionSource = remember { MutableInteractionSource() }
                 Column(

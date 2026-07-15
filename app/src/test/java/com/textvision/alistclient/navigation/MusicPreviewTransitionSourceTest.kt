@@ -26,6 +26,10 @@ class MusicPreviewTransitionSourceTest {
             "MusicPreviewDest must not fade its incoming layer over the previous page",
             transitions.contains("MusicPreviewDest::class)) ->\n            fadeIn"),
         )
+        assertFalse(
+            "MusicPreviewDest must not fade its outgoing source layer during entry",
+            transitions.contains("to.hasRoute(MusicPreviewDest::class) ->\n            fadeOut"),
+        )
         assertTrue(
             "Music preview must paint an opaque root background before async content arrives",
             preview.contains("background(MaterialTheme.colorScheme.background)"),
