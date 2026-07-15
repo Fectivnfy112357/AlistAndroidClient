@@ -54,6 +54,7 @@ fun MusicPreviewScreen(
     viewModel: MusicPlayerViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.state.collectAsStateWithLifecycle()
+    val currentLineIndex by viewModel.currentLineIndex.collectAsStateWithLifecycle()
     val current = ui.playback.current
     val coverGradient = PreviewCoverGradient
 
@@ -136,7 +137,7 @@ fun MusicPreviewScreen(
             ) {
                 Column(Modifier.padding(vertical = 10.dp)) {
                     Text("歌词", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                    LyricsView(lines = ui.lyrics, currentIndex = ui.currentLineIndex, height = 280.dp)
+                    LyricsView(lines = ui.lyrics, currentIndex = currentLineIndex, height = 280.dp)
                 }
             }
             Spacer(Modifier.height(28.dp))

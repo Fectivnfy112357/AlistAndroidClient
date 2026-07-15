@@ -25,7 +25,6 @@ import javax.inject.Inject
 data class MusicPlayerUiState(
     val playback: PlaybackState = PlaybackState(),
     val lyrics: List<LrcLine> = emptyList(),
-    val currentLineIndex: Int = -1,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -75,8 +74,7 @@ class MusicPlayerViewModel @Inject constructor(
         rawLyrics,
         rawArtwork,
     ) { playback, lyrics, artwork ->
-        val index = binarySearchCurrentLine(lyrics, playback.positionMs)
-        MusicPlayerUiState(playback.copy(artworkData = artwork ?: playback.artworkData), lyrics, index)
+        MusicPlayerUiState(playback.copy(artworkData = artwork ?: playback.artworkData), lyrics)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -91,22 +89,13 @@ class MusicPlayerViewModel @Inject constructor(
     val progress: StateFlow<com.textvision.alistclient.music.playback.PlaybackProgress> =
         playbackController.progress
 
-    private fun binarySearchCurrentLine(lines: List<LrcLine>, positionMs: Long): Int {
-        if (lines.isEmpty()) return -1
-        var low = 0
-        var high = lines.lastIndex
-        var result = -1
-        while (low <= high) {
-            val mid = (low + high) ushr 1
-            if (lines[mid].timeMs <= positionMs) {
-                result = mid
-                low = mid + 1
-            } else {
-                high = mid - 1
-            }
-        }
-        return result
-    }
+    val currentLineIndex: StateFlow<Int> = combine(rawLyrics, progress) { lyrics, playbackProgress ->
+        currentLyricLineIndex(lyrics, playbackProgress.positionMs)
+    }.distinctUntilChanged().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = -1,
+    )
 
     fun onTogglePlayPause() = playbackController.togglePlayPause()
     fun onPrev() = playbackController.prev()
@@ -114,4 +103,21 @@ class MusicPlayerViewModel @Inject constructor(
     fun onSeekTo(ms: Long) = playbackController.seekTo(ms)
     fun onToggleShuffle() = playbackController.toggleShuffle()
     fun onCycleRepeat() = playbackController.cycleRepeat()
+}
+
+internal fun currentLyricLineIndex(lines: List<LrcLine>, positionMs: Long): Int {
+    if (lines.isEmpty()) return -1
+    var low = 0
+    var high = lines.lastIndex
+    var result = -1
+    while (low <= high) {
+        val mid = (low + high) ushr 1
+        if (lines[mid].timeMs <= positionMs) {
+            result = mid
+            low = mid + 1
+        } else {
+            high = mid - 1
+        }
+    }
+    return result
 }

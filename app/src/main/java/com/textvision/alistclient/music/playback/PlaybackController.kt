@@ -10,16 +10,9 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.textvision.alistclient.music.data.MusicIndexRepository
 import com.textvision.alistclient.music.data.model.Song
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -65,21 +58,11 @@ class PlaybackController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val indexRepo: MusicIndexRepository,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _state = MutableStateFlow(PlaybackState())
     val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
-    // ── perf fix ─────────────────────────────────────────────────────────
-    // Side-channel flow for Slider / position text. Sourced from `_state`
-    // but only emits a NEW PlaybackProgress instance when the (rounded-to-
-    // second) position changes, so subscribers skip recomposition on no-op
-    // ticks. UI subjects (preview page) subscribe to this instead of the
-    // full PlaybackState, so flipping repeat mode / shuffle / buffering
-    // flags no longer re-walks the slider subtree.
-    val progress: StateFlow<PlaybackProgress> = _state
-        .map { PlaybackProgress(it.positionMs, it.durationMs) }
-        .distinctUntilChanged()
-        .stateIn(scope, SharingStarted.Eagerly, PlaybackProgress(0L, 0L))
+    private val _progress = MutableStateFlow(PlaybackProgress(0L, 0L))
+    val progress: StateFlow<PlaybackProgress> = _progress.asStateFlow()
 
     private var controller: MediaController? = null
 
@@ -176,8 +159,6 @@ class PlaybackController @Inject constructor(
      * keep using the main `state` flow for control-state (current, isPlaying,
      * repeat/shuffle, buffering flags) so they only recompose when they change.
      */
-    private val _progress = MutableStateFlow(PlaybackProgress(0L, 0L))
-
     internal fun publishProgress(positionMs: Long, durationMs: Long) {
         val currentSec = _progress.value.positionMs / 1000L
         if (positionMs / 1000L != currentSec) {
