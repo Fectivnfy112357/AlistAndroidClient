@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -47,7 +49,9 @@ class MusicLibraryViewModel @Inject constructor(
         // silence" before the first track begins). Connecting the MediaController
         // boots the Service in the background; by the time the user taps a row
         // the player thread is alive and waiting on Intent.ACTION_PLAY_QUEUE.
+        android.util.Log.i("MusicPerf", "LibraryVM warmUp begin ${System.nanoTime()}")
         playbackController.warmUp(appContext)
+        android.util.Log.i("MusicPerf", "LibraryVM warmUp invoked (non-blocking) ${System.nanoTime()}")
     }
 
     val state: StateFlow<MusicLibraryUiState> = combine(
@@ -71,12 +75,24 @@ class MusicLibraryViewModel @Inject constructor(
         initialValue = MusicLibraryUiState(),
     )
 
-    /** Sticky bottom MiniPlayer source — playback state, surfaced for the library screen. */
-    val playbackState: StateFlow<PlaybackState> = playbackController.state.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = PlaybackState(),
-    )
+    /**
+     * Mini player source. We expose ONLY the fields the mini player reads
+     * (current song + isPlaying), as a small immutable record. Previously this
+     * forwarded the full PlaybackState — including `positionMs`, which ticks
+     * every 250 ms and forced the entire library screen (including Lazy grids)
+     * to recompose. The mini player doesn't show position, so skipping it
+     * here removes the biggest churn source.
+     */
+    data class MiniPlayerState(val current: Song?, val isPlaying: Boolean)
+
+    val playbackState: StateFlow<MiniPlayerState> = playbackController.state
+        .map { MiniPlayerState(it.current, it.isPlaying) }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = MiniPlayerState(null, false),
+        )
 
     fun onRescanClick() {
         viewModelScope.launch { indexRepo.rescan() }

@@ -90,13 +90,16 @@ class MusicPlaybackService : MediaSessionService() {
         if (intent?.action == PlaybackIntents.ACTION_PLAY_QUEUE) {
             val paths = intent.getStringArrayListExtra(PlaybackIntents.EXTRA_SONG_PATHS) ?: return START_NOT_STICKY
             val startIndex = intent.getIntExtra(PlaybackIntents.EXTRA_START_INDEX, 0)
+            android.util.Log.i("MusicPerf", "onStartCommand PLAY_QUEUE n=${paths.size} start=$startIndex ${System.nanoTime()}")
             serviceScope.launch { playQueue(paths, startIndex) }
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private suspend fun playQueue(paths: List<String>, startIndex: Int) {
         if (paths.isEmpty()) return
+        val tStart = System.nanoTime()
+        android.util.Log.i("MusicPerf", "playQueue start n=${paths.size} idx=$startIndex")
         // Two-stage start:
         //
         // Stage 1 (synchronous, this method): sign only the first song + sign+queue
@@ -146,6 +149,7 @@ class MusicPlaybackService : MediaSessionService() {
         player.setMediaItems(firstItems, 0, 0L)
         player.prepare()
         player.playWhenReady = true
+        android.util.Log.i("MusicPerf", "playQueue setMediaItems+prepare done elapsed=${(System.nanoTime()-tStart)/1_000_000}ms")
 
         // Stage 2: lazy-load the rest of the queue. Earlier songs go in front
         // (used by repeat-all wrap-around); later songs get appended to the
@@ -184,6 +188,8 @@ class MusicPlaybackService : MediaSessionService() {
     private fun startProgressUpdates() {
         progressJob?.cancel()
         progressJob = serviceScope.launch {
+            // Throttle to 250 ms; the PlaybackController.progress flow dedupes
+            // identical-second ticks so callers see at most 1 emission / sec.
             while (isActive) {
                 val player = exoPlayer ?: break
                 if (!player.isPlaying) break
@@ -194,13 +200,18 @@ class MusicPlaybackService : MediaSessionService() {
     }
 
     private fun publishProgress(player: Player) {
-        playbackController.publishState(
-            playbackProgressState(
-                state = playbackController.state.value,
-                positionMs = player.currentPosition,
-                durationMs = player.duration.takeIf { it > 0 } ?: 0L,
-            ),
-        )
+        val pos = player.currentPosition
+        val dur = player.duration.takeIf { it > 0 } ?: 0L
+        // ── perf fix ─────────────────────────────────────────────────────
+        // Only patch the PlaybackState when the duration actually changed;
+        // position is consumed by the side-channel flow (PlaybackController.progress)
+        // so we don't churn the canonical state and don't force every observer
+        // to recompose on each tick.
+        val current = playbackController.state.value
+        if (current.durationMs != dur) {
+            playbackController.publishState(current.copy(durationMs = dur))
+        }
+        playbackController.publishProgress(pos, dur)
     }
 
     private val playerListener = object : Player.Listener {
@@ -282,7 +293,9 @@ class MusicPlaybackService : MediaSessionService() {
     }
 
     private companion object {
-        const val PROGRESS_UPDATE_MS = 500L
+        // 250 ms → 4 Hz. Smooth enough for the Slider / progress text, doesn't
+        // flood the Compose snapshot system with state replacements.
+        const val PROGRESS_UPDATE_MS = 250L
         // Cap concurrent signed-URL fetches so a large queue (e.g. 200 songs) doesn't
         // open 200 parallel HTTP requests against the Alist server. SignProvider already
         // memoises results for TTL_MS, so the steady-state cost is small.

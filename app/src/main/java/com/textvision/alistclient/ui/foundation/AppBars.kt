@@ -29,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -122,10 +121,14 @@ fun AppBottomBar(
         BottomItem("settings",  "设置", AppIcons.settings),
     )
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(elevation = 8.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        modifier = modifier.fillMaxWidth(),
+        // Opaque surface + tonal elevation instead of shadow + alpha. The
+        // previous `shadow(8dp) + surface.copy(alpha = 0.92f)` combo forced
+        // every frame to rasterize a new offscreen layer for the bar AND
+        // re-blend it with what's behind it. Opaque surface is a single
+        // hardware layer with no per-frame extra work.
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 3.dp,
     ) {
         Row(
             modifier = Modifier

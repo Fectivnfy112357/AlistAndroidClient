@@ -1,5 +1,6 @@
 package com.textvision.alistclient.ui.feature.music
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.textvision.alistclient.di.IoDispatcher
@@ -39,6 +40,7 @@ class MusicPlayerViewModel @Inject constructor(
     private val rawArtwork = MutableStateFlow<ByteArray?>(null)
 
     init {
+        Log.i("MusicPerf", "MusicPlayerViewModel.init START ${System.nanoTime()}")
         viewModelScope.launch {
             // Reload LRC only when the LRC path actually changes — `positionMs` ticks every
             // 100ms would otherwise trigger a download per frame.
@@ -46,8 +48,12 @@ class MusicPlayerViewModel @Inject constructor(
                 .map { it.current?.lrcPath }
                 .distinctUntilChanged()
                 .collect { lrcPath ->
+                    val t0 = System.nanoTime()
                     rawLyrics.value = if (lrcPath != null) {
-                        LrcParser.parse(indexRepo.loadLrcText(lrcPath).orEmpty())
+                        val text = indexRepo.loadLrcText(lrcPath).orEmpty()
+                        val parsed = LrcParser.parse(text)
+                        Log.i("MusicPerf", "loadLrcText ${lrcPath} took ${(System.nanoTime()-t0)/1_000_000}ms lines=${parsed.size}")
+                        parsed
                     } else {
                         emptyList()
                     }
@@ -55,9 +61,13 @@ class MusicPlayerViewModel @Inject constructor(
         }
         viewModelScope.launch {
             playbackController.state.map { it.current?.path }.distinctUntilChanged().collect { path ->
+                val t0 = System.nanoTime()
                 rawArtwork.value = if (path != null) indexRepo.artworkForSong(path) else null
+                val bytes = rawArtwork.value?.size ?: 0
+                Log.i("MusicPerf", "artworkForSong ${path} took ${(System.nanoTime()-t0)/1_000_000}ms bytes=$bytes")
             }
         }
+        Log.i("MusicPerf", "MusicPlayerViewModel.init DONE ${System.nanoTime()}")
     }
 
     val state: StateFlow<MusicPlayerUiState> = combine(
@@ -72,6 +82,14 @@ class MusicPlayerViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = MusicPlayerUiState(),
     )
+
+    /**
+     * Side-channel position/duration flow. Composables that only need the
+     * slider/position text should read this instead of `state` so the rest of
+     * the page (title, controls, lyrics) doesn't recompose on each tick.
+     */
+    val progress: StateFlow<com.textvision.alistclient.music.playback.PlaybackProgress> =
+        playbackController.progress
 
     private fun binarySearchCurrentLine(lines: List<LrcLine>, positionMs: Long): Int {
         if (lines.isEmpty()) return -1

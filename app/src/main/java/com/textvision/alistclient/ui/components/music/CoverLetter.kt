@@ -1,6 +1,5 @@
 package com.textvision.alistclient.ui.components.music
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -9,7 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.State
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal fun coverLabel(name: String): String =
     name.firstOrNull { it.isLetter() }?.toString()?.uppercase() ?: "♪"
@@ -70,8 +72,14 @@ fun CoverLetter(
 ) = CoverLetter(name, gradient, modifier.size(size), shape)
 
 /**
- * Artwork cover sized by [modifier] (caller controls fixed size or fill/aspectRatio).
- * Falls back to a [CoverLetter] when [artworkData] is null or fails to decode.
+ * Async artwork cover — sized by [modifier].
+ *
+ * Falls back to a [CoverLetter] while the byte array is still being decoded or
+ * after a decode failure. Previously this composable synchronously ran
+ * `BitmapFactory.decodeByteArray` on the UI thread inside a `remember`,
+ * which triggered `Slow UI thread` frames every time a 30-row Lazy grid
+ * re-laid out a page of freshly-bound items. Decoding on the IO dispatcher
+ * lets the placeholder render in frame 0 and the bitmap swap in when ready.
  */
 @Composable
 fun ArtworkCover(
@@ -81,9 +89,8 @@ fun ArtworkCover(
     modifier: Modifier = Modifier,
     shape: Shape = CoverShape,
 ) {
-    val artwork = remember(artworkData) {
-        artworkData?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
-    }
+    val artworkState = decodeArtworkAsync(artworkData)
+    val artwork = artworkState.value
     if (artwork == null) {
         CoverLetter(name, gradient, modifier, shape)
     } else {
@@ -95,6 +102,14 @@ fun ArtworkCover(
         )
     }
 }
+
+@Composable
+private fun decodeArtworkAsync(data: ByteArray?): State<androidx.compose.ui.graphics.ImageBitmap?> =
+    produceState(initialValue = null, key1 = data) {
+        value = if (data == null) null else withContext(Dispatchers.IO) {
+            android.graphics.BitmapFactory.decodeByteArray(data, 0, data.size)?.asImageBitmap()
+        }
+    }
 
 /** Fixed-size convenience overload. */
 @Composable

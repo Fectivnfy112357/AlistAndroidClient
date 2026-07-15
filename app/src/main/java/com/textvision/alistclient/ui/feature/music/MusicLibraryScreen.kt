@@ -75,6 +75,16 @@ private const val PageSize = 40
 private const val LoadAhead = 8
 private val LibraryTabs = listOf("概览", "歌曲", "专辑", "艺人")
 
+// Stable, reusable Brushes. `Brush.linearGradient(...)` allocates a new
+// instance each call and is treated as unstable by Compose, defeating the
+// recompose-skipping for every ListItem / SongRow / AlbumCard. Reusing the
+// same Brush reference lets LazyList keep items stable across scrolls.
+private val RowGradient: Brush = Brush.linearGradient(listOf(CandyPink, Brand500))
+private val RecentAlbumGradient: Brush = Brush.linearGradient(listOf(CandyPink, CandyLilac))
+private val AlbumGridGradient: Brush = Brush.linearGradient(listOf(CandyLemon, MusicMagenta))
+private val ArtistGradient: Brush = Brush.linearGradient(listOf(CandyMint, Brand500))
+private val MiniPlayerGradient: Brush = Brush.linearGradient(listOf(CandyPink, MusicMagenta, MusicPink))
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicLibraryScreen(
@@ -144,7 +154,7 @@ fun MusicLibraryScreen(
                 MiniPlayer(
                     name = current.title,
                     artist = current.artist,
-                    gradient = Brush.linearGradient(listOf(CandyPink, MusicMagenta, MusicPink)),
+                    gradient = MiniPlayerGradient,
                     isPlaying = playback.isPlaying,
                     onPlayPause = { viewModel.onTogglePlayPause() },
                     onClick = onOpenPreview,
@@ -177,7 +187,7 @@ private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(ui.recentAlbums, key = { "${it.artist}/${it.name}" }) { album ->
-                        AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyPink, CandyLilac)), artworkData = album.artworkData, size = AlbumCardSize.LARGE)
+                        AlbumCard(album.name, album.artist, RecentAlbumGradient, artworkData = album.artworkData, size = AlbumCardSize.LARGE)
                     }
                 }
             }
@@ -187,7 +197,7 @@ private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int
             item {
                 Column {
                     ui.songs.take(5).forEach { song ->
-                        SongRow(song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)), artworkData = song.artworkData, onClick = {
+                        SongRow(song.title, song.artist, "", RowGradient, artworkData = song.artworkData, onClick = {
                             // B2: a single row tap is "play this song now"; the rest
                             // of the queue will arrive from UI catalogue navigation
                             // (album/artist clicks) rather than auto-appending the
@@ -213,6 +223,10 @@ private fun SongsTab(ui: MusicLibraryUiState, playingPath: String?, onPlayQueue:
             .map { it >= visible.lastIndex - LoadAhead && visible.size < ui.songs.size }
             .distinctUntilChanged().filter { it }.collect { requested += PageSize }
     }
+    // Brush is unstable; constructing one per row would defeat LazyList's
+    // recompose-skipping. Resolved once with @Stable lambdas from the theme
+    // singletons, the same reference is shared across all rows.
+    val songBrush = RowGradient
     PagedList(
         title = "所有歌曲",
         subtitle = "按索引顺序 · 已显示 ${visible.size} / ${ui.songs.size}",
@@ -220,7 +234,7 @@ private fun SongsTab(ui: MusicLibraryUiState, playingPath: String?, onPlayQueue:
     ) {
         items(visible, key = { it.path }) { song ->
             SongRow(
-                song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)),
+                song.title, song.artist, "", songBrush,
                 artworkData = song.artworkData,
                 isPlaying = song.path == playingPath,
                 onClick = { onPlayQueue(ui.songs, ui.songs.indexOf(song)) },
@@ -249,7 +263,7 @@ private fun AlbumsTab(ui: MusicLibraryUiState) {
     ) {
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { SectionHeader("全部专辑", "已显示 ${visible.size} / ${ui.albums.size}") }
         items(visible, key = { "${it.artist}/${it.name}" }) { album ->
-            AlbumCard(album.name, album.artist, Brush.linearGradient(listOf(CandyLemon, MusicMagenta)), artworkData = album.artworkData, fill = true)
+            AlbumCard(album.name, album.artist, AlbumGridGradient, artworkData = album.artworkData, fill = true)
         }
         if (visible.size < ui.albums.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { LoadingMore() }
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(120.dp)) }
@@ -272,7 +286,7 @@ private fun ArtistsTab(ui: MusicLibraryUiState) {
     ) {
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { SectionHeader("艺人", "已显示 ${visible.size} / ${ui.artists.size}") }
         items(visible, key = { it.path }) { artist ->
-            ArtistCard(artist.name, artist.songCount, Brush.linearGradient(listOf(CandyMint, Brand500)), artworkData = artist.artworkData, modifier = Modifier.fillMaxWidth())
+            ArtistCard(artist.name, artist.songCount, ArtistGradient, artworkData = artist.artworkData, modifier = Modifier.fillMaxWidth())
         }
         if (visible.size < ui.artists.size) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { LoadingMore() }
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) { Spacer(Modifier.height(120.dp)) }

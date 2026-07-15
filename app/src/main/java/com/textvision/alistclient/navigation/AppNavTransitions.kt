@@ -48,6 +48,14 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTrans
                 slideInVertically(AppNavOffsetTween) { it / 28 }
         from.isMainTab() && to.isMainTab() ->
             EnterTransition.None
+        // Library ↔ Preview is the hottest path: a 240 ms slide+fade while
+        // ExoPlayer starts to buffer makes the transition feel like a frame
+        // freeze. Drop the animation entirely — the destination screen pops
+        // in cleanly and Service/ExoPlayer loading is no longer masked by a
+        // slide that blocks user attention.
+        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
+            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
+            EnterTransition.None
         to.navDepth() > from.navDepth() ->
             fadeIn(AppNavTween, initialAlpha = 0.86f) +
                 slideInHorizontally(AppNavOffsetTween) { width -> width / 8 }
@@ -61,6 +69,13 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsExitTransi
     val to = targetState.destination
     return when {
         from.isMainTab() && to.isMainTab() ->
+            ExitTransition.None
+        // Same reasoning as hyperOsEnterTransition: Library ↔ Preview pairs
+        // need no exit animation either — a fade out on the source page while
+        // the destination is already on screen creates the "double exposure"
+        // frame the user described as "very uncomfortable".
+        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
+            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
             ExitTransition.None
         to.navDepth() > from.navDepth() ->
             fadeOut(AppNavTween, targetAlpha = 0.9f)
@@ -78,6 +93,9 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopEnterTr
     return when {
         to.navDepth() < from.navDepth() ->
             fadeIn(AppNavTween, initialAlpha = 0.94f)
+        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
+            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
+            EnterTransition.None
         else -> hyperOsEnterTransition()
     }
 }
@@ -89,6 +107,9 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopExitTra
         to.navDepth() < from.navDepth() ->
             fadeOut(AppNavTween, targetAlpha = 0.88f) +
                 slideOutHorizontally(AppNavOffsetTween) { width -> width / 8 }
+        (from.isMainTab() && to.hasRoute(MusicPreviewDest::class)) ||
+            (from.hasRoute(MusicPreviewDest::class) && to.isMainTab()) ->
+            ExitTransition.None
         else -> hyperOsExitTransition()
     }
 }

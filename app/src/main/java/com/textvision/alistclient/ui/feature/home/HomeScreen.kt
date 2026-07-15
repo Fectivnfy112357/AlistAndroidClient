@@ -158,7 +158,7 @@ private fun DashboardList(
                 )
             }
         } else {
-            items(storages) { storage ->
+            items(storages, key = { it.mountPath }) { storage ->
                 StorageCard(storage = storage) {
                     android.util.Log.d("HomeScreen", "onStorageClick mountPath=${storage.mountPath}")
                     onStorageClick(storage.mountPath)

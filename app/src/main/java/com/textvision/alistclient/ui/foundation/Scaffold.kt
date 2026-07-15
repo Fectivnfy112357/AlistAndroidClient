@@ -30,10 +30,10 @@ fun AppScaffold(
     transparentBase: Boolean = false,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
-    background: @Composable () -> Unit = {
-        SkyBlueBackground()
-        CloudDecor()
-    },
+    // Default to no background — the nav host already paints SkyBlueBackground
+    // + CloudDecor once for every screen. Overriding here would double-render
+    // the vertical gradient and the 4 cloud circles on every frame.
+    background: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Box(

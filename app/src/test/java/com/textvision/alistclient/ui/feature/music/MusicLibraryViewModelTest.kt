@@ -4,6 +4,7 @@ import com.textvision.alistclient.music.data.MusicIndexRepository
 import com.textvision.alistclient.music.data.MusicIndexState
 import com.textvision.alistclient.music.data.model.Artist
 import com.textvision.alistclient.music.playback.PlaybackController
+import com.textvision.alistclient.music.playback.PlaybackProgress
 import com.textvision.alistclient.music.playback.PlaybackState
 import com.textvision.alistclient.ui.feature.music.dto.UiIndexState
 import io.mockk.coEvery
@@ -18,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -40,11 +42,31 @@ class MusicLibraryViewModelTest {
         every { repo.allSongs() } returns flowOf(emptyList())
         val playback = mockk<PlaybackController>(relaxed = true)
         every { playback.state } returns MutableStateFlow(PlaybackState())
+        every { playback.progress } returns MutableStateFlow(PlaybackProgress(0L, 0L))
 
-        val vm = MusicLibraryViewModel(repo, playback)
+        val vm = MusicLibraryViewModel(mockk(relaxed = true), repo, playback)
         val s = vm.state.first()
         assertEquals(UiIndexState.Ready, s.indexState)
         assertEquals(1, s.artists.size)
+    }
+
+    @Test
+    fun playbackState_omitsPosition_andDuration_soConsumersSkipRecompose() = runTest {
+        val song = mockk<com.textvision.alistclient.music.data.model.Song>(relaxed = true)
+        val playback = mockk<PlaybackController>(relaxed = true)
+        val n = MutableStateFlow(PlaybackState(current = song, isPlaying = true, positionMs = 1234L, durationMs = 9999L))
+        every { playback.state } returns n
+        every { playback.progress } returns MutableStateFlow(PlaybackProgress(1234L, 9999L))
+
+        val vm = MusicLibraryViewModel(mockk(relaxed = true), mockk(relaxed = true), playback)
+        // Position/duration text lives in the preview screen, NOT the mini
+        // player. The mini player state surface must drop positionMs /
+        // durationMs so progress ticks don't trigger recomposition here.
+        val mini = vm.playbackState.first()
+        assertEquals(song, mini.current)
+        assertEquals(true, mini.isPlaying)
+        // Defensive — the published data class has no position field at all.
+        assertNull(mini.javaClass.declaredFields.firstOrNull { it.name == "positionMs" })
     }
 
     @Test

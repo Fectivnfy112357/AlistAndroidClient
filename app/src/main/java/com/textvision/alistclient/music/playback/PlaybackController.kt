@@ -14,8 +14,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,6 +41,15 @@ data class PlaybackState(
     val bufferedPercent: Int = 0,
 )
 
+/**
+ * Cheap, side-channel progress tick — emits the current `positionMs` (rounded to a
+ * second) without re-allocating the full [PlaybackState]. Compose screens that only
+ * need to update the Slider / position Text should subscribe to this so the rest of
+ * the PlaybackState (current, isPlaying, repeatMode, shuffle, artworkData) stays
+ * referentially stable and short-circuits its observers' recomposition.
+ */
+data class PlaybackProgress(val positionMs: Long, val durationMs: Long)
+
 internal fun playbackStartState(songs: List<Song>, startIndex: Int): PlaybackState =
     PlaybackState(current = songs.getOrNull(startIndex))
 
@@ -55,6 +68,18 @@ class PlaybackController @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _state = MutableStateFlow(PlaybackState())
     val state: StateFlow<PlaybackState> = _state.asStateFlow()
+
+    // ── perf fix ─────────────────────────────────────────────────────────
+    // Side-channel flow for Slider / position text. Sourced from `_state`
+    // but only emits a NEW PlaybackProgress instance when the (rounded-to-
+    // second) position changes, so subscribers skip recomposition on no-op
+    // ticks. UI subjects (preview page) subscribe to this instead of the
+    // full PlaybackState, so flipping repeat mode / shuffle / buffering
+    // flags no longer re-walks the slider subtree.
+    val progress: StateFlow<PlaybackProgress> = _state
+        .map { PlaybackProgress(it.positionMs, it.durationMs) }
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.Eagerly, PlaybackProgress(0L, 0L))
 
     private var controller: MediaController? = null
 
@@ -142,5 +167,21 @@ class PlaybackController @Inject constructor(
      */
     internal fun publishState(update: PlaybackState) {
         _state.value = update
+    }
+
+    /**
+     * Side-channel progress publisher: pushed by the Service on each tick. The
+     * progress flow dedupes by `(positionMs / 1000)` so subscribers see at most
+     * one emission per real-time second. Use this for Slider / position text;
+     * keep using the main `state` flow for control-state (current, isPlaying,
+     * repeat/shuffle, buffering flags) so they only recompose when they change.
+     */
+    private val _progress = MutableStateFlow(PlaybackProgress(0L, 0L))
+
+    internal fun publishProgress(positionMs: Long, durationMs: Long) {
+        val currentSec = _progress.value.positionMs / 1000L
+        if (positionMs / 1000L != currentSec) {
+            _progress.value = PlaybackProgress(positionMs, durationMs)
+        }
     }
 }
