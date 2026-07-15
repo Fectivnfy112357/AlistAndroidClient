@@ -134,6 +134,17 @@ fun MusicPreviewScreen(
                 Text(formatTime(ui.playback.durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(10.dp))
+            // D1: show a buffering banner above the controls when the service
+            // reports STATE_BUFFERING. Tells the user the app isn't frozen — it's
+            // pulling bytes for the current track and audio will begin shortly.
+            if (ui.playback.preparing && !ui.playback.isPlaying) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "缓冲中 ${ui.playback.bufferedPercent}%",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             PlayerControls(
                 isPlaying = ui.playback.isPlaying,
                 shuffleEnabled = ui.playback.shuffle,

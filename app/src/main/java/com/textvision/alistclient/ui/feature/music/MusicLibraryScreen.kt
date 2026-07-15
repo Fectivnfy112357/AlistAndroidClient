@@ -87,6 +87,19 @@ fun MusicLibraryScreen(
     val context = LocalContext.current
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
+    // Fire-and-forget click handler: dispatch playQueue (Intent to the Service),
+    // then jump to the preview page immediately. The Service loads the queue and
+    // buffers the first track in the background while the preview page is already
+    // on screen; ExoPlayer's playWhenReady=true is set during queue load, so audio
+    // starts as soon as the buffer is ready. Serially waiting for queue readiness
+    // here was a bad fix that just delayed navigation by the same buffer wait — the
+    // user sees "nothing happens for several seconds" and we don't actually win
+    // any perceived latency.
+    val onPlayQueue: (List<UiSong>, Int) -> Unit = { songs, start ->
+        viewModel.onPlayQueueClick(context, songs, start)
+        onOpenPreview()
+    }
+
     AppScaffold(transparentBase = true, background = {}) {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize()) {
@@ -114,14 +127,8 @@ fun MusicLibraryScreen(
                             }
                         }
                         when (selectedTab) {
-                            0 -> OverviewTab(ui) { songs, start ->
-                                viewModel.onPlayQueueClick(context, songs, start)
-                                onOpenPreview()
-                            }
-                            1 -> SongsTab(ui, playback.current?.path) { songs, start ->
-                                viewModel.onPlayQueueClick(context, songs, start)
-                                onOpenPreview()
-                            }
+                            0 -> OverviewTab(ui, onPlayQueue)
+                            1 -> SongsTab(ui, playback.current?.path, onPlayQueue)
                             2 -> AlbumsTab(ui)
                             else -> ArtistsTab(ui)
                         }
@@ -181,7 +188,12 @@ private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int
                 Column {
                     ui.songs.take(5).forEach { song ->
                         SongRow(song.title, song.artist, "", Brush.linearGradient(listOf(CandyPink, Brand500)), artworkData = song.artworkData, onClick = {
-                            onPlayQueue(ui.songs, ui.songs.indexOf(song))
+                            // B2: a single row tap is "play this song now"; the rest
+                            // of the queue will arrive from UI catalogue navigation
+                            // (album/artist clicks) rather than auto-appending the
+                            // entire library. 5-row hero card should feel like a
+                            // feature shelf, not "play all 439 songs after this one".
+                            onPlayQueue(listOf(song), 0)
                         })
                     }
                 }

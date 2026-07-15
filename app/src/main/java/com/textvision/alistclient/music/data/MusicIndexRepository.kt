@@ -106,12 +106,17 @@ class MusicIndexRepository @Inject constructor(
 
     /**
      * Resolve a path → Song lookup table for a given list of paths. Used by the Service
-     * to translate `currentMediaItem.mediaId` back into a Song for UI rendering.
+     * to translate `currentMediaItem.mediaId` back into a Song for UI rendering. Now
+     * hits the indexed path set directly via [MusicDao.songsByPaths] — historically
+     * this used `allSongs().first()` which forced a full table read every time the
+     * queue loaded, costing 100ms+ on a 400+ song library.
      */
     suspend fun songMapForPaths(paths: List<String>): List<Song> = withContext(dispatcher) {
         if (paths.isEmpty()) return@withContext emptyList()
-        val byPath = allSongs().first().associateBy { it.path }
-        paths.mapNotNull { byPath[it] }
+        // Room's :paths parameter substitution does not bind a zero-length list to
+        // any rows even though `IN ()` would be invalid SQL, but we already handled
+        // the empty case above so the IN clause is always non-empty here.
+        dao.songsByPaths(paths).map(Song::fromEntity)
     }
 
     /**

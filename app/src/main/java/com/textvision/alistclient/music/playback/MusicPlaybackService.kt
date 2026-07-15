@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.PlaybackException
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
@@ -16,9 +17,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
 
 @UnstableApi
@@ -82,20 +88,103 @@ class MusicPlaybackService : MediaSessionService() {
     }
 
     private suspend fun playQueue(paths: List<String>, startIndex: Int) {
-        val items = paths.mapNotNull { path ->
-            val signed = indexRepository.downloadUrl(path) ?: return@mapNotNull null
-            // Keep the path as mediaId so Player.Listener.onMediaItemTransition
-            // can resolve back into a Song via pathToSong.
-            MediaItem.Builder().setUri(signed).setMediaId(path).build()
+        if (paths.isEmpty()) return
+        // Progressive queue strategy:
+        //
+        // - Build the *full* ExoPlayer queue (length = paths.size) immediately so
+        //   indices match what the user expects: tapping the 30th song queues 30..end
+        //   and the player plays them in order, not "preBuffer then tail".
+        // - Only paths[startIndex] (current) and paths[startIndex+1] (next) get signed
+        //   synchronously. ExoPlayer.prepare() then begins streaming the current and
+        //   pre-buffers the next from local cache where present.
+        // - Remaining slots are filled by the background `fillTailSlots` pass. Each
+        //   slot is replaced in place via replaceMediaItem so indices stay aligned.
+        //
+        // Historically this method signed all N paths before any setMediaItems call,
+        // which was the dominant cold-start cost for a queue of 100+ songs.
+        val playIndex = startIndex.coerceIn(0, paths.lastIndex)
+        val preBufferEnd = (playIndex + FASTER_BUFFER).coerceAtMost(paths.lastIndex)
+        val preBufferRange = playIndex..preBufferEnd
+        val preBufferPaths = preBufferRange.map { paths[it] }
+
+        // Sign pre-buffer window + load path → Song rows for them.
+        val sem = Semaphore(SIGN_CONCURRENCY)
+        val (preBufferItems, preBufferSongs) = coroutineScope {
+            val itemsDeferred = async {
+                preBufferPaths.map { path ->
+                    async {
+                        sem.withPermit {
+                            val signed = indexRepository.downloadUrl(path) ?: return@withPermit null
+                            MediaItem.Builder().setUri(signed).setMediaId(path).build()
+                        }
+                    }
+                }.awaitAll().filterNotNull()
+            }
+            val songsDeferred = async { indexRepository.songMapForPaths(preBufferPaths) }
+            itemsDeferred.await() to songsDeferred.await()
         }
-        if (items.isEmpty()) return
+        if (preBufferItems.isEmpty()) return
         val player = exoPlayer ?: return
-        val allSongs = indexRepository.songMapForPaths(paths)
-        pathToSong = allSongs.associateBy { it.path }
-        val firstIndex = startIndex.coerceIn(0, items.lastIndex)
-        player.setMediaItems(items, firstIndex, 0L)
+
+        // Build full queue with placeholder uris ("about:pending") and stitch the
+        // pre-buffer signed items into their proper slots. Tail signing pass
+        // replaces the placeholders in place via replaceMediaItem.
+        val stitched: List<MediaItem> = List(paths.size) { idx ->
+            val path = paths[idx]
+            if (idx in preBufferRange) {
+                preBufferItems.getOrNull(idx - playIndex)
+                    ?: MediaItem.Builder().setMediaId(path).setUri("about:pending").build()
+            } else {
+                MediaItem.Builder().setMediaId(path).setUri("about:pending").build()
+            }
+        }
+        pathToSong = pathToSong + preBufferSongs.associateBy { it.path }
+
+        player.setMediaItems(stitched, playIndex, 0L)
         player.prepare()
         player.playWhenReady = true
+
+        // Background: fill the rest of the queue slots. earlier (paths before playIndex)
+        // and later (paths after preBufferEnd) are signed concurrently with the same
+        // semaphore throttling the player build used.
+        val earlierPaths = if (playIndex > 0) paths.subList(0, playIndex).toList() else emptyList()
+        val laterPaths = if (preBufferEnd + 1 < paths.size) paths.subList(preBufferEnd + 1, paths.size).toList() else emptyList()
+        if (earlierPaths.isNotEmpty() || laterPaths.isNotEmpty()) {
+            serviceScope.launch {
+                fillTailSlots(earlierPaths, laterStart = preBufferEnd + 1, later = laterPaths)
+            }
+        }
+    }
+
+    private suspend fun fillTailSlots(earlier: List<String>, laterStart: Int, later: List<String>) {
+        val sem = Semaphore(SIGN_CONCURRENCY)
+        coroutineScope {
+            earlier.forEachIndexed { offset, path ->
+                launch {
+                    val signed = sem.withPermit { indexRepository.downloadUrl(path) } ?: return@launch
+                    applyTailMediaItem(path, signed, playerIndex = offset)
+                }
+            }
+            later.forEachIndexed { offset, path ->
+                launch {
+                    val signed = sem.withPermit { indexRepository.downloadUrl(path) } ?: return@launch
+                    applyTailMediaItem(path, signed, playerIndex = laterStart + offset)
+                }
+            }
+        }
+    }
+
+    private fun applyTailMediaItem(path: String, signed: String, playerIndex: Int) {
+        val player = exoPlayer ?: return
+        if (playerIndex < 0 || playerIndex >= player.mediaItemCount) return
+        if (player.currentMediaItemIndex == playerIndex) return
+        val current = player.getMediaItemAt(playerIndex)
+        if (current.localConfiguration?.uri.toString() != "about:pending") return
+        val item = MediaItem.Builder().setUri(signed).setMediaId(path).build()
+        runCatching { player.replaceMediaItem(playerIndex, item) }
+        // Best-effort: refresh pathToSong lazily on transition (Player.Listener
+        // already does song lookup on onMediaItemTransition by querying the
+        // MusicIndexRepository, so we don't need to merge eagerly here).
     }
 
     private fun startProgressUpdates() {
@@ -139,11 +228,34 @@ class MusicPlaybackService : MediaSessionService() {
         override fun onPlaybackStateChanged(state: Int) {
             val player = exoPlayer ?: return
             publishProgress(player)
+            // D1: surface buffering state so the preview page can show a
+            // "loading…" placeholder instead of appearing unresponsive. STATE_READY
+            // means audio is actually playing; STATE_BUFFERING means the player has
+            // a MediaItem loaded but is still fetching bytes.
+            val preparing = state == Player.STATE_BUFFERING || state == Player.STATE_IDLE
+            val bufferedPercent = if (player.duration > 0) {
+                ((player.bufferedPosition.coerceAtLeast(0).toDouble() / player.duration) * 100.0)
+                    .toInt().coerceIn(0, 100)
+            } else 0
+            playbackController.publishState(
+                playbackController.state.value.copy(
+                    preparing = preparing,
+                    bufferedPercent = bufferedPercent,
+                ),
+            )
         }
 
         override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) {
             playbackController.publishState(
                 playbackController.state.value.copy(artworkData = mediaMetadata.artworkData),
+            )
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            // D1: an error means we are no longer "preparing"; clear the flag so
+            // the preview UI can show its own error state instead of a stuck spinner.
+            playbackController.publishState(
+                playbackController.state.value.copy(preparing = false),
             )
         }
 
@@ -165,5 +277,13 @@ class MusicPlaybackService : MediaSessionService() {
 
     private companion object {
         const val PROGRESS_UPDATE_MS = 500L
+        // Cap concurrent signed-URL fetches so a large queue (e.g. 200 songs) doesn't
+        // open 200 parallel HTTP requests against the Alist server. SignProvider already
+        // memoises results for TTL_MS, so the steady-state cost is small.
+        const val SIGN_CONCURRENCY = 4
+        // How many extra songs (beyond the start song) are signed synchronously so
+        // ExoPlayer can pre-buffer the next track. Keeps the cold-start synchronous
+        // cost bounded (≤ 2 sign calls when cached) while ensuring gapless transition.
+        const val FASTER_BUFFER = 1
     }
 }

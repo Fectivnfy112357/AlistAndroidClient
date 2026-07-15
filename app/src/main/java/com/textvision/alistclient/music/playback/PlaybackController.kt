@@ -29,6 +29,12 @@ data class PlaybackState(
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val shuffle: Boolean = false,
     val artworkData: ByteArray? = null,
+    // D1: surface ExoPlayer's buffering state to the UI. `preparing == true`
+    // means the user tapped a track and is waiting for the first audio buffer;
+    // `bufferedPercent` is 0..100 of how much of the *current* item's content
+    // has been fetched (ExoPlayer exposes this as bufferedPosition / duration).
+    val preparing: Boolean = false,
+    val bufferedPercent: Int = 0,
 )
 
 internal fun playbackStartState(songs: List<Song>, startIndex: Int): PlaybackState =

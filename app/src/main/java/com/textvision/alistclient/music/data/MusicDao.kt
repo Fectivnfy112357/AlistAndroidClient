@@ -38,6 +38,21 @@ interface MusicDao {
     @Query("SELECT * FROM music_song ORDER BY artist, album, trackNoInt ASC, trackNo ASC")
     fun allSongs(): Flow<List<SongEntity>>
 
+    /**
+     * Look up songs whose paths match any entry in [paths]. Used by the playback
+     * service to translate MediaItem mediaIds back into Song rows for UI display,
+     * without paying the cost of `allSongs()` (a full table scan) every queue load.
+     * The caller passes the small subset of paths that ExoPlayer currently holds
+     * (typically ≤ a handful) so this returns at most a few rows.
+     */
+    @Query(
+        """
+        SELECT * FROM music_song
+        WHERE path IN (:paths)
+        """,
+    )
+    suspend fun songsByPaths(paths: List<String>): List<SongEntity>
+
     @Query(
         """
         SELECT a.artworkData FROM music_album a
