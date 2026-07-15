@@ -7,14 +7,17 @@ import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.music.data.LrcParser
 import com.textvision.alistclient.music.data.MusicIndexRepository
 import com.textvision.alistclient.music.data.model.LrcLine
+import com.textvision.alistclient.music.data.model.Song
 import com.textvision.alistclient.music.playback.PlaybackController
 import com.textvision.alistclient.music.playback.PlaybackState
+import com.textvision.alistclient.music.playback.RepeatMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -25,6 +28,24 @@ import javax.inject.Inject
 data class MusicPlayerUiState(
     val playback: PlaybackState = PlaybackState(),
     val lyrics: List<LrcLine> = emptyList(),
+)
+
+data class PlayerChromeState(
+    val current: Song? = null,
+    val isPlaying: Boolean = false,
+    val repeatMode: RepeatMode = RepeatMode.OFF,
+    val shuffle: Boolean = false,
+    val preparing: Boolean = false,
+    val artworkData: ByteArray? = null,
+)
+
+internal fun MusicPlayerUiState.toPlayerChromeState() = PlayerChromeState(
+    current = playback.current,
+    isPlaying = playback.isPlaying,
+    repeatMode = playback.repeatMode,
+    shuffle = playback.shuffle,
+    preparing = playback.preparing,
+    artworkData = playback.artworkData,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -96,6 +117,17 @@ class MusicPlayerViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = -1,
     )
+
+    val chromeState: StateFlow<PlayerChromeState> = state
+        .map(MusicPlayerUiState::toPlayerChromeState)
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = PlayerChromeState(),
+        )
+
+    val lyrics: StateFlow<List<LrcLine>> = rawLyrics.asStateFlow()
 
     fun onTogglePlayPause() = playbackController.togglePlayPause()
     fun onPrev() = playbackController.prev()

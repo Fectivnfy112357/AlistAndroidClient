@@ -53,9 +53,8 @@ fun MusicPreviewScreen(
     onBack: () -> Unit = {},
     viewModel: MusicPlayerViewModel = hiltViewModel(),
 ) {
-    val ui by viewModel.state.collectAsStateWithLifecycle()
-    val currentLineIndex by viewModel.currentLineIndex.collectAsStateWithLifecycle()
-    val current = ui.playback.current
+    val chrome by viewModel.chromeState.collectAsStateWithLifecycle()
+    val current = chrome.current
     val coverGradient = PreviewCoverGradient
 
     Column(
@@ -84,7 +83,7 @@ fun MusicPreviewScreen(
                 ) {
                     ArtworkLayer(
                         title = current?.title ?: "音乐",
-                        artworkData = ui.playback.artworkData,
+                        artworkData = chrome.artworkData,
                         gradient = coverGradient,
                     )
                 }
@@ -107,22 +106,12 @@ fun MusicPreviewScreen(
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(18.dp))
-            var draggingTo by remember(current?.path) { mutableStateOf<Float?>(null) }
-            val progress by viewModel.progress.collectAsStateWithLifecycle()
-            SliderWithTimeRow(
-                progress = progress,
-                draggingTo = draggingTo,
-                onValueChange = { draggingTo = it },
-                onValueChangeFinished = { v ->
-                    v?.toLong()?.let(viewModel::onSeekTo)
-                },
-                onDraggingCleared = { draggingTo = null },
-            )
+            PlayerProgressSection(viewModel = viewModel, currentPath = current?.path)
             PlayerControls(
-                isPlaying = ui.playback.isPlaying,
-                shuffleEnabled = ui.playback.shuffle,
-                repeatMode = ui.playback.repeatMode,
-                preparing = ui.playback.preparing && !ui.playback.isPlaying,
+                isPlaying = chrome.isPlaying,
+                shuffleEnabled = chrome.shuffle,
+                repeatMode = chrome.repeatMode,
+                preparing = chrome.preparing && !chrome.isPlaying,
                 onPlayPause = viewModel::onTogglePlayPause,
                 onPrev = viewModel::onPrev,
                 onNext = viewModel::onNext,
@@ -137,12 +126,32 @@ fun MusicPreviewScreen(
             ) {
                 Column(Modifier.padding(vertical = 10.dp)) {
                     Text("歌词", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                    LyricsView(lines = ui.lyrics, currentIndex = currentLineIndex, height = 280.dp)
+                    PlayerLyricsSection(viewModel)
                 }
             }
             Spacer(Modifier.height(28.dp))
         }
     }
+}
+
+@Composable
+private fun PlayerProgressSection(viewModel: MusicPlayerViewModel, currentPath: String?) {
+    var draggingTo by remember(currentPath) { mutableStateOf<Float?>(null) }
+    val progress by viewModel.progress.collectAsStateWithLifecycle()
+    SliderWithTimeRow(
+        progress = progress,
+        draggingTo = draggingTo,
+        onValueChange = { draggingTo = it },
+        onValueChangeFinished = { value -> value?.toLong()?.let(viewModel::onSeekTo) },
+        onDraggingCleared = { draggingTo = null },
+    )
+}
+
+@Composable
+private fun PlayerLyricsSection(viewModel: MusicPlayerViewModel) {
+    val lines by viewModel.lyrics.collectAsStateWithLifecycle()
+    val currentLineIndex by viewModel.currentLineIndex.collectAsStateWithLifecycle()
+    LyricsView(lines = lines, currentIndex = currentLineIndex, height = 280.dp)
 }
 
 private fun formatTime(ms: Long): String {
@@ -158,8 +167,14 @@ private fun produceArtworkBitmap(artworkData: ByteArray?): androidx.compose.runt
             return@produceState
         }
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            android.graphics.BitmapFactory
-                .decodeByteArray(artworkData, 0, artworkData.size)
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeByteArray(artworkData, 0, artworkData.size, bounds)
+            val options = android.graphics.BitmapFactory.Options().apply {
+                var sample = 1
+                while (bounds.outWidth / sample > 1024 || bounds.outHeight / sample > 1024) sample *= 2
+                inSampleSize = sample
+            }
+            android.graphics.BitmapFactory.decodeByteArray(artworkData, 0, artworkData.size, options)
                 ?.asImageBitmap()
         }
     }
