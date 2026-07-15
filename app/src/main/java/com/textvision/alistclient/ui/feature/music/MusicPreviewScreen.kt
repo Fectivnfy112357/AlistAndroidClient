@@ -20,6 +20,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -160,13 +162,10 @@ private fun formatTime(ms: Long): String {
 }
 
 @Composable
-private fun produceArtworkBitmap(artworkData: ByteArray?): androidx.compose.runtime.State<androidx.compose.ui.graphics.ImageBitmap?> =
-    androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, key1 = artworkData) {
-        if (artworkData == null) {
-            value = null
-            return@produceState
-        }
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+private fun produceArtworkBitmap(artworkData: ByteArray?): State<androidx.compose.ui.graphics.ImageBitmap?> {
+    val state = remember(artworkData) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    LaunchedEffect(artworkData) {
+        state.value = if (artworkData == null) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
             android.graphics.BitmapFactory.decodeByteArray(artworkData, 0, artworkData.size, bounds)
             val options = android.graphics.BitmapFactory.Options().apply {
@@ -178,6 +177,8 @@ private fun produceArtworkBitmap(artworkData: ByteArray?): androidx.compose.runt
                 ?.asImageBitmap()
         }
     }
+    return state
+}
 
 /**
  * Slider + position/duration row — extracted so it owns its own recomposition

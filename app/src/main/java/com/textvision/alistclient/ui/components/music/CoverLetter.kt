@@ -8,8 +8,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -104,12 +106,15 @@ fun ArtworkCover(
 }
 
 @Composable
-private fun decodeArtworkAsync(data: ByteArray?): State<androidx.compose.ui.graphics.ImageBitmap?> =
-    produceState(initialValue = null, key1 = data) {
-        value = if (data == null) null else withContext(Dispatchers.IO) {
+private fun decodeArtworkAsync(data: ByteArray?): State<androidx.compose.ui.graphics.ImageBitmap?> {
+    val state = remember(data) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    LaunchedEffect(data) {
+        state.value = if (data == null) null else withContext(Dispatchers.IO) {
             android.graphics.BitmapFactory.decodeByteArray(data, 0, data.size)?.asImageBitmap()
         }
     }
+    return state
+}
 
 /** Fixed-size convenience overload. */
 @Composable

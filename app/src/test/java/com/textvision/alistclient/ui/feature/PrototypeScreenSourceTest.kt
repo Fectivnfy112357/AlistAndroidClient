@@ -15,10 +15,12 @@ class PrototypeScreenSourceTest {
     }
 
     @Test
-    fun homeScreenKeepsPrototypeHeaderGradient() {
-        val source = File("src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt").readText()
+    fun homeScreenKeepsPrototypeGreetingHeader() {
+        val screen = File("src/main/java/com/textvision/alistclient/ui/feature/home/HomeScreen.kt").readText()
+        val greeting = File("src/main/java/com/textvision/alistclient/ui/feature/home/HomeGreeting.kt").readText()
 
-        assertTrue("Home screen should provide its own prototype header gradient", source.contains("HomeHeaderGradient"))
-        assertTrue("Header gradient should blend into the shared background", source.contains("Color.Transparent"))
+        assertTrue("Home screen should render its prototype greeting header", screen.contains("HomeGreeting("))
+        assertTrue("Greeting should retain the prototype welcome copy", greeting.contains("早上好 ✨"))
+        assertTrue("Greeting actions should remain testable", greeting.contains("home_topbar_refresh") && greeting.contains("home_topbar_search"))
     }
 }
