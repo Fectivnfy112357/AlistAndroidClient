@@ -36,6 +36,8 @@ internal fun SettingsContent(
     onClearMusicCache: suspend () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val visibleStorages = uiState.storages.take(3)
+    val announcement = uiState.quickSettings.firstOrNull { it.key == "announcement" }
     AppScaffold(
         modifier = modifier,
         transparentBase = true,
@@ -58,11 +60,11 @@ internal fun SettingsContent(
                     }
                 }
 
-                if (uiState.storages.isNotEmpty()) {
+                if (visibleStorages.isNotEmpty()) {
                     item(key = "storages", contentType = "section") {
                         SettingsSection(title = "存储源") {
                             Column {
-                                uiState.storages.take(3).forEachIndexed { index, storage ->
+                                visibleStorages.forEachIndexed { index, storage ->
                                     val id = storage.id ?: return@forEachIndexed
                                     if (index > 0) Divider()
                                     StorageSourceRow(
@@ -82,7 +84,7 @@ internal fun SettingsContent(
                     }
                 }
 
-                uiState.quickSettings.firstOrNull { it.key == "announcement" }?.let { announcement ->
+                announcement?.let {
                     item(key = "quick", contentType = "section") {
                         SettingsSection(title = "快速设置") {
                             Column {

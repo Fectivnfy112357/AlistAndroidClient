@@ -129,8 +129,10 @@ private fun DashboardList(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item { HeroServerCard(data.publicSection, online = isOnline) }
-        item {
+        item(key = "hero", contentType = "hero") {
+            HeroServerCard(data.publicSection, online = isOnline)
+        }
+        item(key = "metrics", contentType = "metrics") {
             MetricRow(
                 serverStats = data.serverStatsSection,
                 session = data.sessionSection,
@@ -138,7 +140,7 @@ private fun DashboardList(
                 onRetrySession = { onRetrySection(SectionKey.Session) },
             )
         }
-        item {
+        item(key = "tasks", contentType = "tasks") {
             Column(modifier = Modifier.testTag("home_task_section")) {
                 TaskHeader()
                 Spacer(Modifier.height(8.dp))
@@ -148,17 +150,23 @@ private fun DashboardList(
                 )
             }
         }
-        item { StorageHeader(onManage = onManageStorage) }
+        item(key = "storage-header", contentType = "header") {
+            StorageHeader(onManage = onManageStorage)
+        }
         val storages = data.storages
         if (storages.isEmpty()) {
-            item {
+            item(key = "storage-empty", contentType = "storage-state") {
                 StorageEmptyOrFailed(
                     storageSection = data.storageSection,
                     onRetry = { onRetrySection(SectionKey.Storage) },
                 )
             }
         } else {
-            items(storages, key = { it.mountPath }) { storage ->
+            items(
+                items = storages,
+                key = { it.mountPath },
+                contentType = { "storage" },
+            ) { storage ->
                 StorageCard(storage = storage) {
                     android.util.Log.d("HomeScreen", "onStorageClick mountPath=${storage.mountPath}")
                     onStorageClick(storage.mountPath)

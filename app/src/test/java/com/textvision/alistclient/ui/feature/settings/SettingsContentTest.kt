@@ -44,6 +44,7 @@ class SettingsContentTest {
                 remark = "百度网盘",
                 disabled = true,
             ),
+            StorageInfo(id = 4, mountPath = "/local", driver = "Local", remark = "本地存储"),
         ),
         quickSettings = listOf(
             SettingItem(key = "site_title", value = "我的云盘"),
@@ -60,6 +61,7 @@ class SettingsContentTest {
         composeRule.onNodeWithText("柚子 · admin").assertIsDisplayed()
         composeRule.onNodeWithText("存储源").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("/baidu · 已禁用").assertIsDisplayed()
+        composeRule.onAllNodesWithText("本地存储").assertCountEquals(0)
         composeRule.onNodeWithText("站点公告").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("快速设置").assertIsDisplayed()
         composeRule.onAllNodesWithText("站点标题").assertCountEquals(0)
