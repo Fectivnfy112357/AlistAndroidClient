@@ -54,6 +54,12 @@ class FileViewModel @Inject constructor(
             is FileIntent.Upload -> transferManager.enqueueUpload(intent.uri, _state.value.path)
             is FileIntent.DownloadOne -> downloadOne(intent.path)
             is FileIntent.MultiSelectToggle -> toggleSelect(intent.path)
+            is FileIntent.MultiSelectSet -> _state.update {
+                it.copy(
+                    selection = intent.paths,
+                    isMultiSelectMode = intent.paths.isNotEmpty(),
+                )
+            }
             FileIntent.MultiSelectClear -> _state.update {
                 it.copy(selection = emptySet(), isMultiSelectMode = false)
             }

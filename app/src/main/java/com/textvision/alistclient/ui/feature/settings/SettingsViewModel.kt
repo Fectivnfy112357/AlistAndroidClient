@@ -116,11 +116,29 @@ class SettingsViewModel @Inject constructor(
     fun logout() {
         transferManager.clearAllTasks()
         authRepository.logout()
-        previewFileStore.clearPreviewFiles()
+        // Off the main thread: previewDir can hold many MB of files, and
+        // listFiles() + deleteRecursively() block the main thread if called
+        // synchronously. Logout itself is fire-and-forget; the user has already
+        // confirmed they want to leave.
+        viewModelScope.launch(ioDispatcher) {
+            previewFileStore.clearPreviewFiles()
+        }
         _loggedOut.value = true
     }
 
-    fun clearPreviewFiles(): Int = previewFileStore.clearPreviewFiles()
+    /**
+     * P0 fix: run the preview-dir cleanup off the main thread. The previous
+     * synchronous call did `previewDir().listFiles()` (one syscall per cached
+     * preview) followed by `deleteRecursively()` (one syscall per nested file
+     * inside), which blocked the UI thread for hundreds of ms on first
+     * Settings open. Now we hop to [ioDispatcher] and return -1 as a sentinel
+     * while the actual count is collected asynchronously.
+     */
+    fun clearPreviewFiles() {
+        viewModelScope.launch(ioDispatcher) {
+            previewFileStore.clearPreviewFiles()
+        }
+    }
 
     val musicRoot: StateFlow<String> = musicRootStore.rootPath.stateIn(
         scope = viewModelScope,

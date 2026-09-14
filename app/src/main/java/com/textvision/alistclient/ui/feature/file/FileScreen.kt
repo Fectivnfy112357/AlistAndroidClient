@@ -127,9 +127,10 @@ fun FileScreen(
                 FileMultiSelectBar(
                     selectionCount = state.selection.size,
                     onSelectAll = {
-                        state.visibleFiles.map { it.path }
-                            .filter { it !in state.selection }
-                            .forEach { vm.onIntent(FileIntent.MultiSelectToggle(it)) }
+                        val toAdd = state.visibleFiles.map { it.path } - state.selection
+                        if (toAdd.isNotEmpty()) {
+                            vm.onIntent(FileIntent.MultiSelectSet(state.selection + toAdd))
+                        }
                     },
                     onMove = { onMoveSelected(state.selection.toList(), state.path) },
                     onDownload = { vm.onIntent(FileIntent.MultiSelectDownload(state.selection.toList())) },

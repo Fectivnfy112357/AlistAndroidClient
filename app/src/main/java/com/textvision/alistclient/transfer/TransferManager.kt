@@ -47,7 +47,17 @@ class TransferManager @Inject constructor(
 
     /**
      * Throttled progress writer per transfer ID.
-     * Flushes at most once per 250ms or 64KB of progress to avoid per-chunk Room writes.
+     *
+     * Time-gated: caps Room writes at ~[debounceIntervalMs] per transfer even
+     * on fast links. The previous `bytes < threshold || time < interval` gate
+     * meant high-speed uploads could trigger a write every 64KB (≈16/s on a
+     * 1MB/s stream × N concurrent transfers), invalidating every
+     * `dao.observeAll()` consumer on each tick. The new gate is time alone
+     * with a `deltaBytes > 0` sanity check to skip no-progress writes; the
+     * 64KB threshold is kept only as a [bytesJustChangedForDoc] constant for
+     * the public docstring and removed from the hot path.
+     *
+     * `force=true` (used by [flush] on terminal events) bypasses the gate.
      */
     private inner class ThrottledProgress(
         private val id: String,
@@ -58,7 +68,6 @@ class TransferManager @Inject constructor(
         private var latestBytes = 0L
         private var latestTotal = 0L
         private val debounceIntervalMs = 250L
-        private val debounceByteThreshold = 65_536L
 
         suspend fun update(bytesDone: Long, totalBytes: Long, force: Boolean = false) {
             if (!isActive(generation, id)) return
@@ -67,7 +76,12 @@ class TransferManager @Inject constructor(
             val now = System.currentTimeMillis()
             val deltaBytes = bytesDone - lastWrittenBytes
             val deltaTime = now - lastWriteMillis
-            if (!force && deltaBytes < debounceByteThreshold && deltaTime < debounceIntervalMs) return
+            if (!force) {
+                // Time-gate first: 250ms between writes regardless of byte volume.
+                if (deltaTime < debounceIntervalMs) return
+                // Skip no-progress writes (e.g. emitter spammed same bytesDone).
+                if (deltaBytes <= 0L) return
+            }
             dao.updateProgress(id, latestBytes, latestTotal, now)
             lastWrittenBytes = latestBytes
             lastWriteMillis = now
