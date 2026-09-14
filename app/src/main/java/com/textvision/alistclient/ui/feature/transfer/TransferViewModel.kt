@@ -43,29 +43,58 @@ data class TransferListUiState(
     val all: List<TransferEntity> = emptyList(),
     val tab: TransferTab = TransferTab.ALL,
     val isOnline: Boolean = true,
+    // P1: derived fields are computed once per upstream emission instead of on
+    // every read. Previously the `summary` getter ran two full-table `count`
+    // invocations each time the top bar read it, and `visible` was filtered
+    // lazily — every recomposition paid the cost again. Hoisting these into
+    // the constructor leaves the Composable side reading plain `val`s.
+    val visible: List<TransferEntity> = emptyList(),
+    val allCount: Int = 0,
+    val uploadCount: Int = 0,
+    val downloadCount: Int = 0,
+    val failedCount: Int = 0,
+    val summary: String = "传输任务",
 ) {
-    val visible: List<TransferEntity> = all.filter(tab::matches)
+    companion object {
+        fun derive(
+            all: List<TransferEntity>,
+            tab: TransferTab,
+            isOnline: Boolean,
+        ): TransferListUiState {
+            val visible = all.filter(tab::matches)
+            val uploadCount = all.count { it.type == TransferType.Upload }
+            val downloadCount = all.count { it.type == TransferType.Download }
+            val failedCount = all.count {
+                it.status == TransferStatus.Failed || it.status == TransferStatus.Interrupted
+            }
+            val summary = computeSummary(all, failedCount)
+            return TransferListUiState(
+                all = all,
+                tab = tab,
+                isOnline = isOnline,
+                visible = visible,
+                allCount = all.size,
+                uploadCount = uploadCount,
+                downloadCount = downloadCount,
+                failedCount = failedCount,
+                summary = summary,
+            )
+        }
 
-    /** Counts per tab (badge data). */
-    val allCount: Int = all.size
-    val uploadCount: Int = all.count { it.type == TransferType.Upload }
-    val downloadCount: Int = all.count { it.type == TransferType.Download }
-    val failedCount: Int = all.count {
-        it.status == TransferStatus.Failed || it.status == TransferStatus.Interrupted
-    }
-
-    val summary: String
-        get() {
+        private fun computeSummary(
+            all: List<TransferEntity>,
+            failedCount: Int,
+        ): String {
             if (all.isEmpty()) return "传输任务"
             val active = all.count { it.status in TransferStatus.activeStatuses }
-            val failed = failedCount
             val completed = all.count { it.status == TransferStatus.Success }
             return listOfNotNull(
                 active.takeIf { it > 0 }?.let { "$it 进行中" },
-                failed.takeIf { it > 0 }?.let { "$it 失败" },
+                failedCount.takeIf { it > 0 }?.let { "$it 失败" },
                 completed.takeIf { it > 0 }?.let { "$it 完成" },
             ).joinToString(" · ").ifBlank { "暂无进行中的任务" }
         }
+    }
 }
 
 @HiltViewModel
@@ -84,7 +113,9 @@ class TransferViewModel @Inject constructor(
         manager.observeTransfers(),
         networkMonitor.isOnline,
     ) { tab, all, online ->
-        TransferListUiState(all = all, tab = tab, isOnline = online)
+        // Derive once per emission so the Composable side reads plain fields
+        // instead of triggering per-read table scans.
+        TransferListUiState.derive(all, tab, online)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,

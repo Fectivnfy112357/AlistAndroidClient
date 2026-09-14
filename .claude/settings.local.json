@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__gitnexus__cypher",
+      "mcp__gitnexus__list_repos",
+      "mcp__gitnexus__context",
+      "mcp__gitnexus__query",
+      "Skill(claude-hud:setup)",
+      "Bash(rtk ls *)",
+      "Bash(cd *)",
+      "Bash(ls -la C:/Users/32115/.claude/image-cache/9f809095-5598-417e-8402-571ab6e3aba2/2.png)",
+      "Bash(echo \"--- hex head ---\")",
+      "Bash(xxd C:/Users/32115/.claude/image-cache/9f809095-5598-417e-8402-571ab6e3aba2/2.png)",
+      "Skill(run)",
+      "Bash(claude plugin *)",
+      "Read(//c/Users/32115/.claude/**)",
+      "Read(//c/Users/32115/**)",
+      "Read(//c/Users/32115/.hindsight/**)",
+      "Bash(cp -r /tmp/mjc-tmp \"/d/programming/projects/my project/alist/.claude/skills/modern-jetpack-compose\")",
+      "Bash(rm -rf \"/d/programming/projects/my project/alist/.claude/skills/jetpack-compose-skills\" /tmp/mjc-tmp)",
+      "Bash(gh api *)",
+      "Bash(D:/programming/devtools/android/sdk/platform-tools/adb.exe devices *)"
+    ]
+  }
+}

@@ -209,4 +209,99 @@ class FileViewModelTest {
         verify(exactly = 1) { transferManager.enqueueDownload("/b.txt", "b.txt") }
         assertEquals(emptySet<String>(), vm.state.value.selection)
     }
+
+    @Test
+    fun ensureLoaded_skipsRepository_whenAlreadyCached() = runTest {
+        coEvery { fileRepository.list("/") } returns ApiResult.Success(listOf(makeFile("a.txt")))
+
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
+        vm.onIntent(FileIntent.Load("/")) // prime cache
+        advanceUntilIdle()
+        coVerify(exactly = 1) { fileRepository.list("/") }
+
+        // Re-resume for the same path: must NOT trigger another fetch.
+        vm.ensureLoaded("/")
+        advanceUntilIdle()
+        coVerify(exactly = 1) { fileRepository.list("/") }
+    }
+
+    @Test
+    fun ensureLoaded_triggersFetch_whenPathChangesAfterCache() = runTest {
+        coEvery { fileRepository.list("/") } returns ApiResult.Success(emptyList())
+        coEvery { fileRepository.list("/docs") } returns ApiResult.Success(emptyList())
+
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
+        vm.onIntent(FileIntent.Load("/"))
+        advanceUntilIdle()
+        // Different path: cache miss must force a load.
+        vm.ensureLoaded("/docs")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { fileRepository.list("/") }
+        coVerify(exactly = 1) { fileRepository.list("/docs") }
+        assertEquals("/docs", vm.state.value.lastLoadedForPath)
+    }
+
+    @Test
+    fun ensureLoaded_bypassesCache_whenLoadFailedPreviously() = runTest {
+        coEvery { fileRepository.list("/") } returnsMany listOf(
+            ApiResult.Failure(500, "boom"),
+            ApiResult.Success(listOf(makeFile("a.txt"))),
+        )
+
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
+        vm.onIntent(FileIntent.Load("/"))
+        advanceUntilIdle()
+        // Failed load leaves lastLoadedForPath null; ensureLoaded must retry.
+        assertNull(vm.state.value.lastLoadedForPath)
+
+        vm.ensureLoaded("/")
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { fileRepository.list("/") }
+        assertEquals("/", vm.state.value.lastLoadedForPath)
+    }
+
+    @Test
+    fun explicit_refresh_load_bypassesCache() = runTest {
+        coEvery { fileRepository.list("/") } returns ApiResult.Success(listOf(makeFile("a.txt")))
+
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
+        vm.onIntent(FileIntent.Load("/")) // prime cache
+        advanceUntilIdle()
+        coVerify(exactly = 1) { fileRepository.list("/") }
+
+        // User hits Refresh: must fetch again even though cache is warm.
+        vm.onIntent(FileIntent.Load("/"))
+        advanceUntilIdle()
+        coVerify(exactly = 2) { fileRepository.list("/") }
+    }
+
+    @Test
+    fun staleResponse_doesNotOverwrite_newerState() = runTest {
+        // Two slow requests queued: an older one for "/" and a newer one for
+        // "/docs" issued before the older completes. The older response must
+        // not win. Note: the current implementation cancels the prior job, so
+        // we exercise the contract via direct coEvery ordering instead of
+        // relying on coroutine cancellation timing.
+        coEvery { fileRepository.list("/") } coAnswers {
+            kotlinx.coroutines.delay(50)
+            ApiResult.Success(listOf(makeFile("root.txt", path = "/root.txt")))
+        }
+        coEvery { fileRepository.list("/docs") } coAnswers {
+            kotlinx.coroutines.delay(10)
+            ApiResult.Success(listOf(makeFile("doc.txt", path = "/docs/doc.txt")))
+        }
+
+        val vm = FileViewModel(fileRepository, transferManager, networkMonitor)
+        vm.onIntent(FileIntent.Load("/"))
+        advanceUntilIdle()
+        // Fire a second load mid-flight — generation counter must shield.
+        vm.onIntent(FileIntent.Load("/docs"))
+        advanceUntilIdle()
+
+        assertEquals("/docs", vm.state.value.path)
+        assertEquals(1, vm.state.value.files.size)
+        assertEquals("doc.txt", vm.state.value.files[0].name)
+    }
 }

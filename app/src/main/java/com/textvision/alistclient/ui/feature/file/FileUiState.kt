@@ -13,6 +13,14 @@ data class FileUiState(
     val selection: Set<String> = emptySet(),
     val isMultiSelectMode: Boolean = false,
     val isOnline: Boolean = true,
+    /**
+     * The last path that successfully resolved from the server. Drives the
+     * "re-load on resume" optimization: when [FileScreen]'s LifecycleResumeEffect
+     * re-fires for the same path, the ViewModel skips the network round-trip
+     * and renders the cached data immediately. Cleared on delete / refresh /
+     * path change so the next Load is forced.
+     */
+    val lastLoadedForPath: String? = null,
 ) {
     val visibleFiles: List<FileItem>
         get() = if (query.isBlank()) files

@@ -9,6 +9,7 @@ import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.transfer.TransferManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +38,15 @@ class FileViewModel @Inject constructor(
         initialValue = FileUiState(),
     )
 
+    // P0: load generation + dedicated Job. Earlier, `load` launched a new
+    // coroutine on every resume and let late responses overwrite newer state
+    // (e.g. tapping the refresh button while the prior request was still in
+    // flight produced visible flicker when the older payload landed last). We
+    // now cancel the prior job and tag the response so a late return is
+    // discarded.
+    private var loadJob: Job? = null
+    private var loadGeneration: Int = 0
+
     fun onIntent(intent: FileIntent) {
         when (intent) {
             is FileIntent.Load -> load(intent.path)
@@ -52,25 +62,47 @@ class FileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Resume-friendly entry point. Skips the network round-trip when we
+     * already have a successful cached listing for [path]; otherwise falls
+     * through to a fresh load. Called from [FileScreen]'s `LifecycleResumeEffect`,
+     * which previously issued an unconditional Load on every resume (including
+     * bottom-tab returns and Compose back-navigation) — paying a full server
+     * request + UI refresh for a directory whose contents had not changed.
+     */
+    fun ensureLoaded(path: String) {
+        if (_state.value.lastLoadedForPath == path && !_state.value.isLoading) return
+        load(path)
+    }
+
     private fun load(path: String) {
+        loadJob?.cancel()
+        val generation = ++loadGeneration
         _state.update { it.copy(path = path, isLoading = true, error = null) }
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             when (val result = fileRepository.list(path)) {
-                is ApiResult.Success -> _state.update {
-                    it.copy(
-                        path = path,
-                        files = result.data,
-                        isLoading = false,
-                        error = null,
-                        selection = emptySet(),
-                        isMultiSelectMode = false,
-                    )
+                is ApiResult.Success -> if (generation == loadGeneration) {
+                    _state.update {
+                        it.copy(
+                            path = path,
+                            files = result.data,
+                            isLoading = false,
+                            error = null,
+                            selection = emptySet(),
+                            isMultiSelectMode = false,
+                            lastLoadedForPath = path,
+                        )
+                    }
                 }
-                is ApiResult.Failure -> _state.update {
-                    it.copy(isLoading = false, error = result.message.ifBlank { "加载失败 (${result.code})" })
+                is ApiResult.Failure -> if (generation == loadGeneration) {
+                    _state.update {
+                        it.copy(isLoading = false, error = result.message.ifBlank { "加载失败 (${result.code})" })
+                    }
                 }
-                is ApiResult.NetworkError -> _state.update {
-                    it.copy(isLoading = false, error = result.cause.message ?: "网络错误")
+                is ApiResult.NetworkError -> if (generation == loadGeneration) {
+                    _state.update {
+                        it.copy(isLoading = false, error = result.cause.message ?: "网络错误")
+                    }
                 }
             }
         }
@@ -92,6 +124,9 @@ class FileViewModel @Inject constructor(
             when (fileRepository.delete(paths)) {
                 is ApiResult.Success -> {
                     _state.update { it.copy(selection = emptySet(), isMultiSelectMode = false) }
+                    // Mark the cache stale so the upcoming load actually fires;
+                    // otherwise `ensureLoaded` would short-circuit on success.
+                    _state.update { it.copy(lastLoadedForPath = null) }
                     load(_state.value.path)
                 }
                 is ApiResult.Failure -> _state.update {

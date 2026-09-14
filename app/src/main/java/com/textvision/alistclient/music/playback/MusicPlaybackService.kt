@@ -161,28 +161,45 @@ class MusicPlaybackService : MediaSessionService() {
     }
 
     private suspend fun enqueueTail(sem: Semaphore, earlier: List<String>, later: List<String>) {
-        // Signing happens on ioScope; the ExoPlayer.addMediaItem step must stay
-        // on main (via serviceScope), which is what serviceScope.launch wraps.
-        coroutineScope {
-            earlier.forEach { path ->
-                launch(ioScope.coroutineContext) {
-                    val signed = sem.withPermit { indexRepository.downloadUrl(path) } ?: return@launch
-                    val item = MediaItem.Builder().setUri(signed).setMediaId(path).build()
-                    withContext(Dispatchers.Main) { exoPlayer?.addMediaItem(0, item) }
-                    val songs = indexRepository.songMapForPaths(listOf(path))
-                    songs.firstOrNull()?.let { pathToSong = pathToSong + (path to it) }
-                }
+        // Batch signing: pull `sem.withPermit` per path so HTTP fan-out is capped,
+        // but collect MediaItems + a path→Song lookup in one go. The previous
+        // implementation issued one main-thread `addMediaItem` per path on
+        // `serviceScope` (after a `withContext(Main)` round-trip) and re-copied
+        // the entire `pathToSong` immutable map for every item — at the observed
+        // 439-song library that becomes ~437 main-thread mutations and 437
+        // immutable-map copies during player entry, the dominant cost of the
+        // 150 ms P99 tail.
+        //
+        // Approach:
+        //   1. Sign `earlier + later` once, off-main, with bounded parallelism.
+        //   2. Pull the path → Song lookup in one DAO hit (was one hit per item).
+        //   3. Apply on main with **two** ExoPlayer batch calls (one each for the
+        //      `earlier` prefix and the `later` suffix) so the looper sees two
+        //      mutations per `playQueue`, regardless of queue size.
+        val pendingPaths = earlier + later
+        if (pendingPaths.isEmpty()) return
+        val (signedByPath, pathToSongEntries) = coroutineScope {
+            val itemsDeferred = async(ioScope.coroutineContext) {
+                PlaybackQueueBatch.signAllOrdered(
+                    paths = pendingPaths,
+                    ioContext = ioScope.coroutineContext,
+                    sem = sem,
+                    sign = { path -> indexRepository.downloadUrl(path) },
+                )
             }
-            later.forEach { path ->
-                launch(ioScope.coroutineContext) {
-                    val signed = sem.withPermit { indexRepository.downloadUrl(path) } ?: return@launch
-                    val item = MediaItem.Builder().setUri(signed).setMediaId(path).build()
-                    withContext(Dispatchers.Main) { exoPlayer?.addMediaItem(item) }
-                    val songs = indexRepository.songMapForPaths(listOf(path))
-                    songs.firstOrNull()?.let { pathToSong = pathToSong + (path to it) }
-                }
+            val songsDeferred = async(ioScope.coroutineContext) {
+                indexRepository.songMapForPaths(pendingPaths)
             }
+            itemsDeferred.await() to songsDeferred.await()
         }
+        val earlierOrdered = PlaybackQueueBatch.buildOrderedList(earlier, signedByPath)
+        val laterOrdered = PlaybackQueueBatch.buildOrderedList(later, signedByPath)
+
+        withContext(Dispatchers.Main) {
+            val player = exoPlayer ?: return@withContext
+            PlaybackQueueBatch.applyBatchOnMain(player, earlierOrdered, laterOrdered)
+        }
+        pathToSong = pathToSong + pathToSongEntries.associateBy { it.path }
     }
 
     private fun startProgressUpdates() {

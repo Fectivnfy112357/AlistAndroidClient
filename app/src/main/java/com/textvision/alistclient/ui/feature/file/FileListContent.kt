@@ -100,12 +100,13 @@ fun FileListContent(
         items(files, key = { it.path }) { file ->
             val selected = file.path in state.selection
             FileRowPrototype(
+                // P2: drop the `MediumBouncy` placement animation — it applied
+                // a spring spec to every row on every directory swap and was the
+                // main per-row cost during `home-scroll`/`file-tab` reflows.
+                // Cross-fading rows on enter/leave is still cheap and is
+                // preserved via the default fade specs.
                 modifier = Modifier.animateItem(
                     fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
-                    placementSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium,
-                    ),
                     fadeOutSpec = spring(stiffness = Spring.StiffnessMedium),
                 ),
                 file = file,
@@ -136,10 +137,14 @@ private fun FileRowPrototype(
     modifier: Modifier = Modifier,
 ) {
     val rowBg = if (selected) Brand300 else Color.Transparent
-    val subtitle = buildSubtitle(file)
+    // P2: cache subtitle per (size, modifiedAt, isDir). The previous version
+    // recomputed the relative-date string on every recomposition — for a busy
+    // directory refresh (selection toggle, scroll, online flip) that produced
+    // hundreds of identical DateFormatter calls per frame.
+    val subtitle = remember(file.size, file.modifiedAt, file.isDir) { buildSubtitle(file) }
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp, vertical = 2.dp)
             .clip(RoundedCornerShape(14.dp))
@@ -205,6 +210,32 @@ private fun FileRowPrototype(
 
 @Composable
 private fun FileIconBox(type: FileType) {
+    // P2: cache the gradient brush + foreground pair per file type. The two
+    // have only 7 distinct values across the prototype palette, so memoising
+    // keeps the row composition from re-allocating `Brush.linearGradient`
+    // on every recomposition (selection flip, scroll, online state tick).
+    val (brush, fg) = remember(type) { iconBoxAppearance(type) }
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(brush),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = iconForType(type),
+            contentDescription = null,
+            tint = fg,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+/**
+ * Pure appearance table for [FileIconBox] — extracted so it can be `remember`-ed
+ * once per file type instead of recomputed for every recomposing row.
+ */
+private fun iconBoxAppearance(type: FileType): Pair<Brush, Color> {
     val (grad, fg) = when (type) {
         FileType.Folder  -> listOf(Brand500, Brand500) to Color.White
         FileType.Image   -> listOf(CandyPinkBg, CandyPink) to Color(0xFFC46683)
@@ -215,20 +246,7 @@ private fun FileIconBox(type: FileType) {
         FileType.Archive -> listOf(Color(0xFFE8EFF8), Color(0xFFD7E1F0)) to InkSoft
         FileType.Other   -> listOf(Color(0xFFEAF0F8), Color(0xFFD7E1F0)) to InkSoft
     }
-    Box(
-        modifier = Modifier
-            .size(38.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Brush.linearGradient(grad)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = iconForType(type),
-            contentDescription = null,
-            tint = fg,
-            modifier = Modifier.size(20.dp),
-        )
-    }
+    return Brush.linearGradient(grad) to fg
 }
 
 private fun iconForType(type: FileType): ImageVector = when (type) {

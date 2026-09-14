@@ -41,18 +41,20 @@ class SettingsViewModelTest {
     @Before fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     @After fun tearDown() { Dispatchers.resetMain() }
 
-    private fun vm() = SettingsViewModel(
-        authRepository = authRepo,
-        transferManager = transfer,
-        previewFileStore = preview,
-        storageRepository = storage,
-        settingsRepository = settings,
-        sessionManager = session,
-        musicRootStore = mockk(relaxed = true),
-        musicCache = mockk(relaxed = true) {
-            io.mockk.every { sizeBytes } returns 0L
-        },
-    )
+    private fun vm(ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Unconfined) =
+        SettingsViewModel(
+            authRepository = authRepo,
+            transferManager = transfer,
+            previewFileStore = preview,
+            storageRepository = storage,
+            settingsRepository = settings,
+            sessionManager = session,
+            musicRootStore = mockk(relaxed = true),
+            musicCache = mockk(relaxed = true) {
+                io.mockk.every { sizeBytes } returns 0L
+            },
+            ioDispatcher = ioDispatcher,
+        )
 
     @Test fun toggleStorageCallsRepo() = runTest {
         coEvery { storage.list(any()) } returns AdminResult.Ok(
@@ -121,5 +123,66 @@ class SettingsViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state.errorMessage.orEmpty(), state.errorMessage?.contains("ServerError") == true)
+    }
+
+    @Test fun musicCacheSize_isReadFromIoDispatcher_notMain() = runTest {
+        // Single-threaded dispatcher lets us assert that the cache walk ran
+        // there and not on the main test dispatcher.
+        var calledOnIo = false
+        val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler)
+        val cache = mockk<com.textvision.alistclient.music.playback.MusicCache>(relaxed = true)
+        io.mockk.every { cache.sizeBytes } answers {
+            calledOnIo = true
+            42L
+        }
+
+        val viewModel = SettingsViewModel(
+            authRepository = authRepo,
+            transferManager = transfer,
+            previewFileStore = preview,
+            storageRepository = storage,
+            settingsRepository = settings,
+            sessionManager = session,
+            musicRootStore = mockk(relaxed = true),
+            musicCache = cache,
+            ioDispatcher = testDispatcher,
+        )
+
+        viewModel.musicCacheSize.test {
+            // Initial value published by the StateFlow before the IO walk
+            // completes is 0L; the IO result then publishes 42L.
+            assertEquals(0L, awaitItem())
+            // Drive the IO dispatcher.
+            testScheduler.advanceUntilIdle()
+            val after = awaitItem()
+            assertEquals(42L, after)
+            assertTrue("sizeBytes should be invoked on the IO dispatcher", calledOnIo)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test fun clearMusicCache_resetsSize_toZero() = runTest {
+        val cache = mockk<com.textvision.alistclient.music.playback.MusicCache>(relaxed = true)
+        io.mockk.every { cache.sizeBytes } returnsMany listOf(1234L, 0L)
+        coEvery { cache.clear() } returns Unit
+
+        val viewModel = SettingsViewModel(
+            authRepository = authRepo,
+            transferManager = transfer,
+            previewFileStore = preview,
+            storageRepository = storage,
+            settingsRepository = settings,
+            sessionManager = session,
+            musicRootStore = mockk(relaxed = true),
+            musicCache = cache,
+            ioDispatcher = Dispatchers.Unconfined,
+        )
+
+        // init block reads 1234L
+        assertEquals(1234L, viewModel.musicCacheSize.value)
+        viewModel.onClearMusicCache()
+        // After clear() the second sizeBytes read returns 0L.
+        assertEquals(0L, viewModel.musicCacheSize.value)
+        coVerify(exactly = 1) { cache.clear() }
     }
 }

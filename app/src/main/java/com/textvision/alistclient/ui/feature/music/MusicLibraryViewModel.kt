@@ -3,6 +3,7 @@ package com.textvision.alistclient.ui.feature.music
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.music.data.MusicIndexRepository
 import com.textvision.alistclient.music.data.model.Song
 import com.textvision.alistclient.music.playback.PlaybackController
@@ -13,11 +14,13 @@ import com.textvision.alistclient.ui.feature.music.model.UiArtist
 import com.textvision.alistclient.ui.feature.music.model.UiSong
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -39,6 +42,7 @@ class MusicLibraryViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val indexRepo: MusicIndexRepository,
     private val playbackController: PlaybackController,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     init {
@@ -56,10 +60,10 @@ class MusicLibraryViewModel @Inject constructor(
 
     val state: StateFlow<MusicLibraryUiState> = combine(
         indexRepo.state,
-        indexRepo.artists(),
-        indexRepo.allAlbums(),
-        indexRepo.recentAlbums(8),
-        indexRepo.allSongs(),
+        indexRepo.artists().distinctUntilChanged(),
+        indexRepo.allAlbums().distinctUntilChanged(),
+        indexRepo.recentAlbums(8).distinctUntilChanged(),
+        indexRepo.allSongs().distinctUntilChanged(),
     ) { indexState, artists, albums, recent, songs ->
         val albumArtwork = albums.associate { (it.artist to it.name) to it.artworkData }
         MusicLibraryUiState(
@@ -69,11 +73,12 @@ class MusicLibraryViewModel @Inject constructor(
             recentAlbums = recent.map(UiAlbum::fromDomain),
             songs = songs.map { song -> UiSong.fromDomain(song, albumArtwork[song.artist to song.album]) },
         )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = MusicLibraryUiState(),
-    )
+    }.flowOn(ioDispatcher)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = MusicLibraryUiState(),
+        )
 
     /**
      * Mini player source. We expose ONLY the fields the mini player reads

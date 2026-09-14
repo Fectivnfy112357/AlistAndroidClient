@@ -86,11 +86,13 @@ fun FileScreen(
         }
     }
 
-    // 每次页面 RESUMED 时重新拉取当前目录：包括首次进入、从子页面返回、
-    // 以及底部 tab 切回本页（BottomNavBar 用 saveState/restoreState 会复用旧
-    // state，若不主动刷新，启用/禁用存储后文件页不会更新）。
+    // Cache-aware resume: only fetch when the ViewModel doesn't already hold
+    // a successful listing for this path. Loading on every resume (the previous
+    // behaviour) was the main per-tab cost in the tab-cycle hotpath and forced
+    // redundant rebinds on bottom-tab returns. Explicit refresh + delete +
+    // retry all bypass this gate via FileIntent.Load.
     LifecycleResumeEffect(initialPath) {
-        vm.onIntent(FileIntent.Load(initialPath))
+        vm.ensureLoaded(initialPath)
         onPauseOrDispose { }
     }
 

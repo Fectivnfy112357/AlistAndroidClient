@@ -15,12 +15,15 @@ import com.textvision.alistclient.network.dto.StoragePatch
 import com.textvision.alistclient.preview.PreviewFileStore
 import com.textvision.alistclient.transfer.TransferManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.textvision.alistclient.di.IoDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class SettingsUiState(
@@ -40,6 +43,7 @@ class SettingsViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val musicRootStore: MusicLibraryRootStore,
     private val musicCache: MusicCache,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
     private val _loggedOut = MutableStateFlow(false)
     val loggedOut: StateFlow<Boolean> = _loggedOut
@@ -128,7 +132,14 @@ class SettingsViewModel @Inject constructor(
     val musicCacheSize: StateFlow<Long> = _musicCacheSize
 
     init {
-        viewModelScope.launch { _musicCacheSize.value = musicCache.sizeBytes }
+        // P0: walk the music cache directory off the main dispatcher. The cache
+        // lives under filesDir/music_cache and can hold hundreds of MB; the
+        // recursive walk used to block the main thread on first Settings open
+        // and was visible as a long-tail frame in `settings-scroll`.
+        viewModelScope.launch {
+            val size = withContext(ioDispatcher) { musicCache.sizeBytes }
+            _musicCacheSize.value = size
+        }
     }
 
     fun onMusicRootChange(path: String) = viewModelScope.launch {
@@ -136,8 +147,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onClearMusicCache() = viewModelScope.launch {
-        musicCache.clear()
-        _musicCacheSize.value = musicCache.sizeBytes
+        // P0: clear() rebuilds the SimpleCache instance (acquires DB locks,
+        // recreates the index). Keep it off the main dispatcher; the follow-up
+        // `sizeBytes` walk is on the same dispatcher.
+        withContext(ioDispatcher) {
+            musicCache.clear()
+            _musicCacheSize.value = musicCache.sizeBytes
+        }
     }
 
     companion object {
