@@ -43,8 +43,6 @@ import com.textvision.alistclient.ui.components.ActionButton
 import com.textvision.alistclient.ui.components.BannerKind
 import com.textvision.alistclient.ui.components.ButtonVariant
 import com.textvision.alistclient.ui.components.StatusBanner
-import com.textvision.alistclient.ui.foundation.CloudDecor
-import com.textvision.alistclient.ui.foundation.SkyBlueBackground
 import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.AlistTheme
 import com.textvision.alistclient.ui.theme.Brand500
@@ -74,9 +72,12 @@ private fun LoginContent(
     onPasswordChange: (String) -> Unit,
     onLogin: () -> Unit,
 ) {
+    // P2 (#33): the `AppNavHost` already paints `SkyBlueBackground()` and
+    // `CloudDecor()` once for every destination (see AppNavHost.kt:64-66). The
+    // two `Box`es here duplicated that work and added a redundant fill pass on
+    // every login recomposition (e.g. each keystroke into the credentials
+    // field). Removing them keeps the background painted exactly once.
     Box(Modifier.fillMaxSize()) {
-        SkyBlueBackground()
-        CloudDecor()
         Column(
             modifier = Modifier
                 .fillMaxSize()

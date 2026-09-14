@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -93,22 +94,30 @@ internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) 
         padding = PaddingValues(14.dp),
         solid = true,
     ) {
+        // P0 (perf #4+#30): wrap the highlight circle in `drawWithCache` so
+        // the `Brush.radialGradient(...)` is allocated once per size / theme
+        // change instead of once per draw. The hero card is the top of Home
+        // and redraws whenever the user scrolls, so this is a hot path.
         Box(
-            modifier = Modifier.drawBehind {
+            modifier = Modifier.drawWithCache {
                 val d = 90.dp.toPx()
                 val ox = 22.dp.toPx()
                 val oy = -22.dp.toPx()
                 val cx = size.width + ox - d / 2f
                 val cy = oy + d / 2f
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        listOf(Brand300.copy(alpha = 1f), Brand200.copy(alpha = 0.5f)),
-                        center = androidx.compose.ui.geometry.Offset(cx, cy),
-                        radius = d / 2f,
-                    ),
+                val center = androidx.compose.ui.geometry.Offset(cx, cy)
+                val brush = Brush.radialGradient(
+                    listOf(Brand300.copy(alpha = 1f), Brand200.copy(alpha = 0.5f)),
+                    center = center,
                     radius = d / 2f,
-                    center = androidx.compose.ui.geometry.Offset(cx, cy),
                 )
+                onDrawBehind {
+                    drawCircle(
+                        brush = brush,
+                        radius = d / 2f,
+                        center = center,
+                    )
+                }
             },
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
