@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -108,17 +109,30 @@ class TransferViewModel @Inject constructor(
 
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    /**
+     * P0 fix: was `stateIn(Eagerly)`, which kept the Room `dao.observeAll()`
+     * upstream hot even when no UI was collecting. With three concurrent
+     * transfers each ticking at ~1Hz, this meant Room ran 3 invalidations
+     * per second even when the user was on Files / Settings / Home. We now
+     * use `WhileSubscribed(5_000)` so the upstream tears down 5s after the
+     * Transfers tab loses its last collector (i.e. when the user navigates
+     * away).
+     *
+     * The `distinctUntilChanged { ... }` on the transfers flow collapses
+     * progress ticks that don't cross a 1% step. With 4 writes/sec per
+     * active transfer (post-O1 throttle) and 1% step quantization, we drop
+     * ~24 emissions/sec down to ~3 — the rest are no-op `combine` re-runs
+     * that would otherwise re-derive `summary` / `visible` / counts.
+     */
     val state: StateFlow<TransferListUiState> = combine(
         _tab,
-        manager.observeTransfers(),
+        manager.observeTransfers().distinctUntilChanged(::sameTransfers),
         networkMonitor.isOnline,
     ) { tab, all, online ->
-        // Derive once per emission so the Composable side reads plain fields
-        // instead of triggering per-read table scans.
         TransferListUiState.derive(all, tab, online)
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = TransferListUiState(),
     )
 
@@ -137,4 +151,34 @@ class TransferViewModel @Inject constructor(
     fun cancel(id: String) = manager.cancel(id)
     fun retry(id: String) = manager.retry(id)
     fun delete(id: String) = manager.delete(id)
+}
+
+/**
+ * True when the user-visible state of [a] and [b] is identical, ignoring
+ * sub-1% progress deltas. Two snapshots with the same ids, statuses, and
+ * percentage steps are treated as the same list — this is what lets
+ * `distinctUntilChanged` drop no-op progress emissions without changing
+ * what the user sees on screen.
+ */
+private fun sameTransfers(a: List<TransferEntity>, b: List<TransferEntity>): Boolean {
+    if (a.size != b.size) return false
+    for (i in a.indices) {
+        val x = a[i]
+        val y = b[i]
+        if (x.id != y.id) return false
+        if (x.status != y.status) return false
+        if (x.bytesDone != y.bytesDone) {
+            val xp = percentStep(x.bytesDone, x.totalBytes)
+            val yp = percentStep(y.bytesDone, y.totalBytes)
+            if (xp != yp) return false
+        }
+    }
+    return true
+}
+
+private fun percentStep(bytesDone: Long, totalBytes: Long): Int {
+    if (totalBytes <= 0L) return 0
+    // 1% quantization. Intentionally coarse — finer steps yield more
+    // re-emits for no visible benefit.
+    return ((bytesDone.toDouble() / totalBytes.toDouble()) * 100.0).toInt()
 }

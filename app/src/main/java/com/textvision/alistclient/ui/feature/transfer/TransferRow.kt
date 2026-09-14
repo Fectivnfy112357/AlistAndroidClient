@@ -58,11 +58,25 @@ private data class StateColors(
     val isCompleted: Boolean,
 )
 
+// P2: per-state brushes are constant for a given (status, type) pair, so hoist
+// them to top-level `val`s. Previously each `TransferRow` recomposition that
+// hit `colorsFor` re-allocated 1-2 new `Brush.horizontalGradient(listOf(...))`
+// objects; on a 50-row transfer list with progress ticking at ~3Hz after the
+// upstream `distinctUntilChanged`, that was ~150 Brush allocations/sec.
+private val FailedProgressBrush: Brush =
+    Brush.horizontalGradient(listOf(Color(0xFFB3261E), Color(0xFFB3261E)))
+private val SuccessProgressBrush: Brush =
+    Brush.horizontalGradient(listOf(CandyMint, Brand500))
+private val UploadProgressBrush: Brush =
+    Brush.horizontalGradient(listOf(CandyPink, CandyMint))
+private val DownloadProgressBrush: Brush =
+    Brush.horizontalGradient(listOf(CandyMint, Brand500))
+
 @Composable
 private fun colorsFor(item: TransferEntity): StateColors {
-    val tertiary = MaterialTheme.colorScheme.tertiary
+    val tertiaryContainer = MaterialTheme.colorScheme.tertiaryContainer
     val onTertiary = MaterialTheme.colorScheme.onTertiaryContainer
-    val secondary = MaterialTheme.colorScheme.secondary
+    val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
     val onSecondary = MaterialTheme.colorScheme.onSecondaryContainer
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
     val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
@@ -71,6 +85,7 @@ private fun colorsFor(item: TransferEntity): StateColors {
     val errorFg = MaterialTheme.colorScheme.error
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val primary = MaterialTheme.colorScheme.primary
+    val secondary = MaterialTheme.colorScheme.secondary
 
     return when {
         item.status == TransferStatus.Failed ||
@@ -78,29 +93,28 @@ private fun colorsFor(item: TransferEntity): StateColors {
             iconBg = errorContainer,
             iconFg = onErrorContainer,
             statusColor = errorFg,
-            progressBrush = Brush.horizontalGradient(listOf(errorFg, errorFg)),
+            progressBrush = FailedProgressBrush,
             isCompleted = false,
         )
         item.status == TransferStatus.Success -> StateColors(
             iconBg = primaryContainer,
             iconFg = onPrimaryContainer,
             statusColor = onSurfaceVariant,
-            // 100% mint→brand gradient frozen at full
-            progressBrush = Brush.horizontalGradient(listOf(CandyMint, Brand500)),
+            progressBrush = SuccessProgressBrush,
             isCompleted = true,
         )
         item.type == TransferType.Upload -> StateColors(
-            iconBg = MaterialTheme.colorScheme.tertiaryContainer,
+            iconBg = tertiaryContainer,
             iconFg = onTertiary,
             statusColor = primary,
-            progressBrush = Brush.horizontalGradient(listOf(CandyPink, CandyMint)),
+            progressBrush = UploadProgressBrush,
             isCompleted = false,
         )
         else -> StateColors(
-            iconBg = MaterialTheme.colorScheme.secondaryContainer,
+            iconBg = secondaryContainer,
             iconFg = onSecondary,
-            statusColor = MaterialTheme.colorScheme.secondary,
-            progressBrush = Brush.horizontalGradient(listOf(CandyMint, Brand500)),
+            statusColor = secondary,
+            progressBrush = DownloadProgressBrush,
             isCompleted = false,
         )
     }
