@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -109,6 +110,9 @@ class FileViewModelTest {
         vm.onIntent(FileIntent.Load("/"))
         advanceUntilIdle()
         vm.onIntent(FileIntent.Search("apple"))
+        // P0 (#40): search input is debounced by 150ms in the production VM;
+        // advance the test scheduler past the debounce window before reading.
+        advanceTimeBy(200L)
 
         val state = vm.state.value
         assertEquals(1, state.visibleFiles.size)

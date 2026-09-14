@@ -10,6 +10,7 @@ import com.textvision.alistclient.transfer.TransferManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,10 +48,18 @@ class FileViewModel @Inject constructor(
     private var loadJob: Job? = null
     private var loadGeneration: Int = 0
 
+    // P0 (perf #40): debounce search input. Each keystroke previously fired
+    // an immediate `_state.update { copy(query = ...) }` which re-ran the
+    // `visibleFiles` filter and recomposed `FileListContent`. Typing "abc"
+    // produced 3 filters; typing a Chinese phrase via the IME produced 8-12.
+    // We now hold the in-flight query on a Job and only commit it 150ms after
+    // the user stops typing, matching the typical IME commit interval.
+    private var searchJob: Job? = null
+
     fun onIntent(intent: FileIntent) {
         when (intent) {
             is FileIntent.Load -> load(intent.path)
-            is FileIntent.Search -> _state.update { it.copy(query = intent.query) }
+            is FileIntent.Search -> scheduleSearch(intent.query)
             is FileIntent.Upload -> transferManager.enqueueUpload(intent.uri, _state.value.path)
             is FileIntent.DownloadOne -> downloadOne(intent.path)
             is FileIntent.MultiSelectToggle -> toggleSelect(intent.path)
@@ -114,6 +123,20 @@ class FileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Debounce search input by 150ms. Cancels the prior pending update so a
+     * fast typist only commits one state change per pause, instead of one per
+     * keystroke. On cancellation we still flush the latest value so the user
+     * doesn't see a stale query on screen.
+     */
+    private fun scheduleSearch(query: String) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(SEARCH_DEBOUNCE_MS)
+            _state.update { it.copy(query = query) }
+        }
+    }
+
     private fun toggleSelect(path: String) {
         _state.update { current ->
             val newSelection = if (path in current.selection) current.selection - path else current.selection + path
@@ -162,5 +185,9 @@ class FileViewModel @Inject constructor(
             }
         }
         _state.update { it.copy(selection = emptySet(), isMultiSelectMode = false) }
+    }
+
+    private companion object {
+        const val SEARCH_DEBOUNCE_MS = 150L
     }
 }

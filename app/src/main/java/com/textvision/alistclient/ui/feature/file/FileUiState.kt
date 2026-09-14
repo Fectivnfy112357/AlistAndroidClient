@@ -22,8 +22,14 @@ data class FileUiState(
      */
     val lastLoadedForPath: String? = null,
 ) {
-    val visibleFiles: List<FileItem>
-        get() = if (query.isBlank()) files
+    /**
+     * P0: was a `get()` that re-ran `filter` on every read. With a 1000-item
+     * directory and two readers (`FileListContent` and the multi-select bar's
+     * `isAllSelected`), each keystroke fired two full O(n) scans. Declaring it
+     * as a `val` makes the data class compute it once per instance during
+     * `copy` — readers now pay nothing.
+     */
+    val visibleFiles: List<FileItem> = if (query.isBlank()) files
         else files.filter { it.name.contains(query, ignoreCase = true) }
 
     val isSelectionEmpty: Boolean
