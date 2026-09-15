@@ -1,7 +1,5 @@
 package com.textvision.alistclient.ui.feature.file
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -93,6 +92,19 @@ fun FileListContent(
         return
     }
 
+    // P3: stabilise the six parent-supplied callbacks via [rememberUpdatedState].
+    // Each `onXxx.value` is a stable State<…> reference; the lambdas we hand to
+    // [FileRowPrototype] capture only that reference, so the compose compiler
+    // treats them as skippable. Previously each scroll / refresh / selection
+    // tick produced 6 fresh lambdas per row, defeating skippability on rows
+    // that hadn't otherwise changed.
+    val onIntentState by rememberUpdatedState(onIntent)
+    val onPreviewState by rememberUpdatedState(onPreview)
+    val onFolderState by rememberUpdatedState(onFolderNavigate)
+    val onShareState by rememberUpdatedState(onShare)
+    val onCopyState by rememberUpdatedState(onCopyLink)
+    val onDownloadFbState by rememberUpdatedState(onDownloadFeedback)
+
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding,
@@ -103,21 +115,21 @@ fun FileListContent(
                 // P2: drop the `MediumBouncy` placement animation — it applied
                 // a spring spec to every row on every directory swap and was the
                 // main per-row cost during `home-scroll`/`file-tab` reflows.
-                // Cross-fading rows on enter/leave is still cheap and is
-                // preserved via the default fade specs.
-                modifier = Modifier.animateItem(
-                    fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
-                    fadeOutSpec = spring(stiffness = Spring.StiffnessMedium),
-                ),
+                // P3: also drop the per-row `fadeInSpec`/`fadeOutSpec` —
+                // `Modifier.animateItem()` already uses LazyList's default
+                // ~100 ms fade, and constructing a new [SpringSpec] for every
+                // row on every recomposition was an extra allocation in the
+                // scroll hot path.
+                modifier = Modifier.animateItem(),
                 file = file,
                 selected = selected,
                 showCheck = state.isMultiSelectMode,
-                onIntent = onIntent,
-                onPreview = onPreview,
-                onFolderNavigate = onFolderNavigate,
-                onShare = onShare,
-                onCopyLink = onCopyLink,
-                onDownloadFeedback = onDownloadFeedback,
+                onIntent = onIntentState,
+                onPreview = onPreviewState,
+                onFolderNavigate = onFolderState,
+                onShare = onShareState,
+                onCopyLink = onCopyState,
+                onDownloadFeedback = onDownloadFbState,
             )
         }
     }

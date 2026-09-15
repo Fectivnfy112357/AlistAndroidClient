@@ -65,6 +65,24 @@ android {
     }
 }
 
+// Compose Compiler Reports & Metrics (P3 perf work):
+// Run `./gradlew :app:assembleDebug` once and inspect:
+//   app/build/compose_reports/        — per-class stability / skippability report
+//   app/build/compose_metrics/        — module-level metrics CSV
+// Pass `-PcomposeCompilerReports=true` to opt-in (off by default so a clean
+// debug build isn't polluted with reports on every run).
+val composeReportsEnabled = project.findProperty("composeCompilerReports") == "true"
+
+// Kotlin 2.0+ Compose Compiler plugin (org.jetbrains.kotlin.plugin.compose)
+// exposes a typed [ComposeCompilerGradlePluginExtension] with Property setters.
+extensions.configure<org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension> {
+    includeSourceInformation.set(composeReportsEnabled)
+    if (composeReportsEnabled) {
+        reportsDestination.set(layout.buildDirectory.dir("compose_reports"))
+        metricsDestination.set(layout.buildDirectory.dir("compose_metrics"))
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))

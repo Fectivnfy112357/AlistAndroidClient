@@ -1,11 +1,13 @@
 package com.textvision.alistclient.transfer.data
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.textvision.alistclient.transfer.model.TransferStatus
 import com.textvision.alistclient.transfer.model.TransferType
 
 @Entity(tableName = "transfer_tasks")
+@Immutable
 data class TransferEntity(
     @PrimaryKey val id: String,
     val fileName: String,

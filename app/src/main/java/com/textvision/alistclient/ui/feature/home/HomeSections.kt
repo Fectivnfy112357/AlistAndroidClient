@@ -84,15 +84,25 @@ internal fun HomeSectionTitle(text: String, modifier: Modifier = Modifier) {
 //  Hero server card — prototype `.card.solid` with cloud icon + name + chip
 // ═══════════════════════════════════════════════════════════════════════════
 
+// A dashboard scroll moves several cards at once. The solid fill, rounded
+// shape, and hairline border retain separation without a moving drop shadow.
+private val DashboardCardShadowElevation = 0.dp
+
 @Composable
 internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) {
     val data = (public as? SectionResult.Ok)?.data
     val serverName = data?.siteTitle ?: "Alist"
     val version = data?.siteVersion
+    // P3: hoist the cloud-icon `Brush.linearGradient(...)` to a top-level val
+    // shared across every HeroServerCard recomposition (and across cards — the
+    // gradient never changes at runtime). The previous inline call allocated
+    // a fresh Brush on every parent recomposition, which on the dashboard
+    // became a measurable share of frame time during continuous scrolling.
     SectionCard(
         modifier = Modifier.testTag("home_hero"),
         padding = PaddingValues(14.dp),
         solid = true,
+        shadowElevation = DashboardCardShadowElevation,
     ) {
         // P0 (perf #4+#30): wrap the highlight circle in `drawWithCache` so
         // the `Brush.radialGradient(...)` is allocated once per size / theme
@@ -126,7 +136,7 @@ internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) 
                     Modifier
                         .size(40.dp)
                         .clip(MaterialTheme.shapes.small)
-                        .background(Brush.linearGradient(listOf(Brand500, Brand600))),
+                        .background(CloudIconBrush),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -161,6 +171,11 @@ internal fun HeroServerCard(public: SectionResult<PublicData>, online: Boolean) 
         }
     }
 }
+
+// P3: top-level stable Brush for the HeroServerCard cloud icon. Theme
+// palette never changes at runtime, so a single shared instance is fine.
+private val CloudIconBrush: Brush =
+    Brush.linearGradient(listOf(Brand500, Brand600))
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Metric row (3 cards) — prototype `.metric` with Fredoka 26sp numerals
@@ -234,6 +249,7 @@ internal fun MetricCard(
         modifier = modifier.testTag("home_metric_$label"),
         padding = PaddingValues(12.dp),
         solid = true,
+        shadowElevation = DashboardCardShadowElevation,
     ) {
         Column {
             Box(
@@ -276,6 +292,7 @@ internal fun TaskSection(task: SectionResult<TaskData>, onRetry: () -> Unit) {
         modifier = Modifier.testTag("home_task_card"),
         padding = PaddingValues(12.dp),
         solid = true,
+        shadowElevation = DashboardCardShadowElevation,
     ) {
         when (task) {
             is SectionResult.Ok -> TaskContent(task.data)

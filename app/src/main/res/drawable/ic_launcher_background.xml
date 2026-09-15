@@ -1,11 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Alist Client adaptive-icon background.
+
+    Diagonal Brand500 → Brand700 gradient, matching the Compose theme in
+    ui/theme/Color.kt (val Brand500 = #6FB6FF, Brand700 = #2D7AD0).
+    Replaces the previous flat #3F51B5 (Material Indigo 500) template color,
+    which clashed with the in-app sky-blue palette.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Solid app seed color fill for adaptive icon background -->
-    <path
-        android:fillColor="#FF3F51B5"
-        android:pathData="M0,0 L108,0 L108,108 L0,108 Z" />
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108"
+                android:type="linear">
+                <item android:offset="0" android:color="#FF6FB6FF" />
+                <item android:offset="1" android:color="#FF2D7AD0" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

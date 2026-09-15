@@ -68,6 +68,30 @@ import com.textvision.alistclient.ui.theme.StateErrorBg
 import com.textvision.alistclient.ui.theme.StateSuccessFg
 import com.textvision.alistclient.ui.theme.StateWarnFg
 
+private val SettingsProfileGradient = Brush.linearGradient(listOf(CandyMint, Brand500))
+private val SettingsQuarkGradient = Brush.linearGradient(listOf(CandyMintBg, CandyMintDeep))
+private val SettingsBaiduGradient = Brush.linearGradient(listOf(CandyLilacBg, CandyLilacDeep))
+private val SettingsDefaultStorageGradient = Brush.linearGradient(listOf(Brand400, Brand200))
+private val SettingsQuickGradient = Brush.linearGradient(listOf(CandyPinkBg, CandyPinkDeep))
+private val SettingsPrivacyGradient = Brush.linearGradient(listOf(CandyLemonBg, CandyLemon))
+private val SettingsSwitchOnGradient = Brush.linearGradient(listOf(Brand500, CandyMint))
+
+private val QuarkStorageVisual = StorageVisual(
+    icon = AppIcons.cloud,
+    background = SettingsQuarkGradient,
+    tint = StateSuccessFg,
+)
+private val BaiduStorageVisual = StorageVisual(
+    icon = AppIcons.database,
+    background = SettingsBaiduGradient,
+    tint = MusicViolet,
+)
+private val DefaultStorageVisual = StorageVisual(
+    icon = AppIcons.database,
+    background = SettingsDefaultStorageGradient,
+    tint = Brand700,
+)
+
 @Composable
 internal fun SettingsHeader(modifier: Modifier = Modifier) {
     Column(
@@ -110,7 +134,7 @@ internal fun SettingsUserCard(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(CandyMint, Brand500))),
+                .background(SettingsProfileGradient),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -198,21 +222,9 @@ private data class StorageVisual(
 private fun storageVisual(driver: String): StorageVisual {
     val value = driver.lowercase()
     return when {
-        "quark" in value -> StorageVisual(
-            icon = AppIcons.cloud,
-            background = Brush.linearGradient(listOf(CandyMintBg, CandyMintDeep)),
-            tint = StateSuccessFg,
-        )
-        "baidu" in value -> StorageVisual(
-            icon = AppIcons.database,
-            background = Brush.linearGradient(listOf(CandyLilacBg, CandyLilacDeep)),
-            tint = MusicViolet,
-        )
-        else -> StorageVisual(
-            icon = AppIcons.database,
-            background = Brush.linearGradient(listOf(Brand400, Brand200)),
-            tint = Brand700,
-        )
+        "quark" in value -> QuarkStorageVisual
+        "baidu" in value -> BaiduStorageVisual
+        else -> DefaultStorageVisual
     }
 }
 
@@ -224,7 +236,7 @@ internal fun QuickSettingRow(
     var editing by remember { mutableStateOf(false) }
     SettingsRow(
         icon = AppIcons.sparkle,
-        iconBackground = Brush.linearGradient(listOf(CandyPinkBg, CandyPinkDeep)),
+        iconBackground = SettingsQuickGradient,
         iconTint = MusicMagenta,
         title = displayLabel(item.key),
         subtitle = item.value?.takeIf(String::isNotBlank) ?: "(未设置)",
@@ -264,7 +276,7 @@ internal fun PrivacyPasswordRow() {
     var enabled by remember { mutableStateOf(true) }
     SettingsRow(
         icon = AppIcons.shield,
-        iconBackground = Brush.linearGradient(listOf(CandyLemonBg, CandyLemon)),
+        iconBackground = SettingsPrivacyGradient,
         iconTint = StateWarnFg,
         title = "隐私与密码",
         subtitle = "指纹解锁 · 自动登录",
@@ -295,7 +307,7 @@ private fun PrototypeSwitch(
                 .size(width = 40.dp, height = 22.dp)
                 .clip(CircleShape)
                 .background(
-                    if (checked) Brush.linearGradient(listOf(Brand500, CandyMint))
+                    if (checked) SettingsSwitchOnGradient
                     else SolidColor(MaterialTheme.colorScheme.outline),
                 )
                 .padding(2.dp),
@@ -315,7 +327,7 @@ private fun PrototypeSwitch(
 internal fun CleanPreviewRow(onClick: () -> Unit) {
     SettingsRow(
         icon = AppIcons.broom,
-        iconBackground = Brush.linearGradient(listOf(CandyMintBg, CandyMintDeep)),
+        iconBackground = SettingsQuarkGradient,
         iconTint = StateSuccessFg,
         title = "清理临时预览文件",
         subtitle = "已使用 234 MB",
@@ -328,7 +340,7 @@ internal fun CleanPreviewRow(onClick: () -> Unit) {
 internal fun AdvancedSettingsRow(onClick: () -> Unit) {
     SettingsRow(
         icon = AppIcons.settings,
-        iconBackground = Brush.linearGradient(listOf(Brand400, Brand200)),
+        iconBackground = SettingsDefaultStorageGradient,
         iconTint = Brand700,
         title = "完整设置",
         subtitle = "全部站点设置项",

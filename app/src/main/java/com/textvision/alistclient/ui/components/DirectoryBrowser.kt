@@ -9,6 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.file.model.FileItem
@@ -20,6 +23,12 @@ fun DirectoryBrowser(
     onOpen: (String) -> Unit,
     onSelectCurrent: (String) -> Unit,
 ) {
+    // P3: stabilise parent callbacks; `trailing` and `onClick` lambdas per row
+    // were reconstructed on every recomposition. With ~tens of directories
+    // and frequent state ticks (path loading), the row closures were a
+    // measurable share of the picker recomposition budget.
+    val onOpenState by rememberUpdatedState(onOpen)
+    val onSelectCurrentState by rememberUpdatedState(onSelectCurrent)
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
             text = path,
@@ -28,7 +37,7 @@ fun DirectoryBrowser(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         TextButton(
-            onClick = { onSelectCurrent(path) },
+            onClick = { onSelectCurrentState(path) },
             modifier = Modifier.padding(horizontal = 8.dp),
         ) {
             Text("选择当前目录")
@@ -38,11 +47,15 @@ fun DirectoryBrowser(
         } else {
             LazyColumn {
                 items(directories, key = { it.path }) { dir ->
+                    val onClick = remember(dir.path) { { onOpenState(dir.path) } }
                     ListItemRow(
                         leading = { FileTypeIcon(dir.type.toFileCategory()) },
                         title = dir.name,
                         subtitle = "文件夹",
-                        onClick = { onOpen(dir.path) },
+                        onClick = onClick,
+                        // Trailing is a no-capture composable lambda so its
+                        // recreation cost is negligible; the meaningful win
+                        // here is the per-row stable onClick above.
                         trailing = { Text("›") },
                     )
                 }

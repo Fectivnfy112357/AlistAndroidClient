@@ -1,5 +1,6 @@
 package com.textvision.alistclient.network.dto
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.contentOrNull
@@ -10,6 +11,7 @@ data class StorageList(
     @SerialName("total") val total: Int = 0,
 )
 
+@Immutable
 @Serializable
 data class StorageInfo(
     @SerialName("id") val id: Long? = null,

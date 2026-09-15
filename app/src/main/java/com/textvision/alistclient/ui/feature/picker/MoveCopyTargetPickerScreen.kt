@@ -31,6 +31,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +81,10 @@ fun MoveCopyTargetPickerScreen(
         "copy" -> "复制 $count 项到…"
         else -> "移动 $count 项到…"
     }
+    // P3: stabilise the parent-supplied callback. The bottom confirm bar and
+    // the per-row click handlers both feed into this; without stabilisation,
+    // every state tick produces fresh lambdas through the picker subtree.
+    val onTargetSelectedState by rememberUpdatedState(onTargetSelected)
 
     AppScaffold(
         topBar = {
@@ -125,36 +131,53 @@ fun MoveCopyTargetPickerScreen(
             )
 
             Box(modifier = Modifier.weight(1f)) {
+                // P3: hoist local copies of the two fields that drive the row
+                // callbacks. Pulling them out by value lets us capture them in
+                // stable lambdas below without invalidating the lambda when
+                // unrelated state fields change.
+                val currentPath = state.currentPath
+                val selectedTarget = state.selectedTarget
                 LazyColumn(contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
                     item(key = "__current__") {
+                        val onCurrentClick = remember(currentPath) {
+                            {
+                                viewModel.selectTarget(currentPath)
+                                onTargetSelectedState(currentPath)
+                            }
+                        }
                         CurrentDirectoryRow(
                             count = count,
-                            selected = state.selectedTarget == null,
-                            onClick = {
-                                viewModel.selectTarget(state.currentPath)
-                                onTargetSelected(state.currentPath)
-                            },
+                            selected = selectedTarget == null,
+                            onClick = onCurrentClick,
                         )
                     }
                     items(state.directories, key = { it.path }) { dir ->
-                        FolderRowPrototype(
-                            dir = dir,
-                            selected = state.selectedTarget == dir.path,
-                            onClick = {
+                        val onDirClick = remember(dir.path) {
+                            {
                                 viewModel.load(dir.path)
                                 viewModel.selectTarget(dir.path)
-                            },
+                            }
+                        }
+                        FolderRowPrototype(
+                            dir = dir,
+                            selected = selectedTarget == dir.path,
+                            onClick = onDirClick,
                         )
                     }
                 }
             }
 
+            val currentPath = state.currentPath
+            val selectedTarget = state.selectedTarget
+            val onConfirmClick = remember(currentPath, selectedTarget) {
+                {
+                    val target = selectedTarget ?: currentPath
+                    onTargetSelectedState(target)
+                }
+            }
             BottomConfirmBar(
-                targetName = displayNameFor(state.currentPath, state.selectedTarget),
-                onConfirm = {
-                    val target = state.selectedTarget ?: state.currentPath
-                    onTargetSelected(target)
-                },
+                targetName = displayNameFor(currentPath, selectedTarget),
+                onConfirm = onConfirmClick,
             )
         }
     }
@@ -166,6 +189,25 @@ private fun displayNameFor(currentPath: String, selected: String?): String =
     } else {
         currentPath.trim('/').split('/').lastOrNull()?.takeIf { it.isNotBlank() } ?: "当前目录"
     }
+
+// P3: hoist the two pure-color (theme-independent) brushes to top-level vals
+// so the picker rows share a single Brush reference across recompositions.
+// Each picker row was constructing a fresh `Brush.linearGradient(listOf(...))`
+// on every recomposition, defeating LazyList skippability.
+private val CurrentDirectoryBrush: Brush =
+    Brush.linearGradient(listOf(Brand300, Brand500.copy(alpha = 0.4f)))
+private val ConfirmButtonBrush: Brush =
+    Brush.linearGradient(listOf(Brand500, Brand600))
+
+// [FolderRowBrush] depends on `MaterialTheme.colorScheme.primaryContainer`,
+// which is only resolvable inside a composable. Cache it per-theme instead.
+@Composable
+private fun rememberFolderRowBrush(): Brush {
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    return remember(primaryContainer) {
+        Brush.linearGradient(listOf(Brand300, primaryContainer))
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 //  Breadcrumb chips
@@ -296,7 +338,7 @@ private fun NewFolderStrip(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.linearGradient(listOf(Brand500, Brand600)))
+                .background(ConfirmButtonBrush)
                 .clickable(onClick = onConfirm)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -337,7 +379,7 @@ private fun CurrentDirectoryRow(
             modifier = Modifier
                 .size(38.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.linearGradient(listOf(Brand300, Brand500.copy(alpha = 0.4f)))),
+                .background(CurrentDirectoryBrush),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -374,6 +416,9 @@ private fun FolderRowPrototype(
     onClick: () -> Unit,
 ) {
     val bg = if (selected) Brand300 else androidx.compose.ui.graphics.Color.Transparent
+    val folderBrush = rememberFolderRowBrush()
+    // P3: cache the per-row subtitle so we don't re-format on every recomposition.
+    val subtitle = remember(dir.size) { subtitleFor(dir) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -388,7 +433,7 @@ private fun FolderRowPrototype(
             modifier = Modifier
                 .size(38.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.linearGradient(listOf(Brand300, MaterialTheme.colorScheme.primaryContainer))),
+                .background(folderBrush),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -402,7 +447,7 @@ private fun FolderRowPrototype(
         Column(modifier = Modifier.weight(1f)) {
             Text(dir.name, style = MaterialTheme.typography.bodyMedium, color = Ink)
             Text(
-                subtitleFor(dir),
+                subtitle,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -426,7 +471,7 @@ private fun RadioCircle(selected: Boolean) {
             modifier = Modifier
                 .size(24.dp)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(Brand500, Brand600))),
+                .background(ConfirmButtonBrush),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

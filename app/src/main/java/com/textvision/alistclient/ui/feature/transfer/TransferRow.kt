@@ -23,9 +23,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,18 +47,24 @@ import com.textvision.alistclient.ui.icons.AppIcons
 import com.textvision.alistclient.ui.theme.Brand500
 import com.textvision.alistclient.ui.theme.CandyMint
 import com.textvision.alistclient.ui.theme.CandyPink
-import com.textvision.alistclient.ui.theme.StateError
-import com.textvision.alistclient.ui.theme.StateSuccessFg
 
 /**
  * Per-state color tokens. All derive from theme/M3 — no hardcoded hex.
+ *
+ * P3: marked [@Stable] so Compose treats this as skippable when callers cache
+ * it via [remember]. Previously the `colorsFor()` helper constructed a fresh
+ * instance on every recomposition; with progress ticking at ~3 Hz on a 50-row
+ * transfer list that meant 150 StateColors objects/sec just to render the
+ * same colour table.
  */
+@Stable
 private data class StateColors(
     val iconBg: Color,
     val iconFg: Color,
     val statusColor: Color,
     val progressBrush: Brush,
     val isCompleted: Boolean,
+    val icon: ImageVector,
 )
 
 // P2: per-state brushes are constant for a given (status, type) pair, so hoist
@@ -72,51 +81,55 @@ private val UploadProgressBrush: Brush =
 private val DownloadProgressBrush: Brush =
     Brush.horizontalGradient(listOf(CandyMint, Brand500))
 
+/**
+ * P3: returns the [StateColors] for a given status/type pair. Theme colours
+ * still come from [MaterialTheme.colorScheme], so we keep this a composable.
+ * The state+type pair typically stays stable for the lifetime of a row
+ * (transitions go Active → Success/Failed/Cancelled, never Upload ↔ Download),
+ * so [remember(item.status, item.type)] keeps the result skippable.
+ */
 @Composable
-private fun colorsFor(item: TransferEntity): StateColors {
-    val tertiaryContainer = MaterialTheme.colorScheme.tertiaryContainer
-    val onTertiary = MaterialTheme.colorScheme.onTertiaryContainer
-    val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
-    val onSecondary = MaterialTheme.colorScheme.onSecondaryContainer
-    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-    val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
-    val errorContainer = MaterialTheme.colorScheme.errorContainer
-    val onErrorContainer = MaterialTheme.colorScheme.onErrorContainer
-    val errorFg = MaterialTheme.colorScheme.error
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-    val primary = MaterialTheme.colorScheme.primary
-    val secondary = MaterialTheme.colorScheme.secondary
-
-    return when {
-        item.status == TransferStatus.Failed ||
-            item.status == TransferStatus.Interrupted -> StateColors(
-            iconBg = errorContainer,
-            iconFg = onErrorContainer,
-            statusColor = errorFg,
-            progressBrush = FailedProgressBrush,
-            isCompleted = false,
-        )
-        item.status == TransferStatus.Success -> StateColors(
-            iconBg = primaryContainer,
-            iconFg = onPrimaryContainer,
-            statusColor = onSurfaceVariant,
-            progressBrush = SuccessProgressBrush,
-            isCompleted = true,
-        )
-        item.type == TransferType.Upload -> StateColors(
-            iconBg = tertiaryContainer,
-            iconFg = onTertiary,
-            statusColor = primary,
-            progressBrush = UploadProgressBrush,
-            isCompleted = false,
-        )
-        else -> StateColors(
-            iconBg = secondaryContainer,
-            iconFg = onSecondary,
-            statusColor = secondary,
-            progressBrush = DownloadProgressBrush,
-            isCompleted = false,
-        )
+private fun rememberStateColors(item: TransferEntity): StateColors {
+    val scheme = MaterialTheme.colorScheme
+    val isFailed = item.status == TransferStatus.Failed ||
+        item.status == TransferStatus.Interrupted
+    val isSuccess = item.status == TransferStatus.Success
+    val isUpload = item.type == TransferType.Upload
+    return remember(item.status, item.type) {
+        when {
+            isFailed -> StateColors(
+                iconBg = scheme.errorContainer,
+                iconFg = scheme.onErrorContainer,
+                statusColor = scheme.error,
+                progressBrush = FailedProgressBrush,
+                isCompleted = false,
+                icon = AppIcons.alert,
+            )
+            isSuccess -> StateColors(
+                iconBg = scheme.primaryContainer,
+                iconFg = scheme.onPrimaryContainer,
+                statusColor = scheme.onSurfaceVariant,
+                progressBrush = SuccessProgressBrush,
+                isCompleted = true,
+                icon = AppIcons.check,
+            )
+            isUpload -> StateColors(
+                iconBg = scheme.tertiaryContainer,
+                iconFg = scheme.onTertiaryContainer,
+                statusColor = scheme.primary,
+                progressBrush = UploadProgressBrush,
+                isCompleted = false,
+                icon = AppIcons.upload,
+            )
+            else -> StateColors(
+                iconBg = scheme.secondaryContainer,
+                iconFg = scheme.onSecondaryContainer,
+                statusColor = scheme.secondary,
+                progressBrush = DownloadProgressBrush,
+                isCompleted = false,
+                icon = AppIcons.download,
+            )
+        }
     }
 }
 
@@ -133,12 +146,64 @@ fun TransferRow(
     enabled: Boolean = true,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val colors = colorsFor(item)
+
+    // P3: cache every derivable per-row value by (status, type, bytesDone,
+    // totalBytes) — progress ticks at ~3 Hz and the recompositions fire on
+    // every tick. Without this, even a "loading" tick of 50 rows would rebuild
+    // the StateColors, statusText, icon, etc. for rows whose inputs didn't change.
+    val colors = rememberStateColors(item)
+    val isActive = remember(item.status) { item.isActive }
+    val statusText = remember(item.status, item.failureReason) {
+        when {
+            item.status == TransferStatus.Failed -> {
+                val reason = item.failureReason?.takeIf { it.isNotBlank() }
+                if (reason != null) "失败 · $reason" else "失败"
+            }
+            item.status == TransferStatus.Interrupted -> {
+                val reason = item.failureReason?.takeIf { it.isNotBlank() }
+                if (reason != null) "已中断 · $reason" else "已中断"
+            }
+            item.status == TransferStatus.Success -> "已完成"
+            else -> item.status.displayName
+        }
+    }
+
+    // P3: progress numeric fields. Only the `progress` Float actually drives
+    // [TransferProgress]'s `animateFloatAsState`; everything else is a String.
+    val progress = remember(item.bytesDone, item.totalBytes) {
+        if (item.totalBytes > 0L) {
+            (item.bytesDone.toFloat() / item.totalBytes).coerceIn(0f, 1f)
+        } else 0f
+    }
+    val percentText = remember(item.bytesDone, item.totalBytes) {
+        if (item.totalBytes > 0L) {
+            val percent = (item.bytesDone.toDouble() / item.totalBytes * 100.0)
+                .coerceIn(0.0, 100.0)
+            "${"%.1f".format(percent)}%"
+        } else "准备中"
+    }
+    val completedMeta = remember(item.totalBytes, item.status) {
+        if (item.status == TransferStatus.Success) "${humanizeBytes(item.totalBytes)} · 已完成"
+        else null
+    }
+
+    // P3: stabilise parent-supplied callbacks. Same reasoning as the list
+    // scope — these are the leaf row, so any unstable lambda here would force
+    // a full row recomposition on every progress tick.
+    val onCancelState by rememberUpdatedState(onCancel)
+    val onRetryState by rememberUpdatedState(onRetry)
+    val onDeleteState by rememberUpdatedState(onDelete)
+
+    // P3: pre-bind click handlers that always take item.id. Stable lambdas,
+    // so the `when` block below doesn't churn closures each frame.
+    val onCancelClick = remember(item.id) { { onCancelState(item.id) } }
+    val onRetryClick = remember(item.id) { { onRetryState(item.id) } }
+    val onDeleteClick = remember(item.id) { { showDeleteDialog = true } }
 
     if (showDeleteDialog) {
         AppAlertDialog(
             title = "删除传输记录",
-            message = if (item.isActive) {
+            message = if (isActive) {
                 "删除后会取消当前传输，并永久删除这条记录。"
             } else {
                 "将永久删除这条传输记录。"
@@ -147,7 +212,7 @@ fun TransferRow(
             dismissLabel = "取消",
             onConfirm = {
                 showDeleteDialog = false
-                onDelete(item.id)
+                onDeleteState(item.id)
             },
             onDismiss = { showDeleteDialog = false },
             destructive = true,
@@ -180,15 +245,8 @@ fun TransferRow(
                         .background(colors.iconBg),
                     contentAlignment = Alignment.Center,
                 ) {
-                    val icon = when {
-                        item.status == TransferStatus.Failed ||
-                            item.status == TransferStatus.Interrupted -> AppIcons.alert
-                        item.status == TransferStatus.Success -> AppIcons.check
-                        item.type == TransferType.Upload -> AppIcons.upload
-                        else -> AppIcons.download
-                    }
                     Icon(
-                        imageVector = icon,
+                        imageVector = colors.icon,
                         contentDescription = null,
                         tint = colors.iconFg,
                         modifier = Modifier.size(18.dp),
@@ -205,18 +263,7 @@ fun TransferRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = when {
-                            item.status == TransferStatus.Failed -> {
-                                val reason = item.failureReason?.takeIf { it.isNotBlank() }
-                                if (reason != null) "失败 · $reason" else "失败"
-                            }
-                            item.status == TransferStatus.Interrupted -> {
-                                val reason = item.failureReason?.takeIf { it.isNotBlank() }
-                                if (reason != null) "已中断 · $reason" else "已中断"
-                            }
-                            item.status == TransferStatus.Success -> "已完成"
-                            else -> item.status.displayName
-                        },
+                        text = statusText,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.statusColor,
                         maxLines = 1,
@@ -227,24 +274,16 @@ fun TransferRow(
 
             // ── Active progress bar (gradient) ────────────────────────────
             AnimatedVisibility(
-                visible = item.isActive,
+                visible = isActive,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 Column(modifier = Modifier.padding(top = 10.dp)) {
-                    val progress = if (item.totalBytes > 0L) {
-                        (item.bytesDone.toFloat() / item.totalBytes).coerceIn(0f, 1f)
-                    } else 0f
                     TransferProgress(
                         progress = progress,
                         brush = colors.progressBrush,
                     )
                     Spacer(Modifier.height(6.dp))
-                    val percentText = if (item.totalBytes > 0L) {
-                        val percent = (item.bytesDone.toDouble() / item.totalBytes * 100.0)
-                            .coerceIn(0.0, 100.0)
-                        "${"%.1f".format(percent)}%"
-                    } else "准备中"
                     Text(
                         text = percentText,
                         style = MaterialTheme.typography.labelSmall,
@@ -254,10 +293,10 @@ fun TransferRow(
             }
 
             // ── Completed meta line (size + completed-time) ───────────────
-            if (item.status == TransferStatus.Success) {
+            completedMeta?.let {
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "${humanizeBytes(item.totalBytes)} · 已完成",
+                    text = it,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -277,13 +316,13 @@ fun TransferRow(
                             text = item.status.retryLabel ?: "重试",
                             enabled = enabled,
                             color = MaterialTheme.colorScheme.primary,
-                            onClick = { onRetry(item.id) },
+                            onClick = onRetryClick,
                         )
                         ActionLink(
                             text = "删除",
                             enabled = true,
                             color = MaterialTheme.colorScheme.error,
-                            onClick = { showDeleteDialog = true },
+                            onClick = onDeleteClick,
                         )
                     }
                     item.status == TransferStatus.Success -> {
@@ -291,21 +330,21 @@ fun TransferRow(
                             text = "删除",
                             enabled = true,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            onClick = { showDeleteDialog = true },
+                            onClick = onDeleteClick,
                         )
                     }
-                    item.isActive -> {
+                    isActive -> {
                         ActionLink(
                             text = "取消",
                             enabled = enabled,
                             color = MaterialTheme.colorScheme.error,
-                            onClick = { onCancel(item.id) },
+                            onClick = onCancelClick,
                         )
                         ActionLink(
                             text = "删除",
                             enabled = true,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            onClick = { showDeleteDialog = true },
+                            onClick = onDeleteClick,
                         )
                     }
                     else -> {
@@ -314,7 +353,7 @@ fun TransferRow(
                             text = "删除",
                             enabled = true,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            onClick = { showDeleteDialog = true },
+                            onClick = onDeleteClick,
                         )
                     }
                 }

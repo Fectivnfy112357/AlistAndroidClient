@@ -1,5 +1,8 @@
 package com.textvision.alistclient.ui.feature.home.dto
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class PublicData(
     val siteTitle: String,
     val siteVersion: String?,

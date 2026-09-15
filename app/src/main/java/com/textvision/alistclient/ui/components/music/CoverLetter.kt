@@ -157,24 +157,34 @@ fun ArtworkCover(
  * disposal so that scrolling a row off-screen and back into view does not
  * trigger a fresh `BitmapFactory.decodeByteArray` pass.
  *
- * Cache key is `data.contentHashCode() * 31 + targetPxBucket` — content
- * identity plus the target resolution bucket (e.g. 128px, 256px). Buckets
- * keep the entry list small while still letting us keep a higher-res version
- * for any caller that asks for one later.
+ * Cache keys use object identity plus the target-resolution bucket. Computing
+ * `ByteArray.contentHashCode()` here would scan every artwork byte array on
+ * the UI thread as a row entered composition; a fast multi-column grid can
+ * enter several covers in one frame. A weak source reference verifies an
+ * identity-hash hit before returning it.
  *
- * Bitmaps are weakly referenced so the GC can reclaim them under memory
- * pressure; the LRU bookkeeping stays but the pixel data does not.
+ * The LRU keeps strong references to at most 64 sampled bitmaps. This is a
+ * bounded cache (a 48dp cover is small after sampling) and, unlike a
+ * WeakReference cache, preserves a cover while a user rapidly reverses a
+ * scroll direction. The previous weak entries could disappear between two
+ * adjacent passes through the same rows, scheduling another decode exactly in
+ * the input-sensitive scroll path.
  */
 private object ArtworkBitmapCache {
     private const val MAX_ENTRIES = 64
     private const val PX_BUCKET = 32 // quantize targetPx to nearest 32px
 
-    private val cache = object : LinkedHashMap<Int, WeakReference<android.graphics.Bitmap>>(
+    private data class CacheEntry(
+        val source: WeakReference<ByteArray>,
+        val bitmap: android.graphics.Bitmap,
+    )
+
+    private val cache = object : LinkedHashMap<Int, CacheEntry>(
         /* initialCapacity = 16, loadFactor = 0.75f, accessOrder = true */
         16, 0.75f, true,
     ) {
         override fun removeEldestEntry(
-            eldest: Map.Entry<Int, WeakReference<android.graphics.Bitmap>>,
+            eldest: Map.Entry<Int, CacheEntry>,
         ) = size > MAX_ENTRIES
     }
 
@@ -182,7 +192,9 @@ private object ArtworkBitmapCache {
 
     fun get(data: ByteArray, targetPx: Int): androidx.compose.ui.graphics.ImageBitmap? {
         val key = key(data, targetPx)
-        val bmp = synchronized(lock) { cache[key]?.get() }
+        val bmp = synchronized(lock) {
+            cache[key]?.takeIf { it.source.get() === data }?.bitmap
+        }
         return bmp?.takeIf { !it.isRecycled }?.asImageBitmap()
     }
 
@@ -193,16 +205,16 @@ private object ArtworkBitmapCache {
         get(data, targetPx)?.let { return it }
         val decoded = decodeSampled(data, targetPx) ?: return null
         synchronized(lock) {
-            cache[key(data, targetPx)] = WeakReference(decoded)
+            cache[key(data, targetPx)] = CacheEntry(WeakReference(data), decoded)
         }
         return decoded.asImageBitmap()
     }
 
     private fun key(data: ByteArray, targetPx: Int): Int {
         val bucket = (targetPx / PX_BUCKET) * PX_BUCKET
-        // Fold targetPx into the content hash so two different display sizes
-        // for the same bytes keep separate bitmap entries.
-        var h = data.contentHashCode()
+        // System.identityHashCode is constant-time; targetPx distinguishes the
+        // sampled bitmap sizes for the same source object.
+        var h = System.identityHashCode(data)
         h = 31 * h + bucket
         return h
     }

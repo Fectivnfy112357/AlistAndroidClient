@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -111,20 +112,29 @@ internal fun StorageEmptyOrFailed(
 @Composable
 internal fun StorageCard(storage: StorageInfo, onClick: () -> Unit) {
     val disabled = storage.status != "work"
-    val (gradient, tint) = storageGradient(storage.driver)
+    // P3: cache both the gradient palette (driver-derived) AND the resulting
+    // Brush. Driver is effectively immutable per card, so [remember(driver)]
+    // holds the same Brush reference for the row's lifetime. The previous
+    // version only cached `storageGradient(driver)` and re-built the Brush on
+    // every recomposition — a measurable allocation per row per scroll frame.
+    val (brush, tint) = remember(storage.driver) {
+        val (gradient, t) = storageGradient(storage.driver)
+        Brush.linearGradient(gradient) to t
+    }
     SectionCard(
         modifier = Modifier
             .testTag("home_storage_card_${storage.mountPath}")
             .clickable(onClick = onClick),
         padding = PaddingValues(12.dp),
         solid = true,
+        shadowElevation = 0.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
                     .size(44.dp)
                     .clip(MaterialTheme.shapes.small)
-                    .background(Brush.linearGradient(gradient)),
+                    .background(brush),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

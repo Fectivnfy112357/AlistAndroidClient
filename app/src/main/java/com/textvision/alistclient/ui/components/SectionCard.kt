@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.textvision.alistclient.ui.theme.Ink
 
@@ -24,11 +25,12 @@ fun SectionCard(
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues(16.dp),
     solid: Boolean = false,
+    shadowElevation: Dp = 4.dp,
     content: @Composable () -> Unit,
 ) {
     Surface(
         modifier = modifier
-            .shadow(elevation = 4.dp, shape = MaterialTheme.shapes.large),
+            .shadow(elevation = shadowElevation, shape = MaterialTheme.shapes.large),
         shape = MaterialTheme.shapes.large,
         color = if (solid) Color.White else MaterialTheme.colorScheme.surfaceContainer,
         border = if (solid) BorderStroke(1.dp, Ink.copy(alpha = 0.06f)) else null,

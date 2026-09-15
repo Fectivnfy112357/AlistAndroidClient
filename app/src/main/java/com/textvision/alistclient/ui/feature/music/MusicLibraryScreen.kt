@@ -1,6 +1,8 @@
 package com.textvision.alistclient.ui.feature.music
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,11 +33,13 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -104,9 +108,16 @@ fun MusicLibraryScreen(
     // here was a bad fix that just delayed navigation by the same buffer wait — the
     // user sees "nothing happens for several seconds" and we don't actually win
     // any perceived latency.
-    val onPlayQueue: (List<UiSong>, Int) -> Unit = { songs, start ->
-        viewModel.onPlayQueueClick(context, songs, start)
-        onOpenPreview()
+    //
+    // P3: keep the closure stable via [remember]; it captures LocalContext which
+    // is itself stable across recompositions, so this lambda is now referentially
+    // stable and tab content (Overview / Songs) can skip recomposition on UiState
+    // ticks that don't change context.
+    val onPlayQueue: (List<UiSong>, Int) -> Unit = remember(context, viewModel, onOpenPreview) {
+        { songs, start ->
+            viewModel.onPlayQueueClick(context, songs, start)
+            onOpenPreview()
+        }
     }
 
     AppScaffold(transparentBase = true, background = {}) {
@@ -179,18 +190,28 @@ private fun MusicLibraryMiniPlayer(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int) -> Unit) {
-    LazyColumn(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
+    // P3: stabilise the parent-supplied playQueue callback the same way as
+    // FileListContent / TransferListContent. The 5-row "Continue listening"
+    // shelf below uses it for every SongRow, so any unstable lambda would
+    // force all 5 rows to recompose on every UiState tick.
+    val onPlayQueueState by rememberUpdatedState(onPlayQueue)
+    val heroSongs = ui.songs
+    // Unlike the catalogue tabs, this short overview reaches both bounds in a
+    // few flings. Do not let the stretch effect absorb a quick reverse drag.
+    CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+        LazyColumn(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
         item(key = "hero", contentType = "hero") {
             MusicHeroCard(
                 title = "我的音乐库",
                 subtitle = "${ui.artists.size} 位艺人 · ${ui.albums.size} 张专辑 · ${ui.songs.size} 首歌",
                 isPlaying = false,
-                onPlayPause = { if (ui.songs.isNotEmpty()) onPlayQueue(ui.songs, 0) },
+                onPlayPause = { if (heroSongs.isNotEmpty()) onPlayQueueState(heroSongs, 0) },
                 onFavorite = {},
                 onQueue = {},
             )
@@ -215,22 +236,38 @@ private fun OverviewTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int
             item(key = "continue-header", contentType = "header") {
                 SectionHeader("继续聆听", "从你的音乐里开始")
             }
-            item(key = "continue-songs", contentType = "song-column") {
-                Column {
-                    ui.songs.take(5).forEach { song ->
-                        SongRow(song.title, song.artist, "", RowGradient, artworkData = song.artworkData, onClick = {
-                            // B2: a single row tap is "play this song now"; the rest
-                            // of the queue will arrive from UI catalogue navigation
-                            // (album/artist clicks) rather than auto-appending the
-                            // entire library. 5-row hero card should feel like a
-                            // feature shelf, not "play all 439 songs after this one".
-                            onPlayQueue(listOf(song), 0)
-                        })
-                    }
-                }
+            // P3: previously wrapped in `Column { forEach { SongRow(...) } }`
+            // inside a single LazyColumn item. That forced the 5 rows to
+            // compose and lay out every time the parent recomposed (which is
+            // often — e.g. on every playback state tick). Promoting to lazy
+            // items lets LazyList skip and reuse the rows properly. Take the
+            // snapshot here so changes to ui.songs only invalidate rows that
+            // actually differ.
+            val continueSnapshot = ui.songs.take(5)
+            items(
+                items = continueSnapshot,
+                key = { it.path },
+                contentType = { "song-shelf" },
+            ) { song ->
+                SongRow(
+                    name = song.title,
+                    artist = song.artist,
+                    duration = "",
+                    gradient = RowGradient,
+                    artworkData = song.artworkData,
+                    onClick = {
+                        // B2: a single row tap is "play this song now"; the rest
+                        // of the queue will arrive from UI catalogue navigation
+                        // (album/artist clicks) rather than auto-appending the
+                        // entire library. 5-row hero card should feel like a
+                        // feature shelf, not "play all 439 songs after this one".
+                        onPlayQueueState(listOf(song), 0)
+                    },
+                )
             }
         }
         item(key = "bottom-spacer", contentType = "spacer") { Spacer(Modifier.height(16.dp)) }
+        }
     }
 }
 
@@ -250,16 +287,24 @@ private fun SongsTab(ui: MusicLibraryUiState, onPlayQueue: (List<UiSong>, Int) -
     // recompose-skipping. Resolved once with @Stable lambdas from the theme
     // singletons, the same reference is shared across all rows.
     val songBrush = RowGradient
+    // P3: stabilise parent callback for the same reason as OverviewTab.
+    val onPlayQueueState by rememberUpdatedState(onPlayQueue)
+    val allSongs = ui.songs
     PagedList(
         title = "所有歌曲",
         subtitle = "按索引顺序 · 已显示 ${visible.size} / ${ui.songs.size}",
         state = state,
     ) {
         items(items = visible, key = { it.path }, contentType = { "song" }) { song ->
+            // P3: bind indexOf lookup to the song key so it re-runs only when
+            // the catalogue actually changes (not on every state tick).
+            val click = remember(song.path, allSongs) {
+                { onPlayQueueState(allSongs, allSongs.indexOf(song)) }
+            }
             SongRow(
                 song.title, song.artist, "", songBrush,
                 artworkData = song.artworkData,
-                onClick = { onPlayQueue(ui.songs, ui.songs.indexOf(song)) },
+                onClick = click,
             )
         }
         if (visible.size < ui.songs.size) item(key = "loading", contentType = "loading") { LoadingMore() }

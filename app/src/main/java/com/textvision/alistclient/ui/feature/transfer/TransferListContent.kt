@@ -1,13 +1,13 @@
 package com.textvision.alistclient.ui.feature.transfer
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,6 +49,13 @@ fun TransferListContent(
         return
     }
 
+    // P3: stabilise parent callbacks the same way as FileListContent. The
+    // transfer list ticks progress at ~3 Hz on the upstream StateFlow, so every
+    // tick was rebuilding 3 fresh lambdas per row before this fix.
+    val onCancelState by rememberUpdatedState(onCancel)
+    val onRetryState by rememberUpdatedState(onRetry)
+    val onDeleteState by rememberUpdatedState(onDelete)
+
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
@@ -57,18 +64,15 @@ fun TransferListContent(
         items(items = rows, key = { it.id }) { task ->
             TransferRow(
                 item = task,
-                onCancel = onCancel,
-                onRetry = onRetry,
-                onDelete = onDelete,
+                onCancel = onCancelState,
+                onRetry = onRetryState,
+                onDelete = onDeleteState,
                 enabled = enabled,
-                modifier = Modifier.animateItem(
-                    fadeInSpec = spring(stiffness = Spring.StiffnessMedium),
-                    placementSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium,
-                    ),
-                    fadeOutSpec = spring(stiffness = Spring.StiffnessMedium),
-                ),
+                // P3: drop the `placementSpec = MediumBouncy` spring — same
+                // reasoning as FileListContent P2: each row was constructing
+                // two `SpringSpec` instances per recomposition, on top of the
+                // fadeIn/fadeOut ones. Default LazyList fade-in/out is enough.
+                modifier = Modifier.animateItem(),
             )
         }
     }

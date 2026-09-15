@@ -1,8 +1,10 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 package com.textvision.alistclient.ui.feature.home
 
 import android.content.res.Configuration
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,8 +16,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
@@ -124,11 +129,36 @@ private fun DashboardList(
     onRetrySection: (SectionKey) -> Unit,
     onRefresh: () -> Unit,
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(contentPadding),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
+    // P3: stabilise the parent-supplied retry callback. The previous
+    // `onRetryServerStats = { onRetrySection(SectionKey.ServerStats) }` style
+    // rebuilt a fresh lambda on every recomposition, defeating the new
+    // @Immutable DTOs and forcing MetricRow / TaskSection to recompose along
+    // with the entire dashboard even when their actual data hadn't changed.
+    val onRetrySectionState by rememberUpdatedState(onRetrySection)
+    val onRetryServerStats: () -> Unit = remember(onRetrySectionState) {
+        { onRetrySectionState(SectionKey.ServerStats) }
+    }
+    val onRetrySession: () -> Unit = remember(onRetrySectionState) {
+        { onRetrySectionState(SectionKey.Session) }
+    }
+    val onRetryTask: () -> Unit = remember(onRetrySectionState) {
+        { onRetrySectionState(SectionKey.Task) }
+    }
+    val onRetryStorage: () -> Unit = remember(onRetrySectionState) {
+        { onRetrySectionState(SectionKey.Storage) }
+    }
+    val onStorageClickState by rememberUpdatedState(onStorageClick)
+
+    // The dashboard is deliberately short. During fast fling reversals it
+    // repeatedly reaches an edge, where stretch overscroll consumes the next
+    // drag before the list can move in the opposite direction. Keep the
+    // dashboard directly manipulable at its bounds rather than stretching it.
+    CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(contentPadding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
         item(key = "hero", contentType = "hero") {
             HeroServerCard(data.publicSection, online = isOnline)
         }
@@ -136,8 +166,8 @@ private fun DashboardList(
             MetricRow(
                 serverStats = data.serverStatsSection,
                 session = data.sessionSection,
-                onRetryServerStats = { onRetrySection(SectionKey.ServerStats) },
-                onRetrySession = { onRetrySection(SectionKey.Session) },
+                onRetryServerStats = onRetryServerStats,
+                onRetrySession = onRetrySession,
             )
         }
         item(key = "tasks", contentType = "tasks") {
@@ -146,7 +176,7 @@ private fun DashboardList(
                 Spacer(Modifier.height(8.dp))
                 TaskSection(
                     task = data.taskSection,
-                    onRetry = { onRetrySection(SectionKey.Task) },
+                    onRetry = onRetryTask,
                 )
             }
         }
@@ -158,7 +188,7 @@ private fun DashboardList(
             item(key = "storage-empty", contentType = "storage-state") {
                 StorageEmptyOrFailed(
                     storageSection = data.storageSection,
-                    onRetry = { onRetrySection(SectionKey.Storage) },
+                    onRetry = onRetryStorage,
                 )
             }
         } else {
@@ -167,11 +197,17 @@ private fun DashboardList(
                 key = { it.mountPath },
                 contentType = { "storage" },
             ) { storage ->
-                StorageCard(storage = storage) {
-                    android.util.Log.d("HomeScreen", "onStorageClick mountPath=${storage.mountPath}")
-                    onStorageClick(storage.mountPath)
+                // P3: per-row stable click lambda. The previous version logged
+                // `mountPath` to logcat on every recomposition of every card
+                // (i.e. every scroll frame, every online-state flip, every
+                // refresh tick), which is exactly the churn we saw on the
+                // dashboard during continuous scrolling.
+                val onClick = remember(storage.mountPath) {
+                    { onStorageClickState(storage.mountPath) }
                 }
+                StorageCard(storage = storage, onClick = onClick)
             }
+        }
         }
     }
 }

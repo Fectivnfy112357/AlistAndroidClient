@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="seed">#3F51B5</color>
+    <!-- Alist brand seed, matches adaptive-icon background (Brand500→Brand700 gradient)
+         and the Compose Color.kt Brand700 token. -->
+    <color name="seed">#2D7AD0</color>
 </resources>
