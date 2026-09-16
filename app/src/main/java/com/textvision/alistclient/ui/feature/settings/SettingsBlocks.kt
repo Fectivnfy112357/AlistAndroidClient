@@ -1,6 +1,5 @@
 package com.textvision.alistclient.ui.feature.settings
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,11 +11,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -24,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -281,46 +278,12 @@ internal fun PrivacyPasswordRow() {
         title = "隐私与密码",
         subtitle = "指纹解锁 · 自动登录",
         trailing = {
-            PrototypeSwitch(
+            Switch(
                 checked = enabled,
                 onCheckedChange = { enabled = it },
             )
         },
     )
-}
-
-@Composable
-private fun PrototypeSwitch(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val thumbOffset by animateDpAsState(if (checked) 18.dp else 0.dp, label = "switchThumb")
-    Box(
-        modifier = modifier
-            .size(width = 48.dp, height = 48.dp)
-            .toggleable(checked, role = Role.Switch, onValueChange = onCheckedChange),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(width = 40.dp, height = 22.dp)
-                .clip(CircleShape)
-                .background(
-                    if (checked) SettingsSwitchOnGradient
-                    else SolidColor(MaterialTheme.colorScheme.outline),
-                )
-                .padding(2.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .offset(x = thumbOffset)
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(Color.White),
-            )
-        }
-    }
 }
 
 @Composable

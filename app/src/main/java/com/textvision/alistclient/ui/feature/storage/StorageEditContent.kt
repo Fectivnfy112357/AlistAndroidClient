@@ -3,7 +3,6 @@ package com.textvision.alistclient.ui.feature.storage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +28,7 @@ import androidx.compose.material.icons.outlined.Cookie
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -258,21 +258,11 @@ private fun StorageEnabledRow(enabled: Boolean, isSaving: Boolean, onToggleEnabl
             Text("启用存储", style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium), color = Ink)
             Text("禁用后文件将不再显示", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = InkMute)
         }
-        PrototypeSwitch(checked = enabled, enabled = !isSaving, onClick = onToggleEnabled)
-    }
-}
-
-@Composable
-private fun PrototypeSwitch(checked: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val bg = when {
-        !enabled -> InkMute.copy(alpha = 0.3f)
-        checked -> Brand500
-        else -> InkMute.copy(alpha = 0.5f)
-    }
-    Box(
-        Modifier.size(width = 40.dp, height = 22.dp).clip(RoundedCornerShape(99.dp)).background(bg).clickable(enabled = enabled, interactionSource = remember { MutableInteractionSource() }, indication = null) { onClick() }.padding(2.dp),
-    ) {
-        Box(Modifier.size(18.dp).align(if (checked) Alignment.CenterEnd else Alignment.CenterStart).clip(CircleShape).background(Color.White))
+        Switch(
+            checked = enabled,
+            onCheckedChange = { onToggleEnabled() },
+            enabled = !isSaving,
+        )
     }
 }
 
