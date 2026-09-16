@@ -100,13 +100,38 @@ class FileViewModel @Inject constructor(
     /**
      * Resume-friendly entry point. Skips the network round-trip when we
      * already have a successful cached listing for [path]; otherwise falls
-     * through to a fresh load. Called from [FileScreen]'s `LifecycleResumeEffect`,
+     * through to a fresh load. Called from [FileScreen]'s `LaunchedEffect`,
      * which previously issued an unconditional Load on every resume (including
      * bottom-tab returns and Compose back-navigation) — paying a full server
      * request + UI refresh for a directory whose contents had not changed.
+     *
+     * When [path] differs from the last-loaded path we **also** reset the UI
+     * to a blank loading state immediately. Without this, the SharedAxisX
+     * navigation transition would show the *previous* directory's file list
+     * for the full duration of the network round-trip (the ViewModel is
+     * ViewModelStore-scoped, so navigating `/ → /我的照片` reuses the same
+     * instance and the stale `state.files` remains visible until the new
+     * listing lands). Clearing the list here lets the screen show the
+     * "加载中…" placeholder during the animation, and the subsequent `load`
+     * / `applyCached` populates it with the new directory's contents.
      */
     fun ensureLoaded(path: String) {
-        if (_state.value.lastLoadedForPath == path && !_state.value.isLoading) return
+        val current = _state.value
+        if (current.lastLoadedForPath == path && !current.isLoading) return
+
+        // Path changed (or first entry / warm-cache miss): reset the visible
+        // state so the navigation transition doesn't show the prior directory.
+        if (current.lastLoadedForPath != path) {
+            _state.update {
+                it.copy(
+                    path = path,
+                    files = emptyList(),
+                    isLoading = true,
+                    error = null,
+                )
+            }
+        }
+
         // App-startup warmer may have already pre-fetched this directory;
         // honour the cache before issuing a fresh network request. The TTL
         // is short (60s) — a stale hit just falls through to load(path).

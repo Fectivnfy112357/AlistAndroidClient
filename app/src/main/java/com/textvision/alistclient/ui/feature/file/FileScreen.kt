@@ -33,7 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.textvision.alistclient.LocalSnackbarHostState
 import com.textvision.alistclient.file.model.FileItem
@@ -91,9 +91,15 @@ fun FileScreen(
     // behaviour) was the main per-tab cost in the tab-cycle hotpath and forced
     // redundant rebinds on bottom-tab returns. Explicit refresh + delete +
     // retry all bypass this gate via FileIntent.Load.
-    LifecycleResumeEffect(initialPath) {
+    //
+    // Uses LaunchedEffect (not LifecycleResumeEffect) so the load kicks off as
+    // soon as the new destination enters composition — in parallel with the
+    // navigation transition. With LifecycleResumeEffect, the load only fired
+    // *after* the RESUMED callback (i.e. after the SharedAxisX animation
+    // completed), leaving the previous directory's file list visible for the
+    // full duration of the network round-trip.
+    LaunchedEffect(initialPath) {
         vm.ensureLoaded(initialPath)
-        onPauseOrDispose { }
     }
 
     AppScaffold(
