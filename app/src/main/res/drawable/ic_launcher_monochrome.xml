@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Alist Client adaptive-icon monochrome layer (Material You themed icons).
+
+    Why this layer exists: from Android 16 QPR 2 the system auto-themes every
+    app icon, and when an adaptive icon declares no <monochrome> layer the
+    launcher falls back to a silhouette derived from the foreground's alpha
+    channel. The colour foreground is an opaque bitmap that fills the whole
+    108dp canvas, so that fallback would render as a featureless solid square.
+    This layer gives the launcher a correct silhouette to tint instead.
+
+    Shape: the single candy cloud, matching the colour icon's mark.
+
+    Only the alpha channel is read - the launcher replaces the fill colour with
+    a tint derived from the user's wallpaper, so #FFFFFFFF here is a formality.
+
+    Stays inside the 66dp safe zone (x/y 21..87) so no launcher mask clips it:
+    the cloud spans x 25.2..82.8, y 34.8..73.2.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M71.64,49.3 C70.01,41.02 62.74,34.8 54,34.8 C47.06,34.8 41.04,38.74 38.04,44.5 C30.82,45.26 25.2,51.38 25.2,58.8 C25.2,66.74 31.66,73.2 39.6,73.2 L70.8,73.2 C77.42,73.2 82.8,67.82 82.8,61.2 C82.8,54.86 77.88,49.73 71.64,49.3 Z" />
+</vector>
