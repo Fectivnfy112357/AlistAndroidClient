@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.textvision.alistclient.debug.TraceMarkers
 import com.textvision.alistclient.file.model.FileType
 import com.textvision.alistclient.ui.feature.home.HomeScreen
 import com.textvision.alistclient.ui.feature.admin.AdminSiteSettingsScreen
@@ -86,10 +87,18 @@ fun AppNavHost(
                 })
             }
             composable<HomeDest> {
+                // alist: temporary jank instrumentation, see TraceMarkers.
+                // Brackets `hiltViewModel()` (default arg) + the screen's first
+                // composition, so the delta against the composable tracer's own
+                // C(HomeScreen) marker is the Hilt graph + VM construction cost.
+                val cookie = TraceMarkers.begin("nav:Home")
                 HomeScreen(onStorageClick = { mountPath -> navController.navigate(FilesDest(mountPath)) })
+                TraceMarkers.end("nav:Home", cookie)
             }
             composable<FilesDest> { entry ->
                 val dest = entry.toRoute<FilesDest>()
+                // alist: temporary jank instrumentation, see TraceMarkers.
+                val cookie = TraceMarkers.begin("nav:Files")
                 FileScreen(
                     initialPath = dest.path,
                     onPreview = { item ->
@@ -115,6 +124,7 @@ fun AppNavHost(
                         navController.navigate(MoveCopyPickerDest(op = "move", path = dest.path))
                     },
                 )
+                TraceMarkers.end("nav:Files", cookie)
             }
             composable<TransfersDest> { TransferScreen() }
             composable<SettingsDest> {
@@ -151,10 +161,13 @@ fun AppNavHost(
                 )
             }
             composable<MusicLibraryDest> {
+                // alist: temporary jank instrumentation, see TraceMarkers.
+                val cookie = TraceMarkers.begin("nav:Music")
                 MusicLibraryScreen(
                     onBack = { navController.popBackStack() },
                     onOpenPreview = { navController.navigate(MusicPreviewDest) },
                 )
+                TraceMarkers.end("nav:Music", cookie)
             }
             composable<MusicPreviewDest> {
                 MusicPreviewScreen(onBack = { navController.popBackStack() })
