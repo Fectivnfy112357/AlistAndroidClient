@@ -29,7 +29,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.textvision.alistclient.network.dto.StorageInfo
 import com.textvision.alistclient.ui.components.ErrorState
-import com.textvision.alistclient.ui.components.LoadingState
 import com.textvision.alistclient.ui.feature.home.dto.HomeData
 import com.textvision.alistclient.ui.feature.home.dto.PublicData
 import com.textvision.alistclient.ui.feature.home.dto.SectionResult
@@ -93,19 +92,23 @@ internal fun HomeScreenContent(
             )
         },
     ) { padding ->
+        // The skeleton below intentionally emits the SAME DashboardList
+        // composable path for both Loading and Success so the LazyColumn
+        // slots are reused across the state transition — see
+        // `HomeData.skeleton()` for the rationale and the user-visible
+        // differences from a "loading spinner" state. Error is the one case
+        // that does NOT belong on the DashboardList path (it has no
+        // HomeData), so it stays in its own subtree.
         when (state) {
-            is HomeUiState.Loading -> LoadingState(
-                modifier = Modifier.padding(padding).testTag("home_loading"),
-            )
-
             is HomeUiState.Error -> ErrorState(
                 message = state.message,
                 onRetry = onRefresh,
                 modifier = Modifier.padding(padding),
             )
 
-            is HomeUiState.Success -> DashboardList(
-                data = state.data,
+            else -> DashboardList(
+                data = (state as? HomeUiState.Success)?.data
+                    ?: HomeData.skeleton(),
                 isRefreshing = isRefreshing,
                 isOnline = isOnline,
                 contentPadding = padding,
