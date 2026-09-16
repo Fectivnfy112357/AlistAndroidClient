@@ -39,6 +39,13 @@ source tools/dev-env.sh
 - `common/result/ApiResult.kt`：统一网络结果模型。
 - `transfer/TransferManager.kt`：上传下载协调器。
 
+## 技术选型
+
+- **优先复用现成方案**。遇到"通用、模式化"的功能（页面切换动画、网络状态机、权限请求、JSON 解析、依赖注入、日志、压缩、缓存、列表性能模式、Compose / View 常见封装等），先用 web 搜索、`docs/superpowers/`、`gradle/libs.versions.toml` 内的现有依赖、`google()` / `mavenCentral()` 可解析的官方或社区主流库交叉确认是否有现成封装，再决定是否自实现。
+- 引入新依赖时在交付中说明：库名（group/artifact）、版本、与现有依赖的兼容性，以及为什么不用同类的其他方案（AC 决策）。
+- 决定自实现时记录原因（无可用 / 现有方案不满足需求 / 引入成本大于收益 / 学习成本）。**不要因为"没想起来"或"懒得搜"而手写等价实现**——本项目已经因为这个原因浪费过多个迭代（参见 `navigation/AppNavTransitions.kt` 几经重写，最终落到 `io.github.fornewid:material-motion-compose-core`）。
+- 自实现前先看一遍主流候选库的源码或 API 文档，确认它的"边界行为"和我们的需求一致；不要只看 README 就决定自实现。
+
 ## Compose 与滚动性能
 
 性能问题先建立与用户手势等价的复现，再修改。持续按住的反向拖动与“滑动、松手、立即反向再落指”的 fling 接管是不同路径，不能互相替代。
