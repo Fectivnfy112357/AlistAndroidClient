@@ -21,6 +21,14 @@ import com.textvision.alistclient.di.IoDispatcher
 
 interface AuthRepositoryContract {
     suspend fun login(serverUrl: String, username: String, password: String): ApiResult<SavedSession>
+
+    /**
+     * Synchronous read of the most recently saved session, if any. Used by
+     * [com.textvision.alistclient.startup.AppStartupWarmer] to decide whether
+     * to fan out pre-fetches; safe to call on the main thread because it
+     * hits an already-loaded in-memory cache after first use.
+     */
+    fun loadSavedSession(): SavedSession?
 }
 
 data class LoginUiState(

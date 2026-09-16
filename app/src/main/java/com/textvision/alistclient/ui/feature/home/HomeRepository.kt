@@ -26,7 +26,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,6 +44,42 @@ class HomeRepository @Inject constructor(
     private val adminRepository: AdminRepository,
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) : HomeRepositoryContract {
+
+    // ── Warm cache (see HomeRepositoryContract + AppStartupWarmer) ────────
+    // The dashboard payload is the dominant first-frame cost on Home tab.
+    // AppStartupWarmer kicks off [warmUpDashboard] on a background coroutine
+    // shortly after onCreate; the HomeViewModel then reads [loadIfCached]
+    // before falling back to the live [loadDashboard] path. The timestamp
+    // is stored alongside the payload so a stale cache (e.g. user opened
+    // the app yesterday and only resumed today) is treated as a miss.
+    private val _warmCache = MutableStateFlow<HomeData?>(null)
+    override val warmCache: StateFlow<HomeData?> = _warmCache.asStateFlow()
+    private val warmTimestamp = AtomicLong(0L)
+    private val warmMutex = Mutex()
+
+    override suspend fun warmUpDashboard() {
+        // Concurrent warm-up requests collapse onto the same in-flight call,
+        // so two near-simultaneous triggers don't double the network bill.
+        warmMutex.withLock {
+            if (warmTimestamp.get() > 0L &&
+                System.currentTimeMillis() - warmTimestamp.get() < WARM_MIN_INTERVAL_MS
+            ) return
+            when (val result = loadDashboard()) {
+                is ApiResult.Success -> {
+                    _warmCache.value = result.data
+                    warmTimestamp.set(System.currentTimeMillis())
+                }
+                else -> { /* keep prior cache; lazy load retries on demand */ }
+            }
+        }
+    }
+
+    override fun loadIfCached(maxAgeMs: Long): HomeData? {
+        val ts = warmTimestamp.get()
+        val payload = _warmCache.value ?: return null
+        if (ts <= 0L || System.currentTimeMillis() - ts > maxAgeMs) return null
+        return payload
+    }
 
     override suspend fun loadDashboard(): ApiResult<HomeData> = withContext(dispatcher) {
         val saved = sessionManager.loadSavedSession()
@@ -245,3 +287,8 @@ class HomeRepository @Inject constructor(
 }
 
 private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+/** Cache key window: same warm payload is reused for at most this long. */
+internal const val HOME_WARM_TTL_MS = 60_000L
+
+private const val WARM_MIN_INTERVAL_MS = 30_000L

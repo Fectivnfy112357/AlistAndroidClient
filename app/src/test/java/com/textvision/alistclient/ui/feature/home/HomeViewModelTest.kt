@@ -49,6 +49,18 @@ class HomeViewModelTest {
             retryCalls++
             return retryBehavior(data, key)
         }
+        // Warm-up stubs: defaults mimic "no warm-up has happened". Tests that
+        // care about the warm path seed [warmPayload] / [warmTimestampMs]
+        // before invoking the VM.
+        override val warmCache = kotlinx.coroutines.flow.MutableStateFlow<HomeData?>(null)
+        override suspend fun warmUpDashboard() { /* no-op */ }
+        override fun loadIfCached(maxAgeMs: Long): HomeData? = null
+
+        /** Helper: let a test push a payload into the warm cache to simulate
+         *  the splash gate having completed after VM construction. */
+        fun pushWarm(payload: HomeData?) {
+            warmCache.value = payload
+        }
     }
 
     @Before fun setUp() { kotlinx.coroutines.Dispatchers.setMain(StandardTestDispatcher()) }
@@ -64,6 +76,43 @@ class HomeViewModelTest {
 
         assertTrue(vm.uiState.value is HomeUiState.Success)
         assertEquals(1, repo.loadCalls)
+    }
+
+    @Test fun loadIfNeededUsesCachedPayloadWithoutNetwork() = runTest {
+        val repo = FakeRepo()
+        // Simulate the warmer having finished before the user opened the tab.
+        repo.warmCache.value = emptyHomeData()
+        val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
+        // Drain the init-block subscriber so it consumes the cached payload
+        // and sets hasLoadedInitial = true before loadIfNeeded runs.
+        advanceUntilIdle()
+
+        vm.loadIfNeeded()
+        advanceUntilIdle()
+
+        // loadDashboard() must NOT have been called because the warm cache
+        // was already populated; the init-block subscriber + loadIfNeeded
+        // race here is resolved by [hasLoadedInitial].
+        assertEquals(0, repo.loadCalls)
+        assertTrue(vm.uiState.value is HomeUiState.Success)
+    }
+
+    @Test fun loadIfNeededCatchesLateWarmCacheAfterViewModelCreated() = runTest {
+        val repo = FakeRepo()
+        val vm = HomeViewModel(repo, StandardTestDispatcher(testScheduler))
+        advanceUntilIdle() // let the init-block subscribe before we emit
+
+        // User opens the tab before the splash gate has finished — VM starts
+        // empty. The warm-up payload lands AFTER construction. The init-block
+        // subscriber should still pick it up and short-circuit.
+        repo.pushWarm(emptyHomeData())
+        advanceUntilIdle()
+
+        vm.loadIfNeeded()
+        advanceUntilIdle()
+
+        assertEquals(0, repo.loadCalls)
+        assertTrue(vm.uiState.value is HomeUiState.Success)
     }
 
     @Test fun loadIfNeededDoesNotReloadWhenAlreadyLoaded() = runTest {

@@ -29,7 +29,7 @@ class AuthRepository @Inject constructor(
         ApiResult.NetworkError(t)
     }
 
-    fun loadSavedSession(): SavedSession? = sessionManager.loadSavedSession()
+    override fun loadSavedSession(): SavedSession? = sessionManager.loadSavedSession()
 
     fun logout() {
         sessionManager.clearSession()

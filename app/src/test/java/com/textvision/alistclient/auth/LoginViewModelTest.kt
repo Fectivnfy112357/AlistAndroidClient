@@ -24,6 +24,7 @@ class LoginViewModelTest {
     private class FakeAuthRepository : AuthRepositoryContract {
         var result: ApiResult<SavedSession> = ApiResult.Success(SavedSession("http://s/", "u", "p", "t"))
         override suspend fun login(serverUrl: String, username: String, password: String): ApiResult<SavedSession> = result
+        override fun loadSavedSession(): SavedSession? = null
     }
 
     private class TrackingDispatcher(

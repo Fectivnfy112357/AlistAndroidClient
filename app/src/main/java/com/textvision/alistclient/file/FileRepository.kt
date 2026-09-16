@@ -19,6 +19,11 @@ import com.textvision.alistclient.network.dto.RemoveRequest
 import com.textvision.alistclient.network.dto.RenameRequest
 import com.textvision.alistclient.network.dto.toFileItem
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,6 +34,36 @@ class FileRepository @Inject constructor(
     private val adminRepository: AdminRepository,
     private val sessionEventBus: SessionEventBus,
 ) : FileRepositoryContract, FileOperationRepositoryContract {
+
+    // ── Warm cache (see FileRepositoryContract + AppStartupWarmer) ────────
+    // Per-path so we can later pre-warm subdirectories the user is likely
+    // to drill into. Today only "/" is warmed at app startup, but the
+    // storage keeps a timestamp per path so the staleness check is exact.
+    private val _warmCache = MutableStateFlow<Map<String, List<FileItem>>>(emptyMap())
+    override val warmCache: StateFlow<Map<String, List<FileItem>>> = _warmCache.asStateFlow()
+    private val warmTimestamps = HashMap<String, Long>()
+    private val warmMutex = Mutex()
+
+    override suspend fun warmUp(path: String) {
+        warmMutex.withLock {
+            val ts = warmTimestamps[path] ?: 0L
+            if (ts > 0L && System.currentTimeMillis() - ts < WARM_MIN_INTERVAL_MS) return
+            when (val result = list(path)) {
+                is ApiResult.Success -> {
+                    _warmCache.value = _warmCache.value + (path to result.data)
+                    warmTimestamps[path] = System.currentTimeMillis()
+                }
+                else -> { /* keep prior cache; lazy load retries on demand */ }
+            }
+        }
+    }
+
+    override fun loadIfCached(path: String, maxAgeMs: Long): List<FileItem>? {
+        val ts = warmTimestamps[path] ?: return null
+        if (System.currentTimeMillis() - ts > maxAgeMs) return null
+        return _warmCache.value[path]
+    }
+
     private fun baseUrl(): String =
         sessionManager.loadSavedSession()?.serverUrl ?: error("No active session — cannot resolve server URL")
 
@@ -122,3 +157,9 @@ class FileRepository @Inject constructor(
 
     private suspend fun <T> runAlist(block: suspend () -> ApiResult<T>): ApiResult<T> = try { block() } catch (t: CancellationException) { throw t } catch (t: Throwable) { ApiResult.NetworkError(t) }
 }
+
+/** Cache TTL: VM treats pre-fetched listings as fresh for this long. */
+internal const val FILE_WARM_TTL_MS = 60_000L
+
+/** Cooldown between warm-up triggers for the same path. */
+private const val WARM_MIN_INTERVAL_MS = 30_000L

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.textvision.alistclient.common.network.NetworkMonitorContract
 import com.textvision.alistclient.common.result.ApiResult
+import com.textvision.alistclient.file.FILE_WARM_TTL_MS
 import com.textvision.alistclient.file.FileRepository
 import com.textvision.alistclient.file.model.FileItem
 import com.textvision.alistclient.transfer.TransferManager
@@ -15,6 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,6 +42,22 @@ class FileViewModel @Inject constructor(
         started = SharingStarted.Eagerly,
         initialValue = FileUiState(),
     )
+
+    init {
+        // Continuously observe the warmer's pre-fetched listings so a late
+        // cache hit (splash gate still in flight when user first opens the
+        // tab) still short-circuits the lazy load. We filter on the current
+        // path so we don't poison the state with a pre-fetch for "/" when
+        // the user is browsing "/docs".
+        fileRepository.warmCache
+            .onEach { cache ->
+                val currentPath = _state.value.path.ifBlank { "/" }
+                fileRepository.loadIfCached(currentPath, FILE_WARM_TTL_MS)?.let { items ->
+                    applyCached(items, currentPath)
+                }
+            }
+            .launchIn(viewModelScope)
+    }
 
     // P0: load generation + dedicated Job. Earlier, `load` launched a new
     // coroutine on every resume and let late responses overwrite newer state
@@ -87,7 +107,29 @@ class FileViewModel @Inject constructor(
      */
     fun ensureLoaded(path: String) {
         if (_state.value.lastLoadedForPath == path && !_state.value.isLoading) return
+        // App-startup warmer may have already pre-fetched this directory;
+        // honour the cache before issuing a fresh network request. The TTL
+        // is short (60s) — a stale hit just falls through to load(path).
+        val cached = fileRepository.loadIfCached(path, FILE_WARM_TTL_MS)
+        if (cached != null) {
+            applyCached(cached, path)
+            return
+        }
         load(path)
+    }
+
+    private fun applyCached(cached: List<FileItem>, path: String) {
+        _state.update {
+            it.copy(
+                path = path,
+                files = cached,
+                isLoading = false,
+                error = null,
+                selection = emptySet(),
+                isMultiSelectMode = false,
+                lastLoadedForPath = path,
+            )
+        }
     }
 
     private fun load(path: String) {

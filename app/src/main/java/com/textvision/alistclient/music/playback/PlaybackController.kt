@@ -7,6 +7,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
+import com.textvision.alistclient.debug.TraceMarkers
 import com.textvision.alistclient.music.data.MusicIndexRepository
 import com.textvision.alistclient.music.data.model.Song
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -76,9 +77,17 @@ class PlaybackController @Inject constructor(
         val future = MediaController.Builder(context, token).buildAsync()
         future.addListener(
             {
-                val c = future.get()
-                controller = c
-                onReady(c)
+                // alist: temporary jank instrumentation, see TraceMarkers.
+                // This listener runs on whichever thread completes the binder
+                // handshake, so it is an async section, not a B/E pair.
+                val cookie = TraceMarkers.begin("playback:connected")
+                try {
+                    val c = future.get()
+                    controller = c
+                    onReady(c)
+                } finally {
+                    TraceMarkers.end("playback:connected", cookie)
+                }
             },
             MoreExecutors.directExecutor(),
         )
@@ -92,7 +101,13 @@ class PlaybackController @Inject constructor(
      * is alive, MediaController is bound and subsequent calls are no-ops.
      */
     fun warmUp(context: Context) {
-        ensureController { /* no-op: just want the Service up */ }
+        // alist: temporary jank instrumentation, see TraceMarkers.
+        val cookie = TraceMarkers.begin("playback:warmUp")
+        try {
+            ensureController { /* no-op: just want the Service up */ }
+        } finally {
+            TraceMarkers.end("playback:warmUp", cookie)
+        }
     }
 
     fun playQueue(context: Context, songs: List<Song>, startIndex: Int) {

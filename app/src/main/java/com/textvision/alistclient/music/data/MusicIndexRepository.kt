@@ -1,6 +1,7 @@
 package com.textvision.alistclient.music.data
 
 import com.textvision.alistclient.auth.SessionManager
+import com.textvision.alistclient.debug.TraceMarkers
 import com.textvision.alistclient.di.IoDispatcher
 import com.textvision.alistclient.music.MusicLibraryRootStore
 import com.textvision.alistclient.music.data.model.Album
@@ -34,7 +35,16 @@ class MusicIndexRepository @Inject constructor(
     val state: StateFlow<MusicIndexState> = _state.asStateFlow()
 
     suspend fun ensureIndexed() {
-        val count = withContext(dispatcher) { dao.songCount() }
+        // alist: temporary jank instrumentation, see TraceMarkers. This is the
+        // first Room statement this process issues, so it also carries the
+        // one-off SQLite open + prepared-statement cost.
+        val count: Int
+        val cookie = TraceMarkers.begin("room:songCount")
+        try {
+            count = withContext(dispatcher) { dao.songCount() }
+        } finally {
+            TraceMarkers.end("room:songCount", cookie)
+        }
         if (count > 0) {
             _state.value = MusicIndexState.Ready
         } else {
@@ -43,6 +53,16 @@ class MusicIndexRepository @Inject constructor(
     }
 
     suspend fun rescan() {
+        // alist: temporary jank instrumentation, see TraceMarkers.
+        val rescanCookie = TraceMarkers.begin("musicIndex:rescan")
+        try {
+            rescanTracked()
+        } finally {
+            TraceMarkers.end("musicIndex:rescan", rescanCookie)
+        }
+    }
+
+    private suspend fun rescanTracked() {
         val session = sessionManager.loadSavedSession()
         if (session == null) {
             _state.value = MusicIndexState.Failed("no active session")

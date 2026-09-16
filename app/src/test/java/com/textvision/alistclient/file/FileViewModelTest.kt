@@ -33,6 +33,12 @@ class FileViewModelTest {
         var listResult: ApiResult<List<FileItem>> = ApiResult.Success(
             listOf(item("b.txt"), item("docs", true), item("a.txt"))
         )
+        // Warm-up stubs: defaults to "no warm-up happened". Tests that
+        // exercise the cache path set [warmEntries] explicitly.
+        var warmEntries: Map<String, List<FileItem>> = emptyMap()
+        var warmTimestamps: Map<String, Long> = emptyMap()
+        override val warmCache = kotlinx.coroutines.flow.MutableStateFlow<Map<String, List<FileItem>>>(emptyMap())
+        override suspend fun warmUp(path: String) { /* no-op for tests */ }
         override suspend fun list(path: String): ApiResult<List<FileItem>> {
             listCalls++
             return listResult
@@ -41,6 +47,11 @@ class FileViewModelTest {
         override suspend fun delete(paths: List<String>): ApiResult<Unit> {
             deletedPaths = paths
             return deleteResult
+        }
+        override fun loadIfCached(path: String, maxAgeMs: Long): List<FileItem>? {
+            val ts = warmTimestamps[path] ?: return null
+            if (System.currentTimeMillis() - ts > maxAgeMs) return null
+            return warmEntries[path]
         }
     }
 
@@ -54,6 +65,9 @@ class FileViewModelTest {
         }
         override suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>> = ApiResult.Success(emptyList())
         override suspend fun delete(paths: List<String>): ApiResult<Unit> = ApiResult.Success(Unit)
+        override val warmCache = kotlinx.coroutines.flow.MutableStateFlow<Map<String, List<FileItem>>>(emptyMap())
+        override suspend fun warmUp(path: String) {}
+        override fun loadIfCached(path: String, maxAgeMs: Long): List<FileItem>? = null
         fun release() { releaseSecondLoad.complete(Unit) }
     }
 

@@ -54,6 +54,15 @@ android {
     }
 
     packaging {
+        // alist: perf experiment 2026-09-16.
+        // All 20 dex entries used to be deflated (74 MB of dex → 19 MB in the
+        // APK). ART cannot mmap a compressed dex, so the first launch after
+        // every install paid a one-off ~1.4 s `Extract dex file` stall on the
+        // main thread. Storing them uncompressed lets ART mmap the dex in
+        // place. Costs APK size, buys first-launch latency.
+        dex {
+            useLegacyPackaging = false
+        }
         resources {
             excludes += "META-INF/LICENSE.md"
             excludes += "META-INF/LICENSE-notice.md"

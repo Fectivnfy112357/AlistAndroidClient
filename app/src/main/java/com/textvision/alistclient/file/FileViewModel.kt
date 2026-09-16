@@ -30,6 +30,23 @@ interface FileRepositoryContract {
     suspend fun list(path: String): ApiResult<List<FileItem>>
     suspend fun search(path: String, keyword: String): ApiResult<List<FileItem>>
     suspend fun delete(paths: List<String>): ApiResult<Unit>
+
+    // ── App-startup warm-up (see AppStartupWarmer) ────────────────────────
+    //
+    // The Files tab's first open pays the round-trip for "/" plus the admin
+    // storage list (used to filter disabled mounts). The startup warmer kicks
+    // off [warmUp] right after onCreate; the FileViewModel reads
+    // [loadIfCached] inside [ensureLoaded] before falling back to [list].
+    // Per-path staleness is tracked via an internal timestamp map.
+
+    /** Per-path warm-up results (path → listing), or empty when none pre-fetched. */
+    val warmCache: kotlinx.coroutines.flow.StateFlow<Map<String, List<FileItem>>>
+
+    /** Trigger a background pre-fetch of [path]. Idempotent. */
+    suspend fun warmUp(path: String)
+
+    /** Returns the cached listing if it landed within the last [maxAgeMs] ms. */
+    fun loadIfCached(path: String, maxAgeMs: Long): List<FileItem>?
 }
 
 @OptIn(FlowPreview::class)

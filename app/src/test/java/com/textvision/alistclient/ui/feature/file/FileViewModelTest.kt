@@ -40,6 +40,14 @@ class FileViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         every { networkMonitor.isOnline } returns MutableStateFlow(true)
+        // Default: no warm-up has happened — the cache miss path falls through
+        // to the original `list(...)` call. Tests that want to exercise the
+        // warm-cache hit override this with a specific stub.
+        every { fileRepository.loadIfCached(any(), any()) } returns null
+        // The init block subscribes to warmCache; an empty flow means the
+        // observer never picks up anything, which matches the "no warm-up
+        // happened" default.
+        every { fileRepository.warmCache } returns MutableStateFlow(emptyMap())
     }
 
     @After

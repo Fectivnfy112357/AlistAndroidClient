@@ -12,6 +12,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -37,9 +41,37 @@ class HomeViewModel @Inject constructor(
     private var loadJob: Job? = null
     private var hasLoadedInitial = false
 
+    init {
+        // Continuously observe the warmer's pre-fetched payload — if the
+        // splash gate hasn't completed when the user first opens the tab,
+        // a late cache hit still short-circuits the lazy load. We take(1)
+        // so a stale emission after the first successful load doesn't
+        // overwrite user-visible state (e.g. a refresh in progress).
+        repository.warmCache
+            .filterNotNull()
+            .take(1)
+            .onEach { cached -> applyCached(cached) }
+            .launchIn(viewModelScope)
+    }
+
     fun loadIfNeeded() {
         if (hasLoadedInitial) return
+        // App-startup warmer may have already pre-fetched the dashboard; if
+        // so, skip the network round-trip and present the cached snapshot
+        // immediately. The cache TTL is short (60s) — a stale hit just
+        // falls through to the live load below.
+        val cached = repository.loadIfCached(HOME_WARM_TTL_MS)
+        if (cached != null) {
+            applyCached(cached)
+            return
+        }
         load()
+    }
+
+    private fun applyCached(cached: HomeData) {
+        if (hasLoadedInitial) return
+        hasLoadedInitial = true
+        _uiState.value = HomeUiState.Success(cached)
     }
 
     fun refresh() {
