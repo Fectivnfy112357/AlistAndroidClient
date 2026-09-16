@@ -99,8 +99,6 @@ private const val SharedAxisSlidePx = 75
 internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTransition(): EnterTransition {
     val from = initialState.destination
     val to = targetState.destination
-    val tabSwap = from.isMainTab() && to.isMainTab() &&
-        !(from.hasRoute(FilesDest::class) && to.hasRoute(FilesDest::class))
     val slideDistance = SharedAxisSlidePx
     return when {
         // Login → main tab: the only non shared-axis push — a vertical fade
@@ -109,14 +107,31 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTrans
             fadeIn(AppNavTween, initialAlpha = 0.92f) +
                 slideInVertically(AppNavOffsetTween) { it / 28 }
 
+        // FilesDest → FilesDest with a *different* path is a drill-down (the
+        // user tapped a folder inside the file browser, not a bottom-nav tab).
+        // Drill-downs share the same SharedAxis X cue as every other push so
+        // the user reads a consistent "one level deeper" motion everywhere.
+        from.hasRoute(FilesDest::class) && to.hasRoute(FilesDest::class) ->
+            materialSharedAxisXIn(
+                forward = true,
+                slideDistance = slideDistance,
+            )
+
         // Tab ↔ different tab: full-width sweep; the bottom-nav bar lives
         // outside the NavHost so this reads as M3 NavigationBar behaviour.
-        tabSwap -> {
+        // Direction (forward / backward in tab order) drives the slide sign
+        // so the swap matches the user's mental model of moving right/left.
+        from.isMainTab() && to.isMainTab() -> {
             val sign = tabSwapDirection(from, to)
             slideInHorizontally(TabSwapTween) { fullWidth ->
                 if (sign >= 0) fullWidth else -fullWidth
             }
         }
+
+        // Music preview: dedicated helper below so callers (and the source
+        // invariant test) can reference a named transition.
+        to.hasRoute(MusicPreviewDest::class) ->
+            musicPreviewEnterTransition()
 
         // EVERY other forward transition is a drill-down navigation: folder
         // → sub-folder, file → preview, action → picker, settings → edit
@@ -132,18 +147,30 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsEnterTrans
 internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsExitTransition(): ExitTransition {
     val from = initialState.destination
     val to = targetState.destination
-    val tabSwap = from.isMainTab() && to.isMainTab() &&
-        !(from.hasRoute(FilesDest::class) && to.hasRoute(FilesDest::class))
     val slideDistance = SharedAxisSlidePx
     return when {
-        tabSwap -> {
+        // FilesDest → FilesDest drill-down: symmetric exit on the outgoing
+        // SharedAxis X layer so the layer peels off rather than snapping.
+        from.hasRoute(FilesDest::class) && to.hasRoute(FilesDest::class) ->
+            materialSharedAxisXOut(
+                forward = true,
+                slideDistance = slideDistance,
+            )
+
+        // Tab ↔ different tab: see [hyperOsEnterTransition] for sign logic.
+        // The exit slides off the opposite edge from the incoming enter so
+        // the two layers trade places across the screen.
+        from.isMainTab() && to.isMainTab() -> {
             val sign = tabSwapDirection(from, to)
             slideOutHorizontally(TabSwapTween) { fullWidth ->
                 if (sign >= 0) -fullWidth else fullWidth
             }
         }
+
+        to.hasRoute(MusicPreviewDest::class) ->
+            musicPreviewExitTransition()
+
         // Drill-down reverse (mirror of [hyperOsEnterTransition]'s else).
-        // Same SharedAxis X but with the matching exit side.
         else -> materialSharedAxisXOut(
             forward = true,
             slideDistance = slideDistance,
@@ -159,6 +186,9 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopEnterTr
         // SharedAxis reverse — keep it consistent with the matching push.
         to.hasRoute(LoginDest::class) ->
             fadeIn(AppNavTween, initialAlpha = 0.94f)
+        // Music preview pop: mirror of the dedicated enter transition.
+        to.hasRoute(MusicPreviewDest::class) ->
+            musicPreviewPopEnterTransition()
         // Every other pop enters from the trailing edge (left → right)
         // because the user is moving one level shallower.
         else -> materialSharedAxisXIn(
@@ -175,6 +205,8 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopExitTra
         to.hasRoute(LoginDest::class) ->
             fadeOut(AppNavTween, targetAlpha = 0.88f) +
                 slideOutVertically(AppNavOffsetTween) { it / 28 }
+        to.hasRoute(MusicPreviewDest::class) ->
+            musicPreviewPopExitTransition()
         // Mirror of [hyperOsPopEnterTransition]: leaving pages slide out to
         // the leading edge (right) during pop.
         else -> materialSharedAxisXOut(
@@ -183,3 +215,24 @@ internal fun AnimatedContentTransitionScope<NavBackStackEntry>.hyperOsPopExitTra
         )
     }
 }
+
+/**
+ * Dedicated enter transition for [MusicPreviewDest]. Kept as a named helper so
+ * the preview screen has a single, documented motion policy referenced by
+ * tests and any future direct callers. Implemented as Material Motion's
+ * SharedAxis X (forward) so it stays consistent with every other drill-down.
+ */
+internal fun AnimatedContentTransitionScope<NavBackStackEntry>.musicPreviewEnterTransition(): EnterTransition =
+    materialSharedAxisXIn(forward = true, slideDistance = SharedAxisSlidePx)
+
+/** Symmetric exit for [MusicPreviewDest]. See [musicPreviewEnterTransition]. */
+internal fun AnimatedContentTransitionScope<NavBackStackEntry>.musicPreviewExitTransition(): ExitTransition =
+    materialSharedAxisXOut(forward = true, slideDistance = SharedAxisSlidePx)
+
+/** Pop-enter for [MusicPreviewDest] — reverse direction (right → left). */
+internal fun AnimatedContentTransitionScope<NavBackStackEntry>.musicPreviewPopEnterTransition(): EnterTransition =
+    materialSharedAxisXIn(forward = false, slideDistance = SharedAxisSlidePx)
+
+/** Pop-exit for [MusicPreviewDest] — reverse direction. */
+internal fun AnimatedContentTransitionScope<NavBackStackEntry>.musicPreviewPopExitTransition(): ExitTransition =
+    materialSharedAxisXOut(forward = false, slideDistance = SharedAxisSlidePx)
