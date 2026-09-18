@@ -17,17 +17,19 @@
 | 上传 / 下载 | 并发限流（上传 2、下载 3）；Room 持久化任务；通知栏进度；取消与失败重试 |
 | 预览 | 图片 / 文本 App 内预览；音视频 Media3 播放器；其他类型走系统应用 |
 | 分享 | 系统分享面板、Alist 直链分享 |
-| 音乐 | Media3 前台服务 + MediaSession 通知栏控制 |
+| 音乐 | Media3 前台服务 + MediaSession 通知栏控制；专辑 / 艺人 / 歌曲库 |
 | 管理员 | 存储源编辑（含 Cookie 获取）、完整站点设置、清理预览缓存 |
 | 主题 | 浅色 / 深色 / 跟随系统 |
 
+主框架底部导航 **5 个 Tab**：首页 / 文件 / 音乐 / 传输 / 设置（详见 [`prototype/alist-android/DESIGN_HANDOFF.md`](prototype/alist-android/DESIGN_HANDOFF.md) § 5.1）。
+
 ## 截图
 
-| 文件浏览 | 子目录 | 搜索 |
-| :---: | :---: | :---: |
-| ![File List](docs/testing/screenshots/file-list-root.png) | ![Child Directory](docs/testing/screenshots/child-dir.png) | ![Search](docs/testing/screenshots/search.png) |
+| 登录 | 首页（仪表盘） | 文件页（多选态） | 音乐预览 |
+| :---: | :---: | :---: | :---: |
+| ![Login](prototype/alist-android/img.png) | ![Home](prototype/alist-android/img_1.png) | ![Files](prototype/alist-android/img_2.png) | ![Music Preview](prototype/alist-android/img_4.png) |
 
-更多截图见 [`docs/testing/screenshots/`](docs/testing/screenshots/)。
+> 设计稿来自 Hermes · 完整 13 屏可交互原型见 [`prototype/alist-android/`](prototype/alist-android/)。Android 真机回归截图见 [`prototype/alist-android/screenshots/`](prototype/alist-android/screenshots/)（21 张 · 按主题分组）。
 
 ## 技术栈
 
