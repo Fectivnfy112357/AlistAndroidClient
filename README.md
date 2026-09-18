@@ -29,7 +29,7 @@
 | :---: | :---: | :---: | :---: |
 | ![Login](prototype/alist-android/img.png) | ![Home](prototype/alist-android/img_1.png) | ![Files](prototype/alist-android/img_2.png) | ![Music Preview](prototype/alist-android/img_4.png) |
 
-> 设计稿来自 Hermes · 完整 13 屏可交互原型见 [`prototype/alist-android/`](prototype/alist-android/)。Android 真机回归截图见 [`prototype/alist-android/screenshots/`](prototype/alist-android/screenshots/)（21 张 · 按主题分组）。
+> 设计稿来自 Hermes · 完整 13 屏可交互原型见 [`prototype/alist-android/`](prototype/alist-android/)（含 [`DESIGN_HANDOFF.md`](prototype/alist-android/DESIGN_HANDOFF.md)）。
 
 ## 技术栈
 
