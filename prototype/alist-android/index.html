@@ -1606,6 +1606,127 @@
     z-index: 2;
   }
   .deco-center-lg svg { width: 60%; height: 60%; }
+
+  /* ============================================================
+   * Real Shots · 真机截图预览（来自 prototype/alist-android/screenshots/）
+   * ============================================================ */
+  .shots-stage {
+    max-width: 1480px;
+    margin: 80px auto 0;
+    padding: 0 24px 60px;
+  }
+  .shots-hero { text-align: center; margin-bottom: 24px; }
+  .shots-hero h2 {
+    font-family: 'Fredoka', 'Noto Sans SC', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #4A98E8 0%, #9C7CE8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 6px;
+  }
+  .shots-hero p { color: var(--ink-soft); font-size: 13px; }
+
+  .shot-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 12px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(12px);
+    border-radius: var(--r-card);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-card);
+  }
+  .shot-tab {
+    padding: 8px 14px;
+    border-radius: var(--r-chip);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .shot-tab:hover { background: rgba(111, 182, 255, 0.10); color: var(--ink); }
+  .shot-tab.active {
+    background: linear-gradient(135deg, #BFE0FF 0%, #D7E9FF 100%);
+    color: var(--brand-deep);
+    font-weight: 600;
+  }
+  .shot-tab .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(111, 182, 255, 0.18);
+    color: var(--brand-deep);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .shot-tab.active .badge { background: white; }
+
+  .shot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .shot-card {
+    background: var(--surface-solid);
+    border: 1px solid var(--line);
+    border-radius: var(--r-btn);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .shot-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
+  .shot-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #EAF2FC;
+  }
+  .shot-card .meta {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .shot-card .meta .name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .shot-card .meta .tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--r-chip);
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+    flex-shrink: 0;
+  }
+  .shot-card .meta .tag.mint  { background: #DAF6EC; color: #2D9B7C; }
+  .shot-card .meta .tag.pink  { background: #FFE4ED; color: #C46683; }
+  .shot-card .meta .tag.lemon { background: #FFF4CC; color: #9C7A1F; }
+  .shot-card .meta .tag.lilac { background: #ECE2FF; color: #7C5BC7; }
 </style>
 </head>
 <body>
@@ -1622,6 +1743,22 @@
   <!-- 手机墙 -->
   <div class="phone-wall" id="wall"></div>
 </div>
+
+<!-- 真实截图预览 · Tab 切换（来自 prototype/alist-android/screenshots/） -->
+<section class="shots-stage">
+  <div class="shots-hero">
+    <h2>真实截图</h2>
+    <p>来自 Android 真机回归测试 · 共 21 张</p>
+  </div>
+  <div class="shot-tabs">
+    <button class="shot-tab active" data-cat="all">全部 <span class="badge">21</span></button>
+    <button class="shot-tab" data-cat="file">文件 <span class="badge">5</span></button>
+    <button class="shot-tab" data-cat="transfer">传输 <span class="badge">5</span></button>
+    <button class="shot-tab" data-cat="recovery">通知恢复 <span class="badge">7</span></button>
+    <button class="shot-tab" data-cat="login">登录启动 <span class="badge">4</span></button>
+  </div>
+  <div class="shot-grid" id="shotGrid"></div>
+</section>
 
 <script>
 /* ============================================================
@@ -3379,6 +3516,60 @@ nav.querySelectorAll('.nav-chip').forEach(btn => {
 });
 
 wall.innerHTML = SCREENS.map(s => `<div class="phone-wrap">${s.render()}</div>`).join('');
+
+/* ============================================================
+   * Real Shots · 真机截图 Tab 切换
+   * 数据来自 prototype/alist-android/screenshots/，21 张 PNG
+   * ============================================================ */
+const SHOTS = [
+  // —— 文件浏览 (5) ——
+  { name: '文件列表（根目录）', tag: '文件', tagCls: '',        cat: 'file',     src: 'screenshots/file-list-root.png' },
+  { name: '子目录',             tag: '文件', tagCls: '',        cat: 'file',     src: 'screenshots/child-dir.png' },
+  { name: '面包屑',             tag: '文件', tagCls: '',        cat: 'file',     src: 'screenshots/breadcrumb-root2.png' },
+  { name: '搜索',               tag: '文件', tagCls: '',        cat: 'file',     src: 'screenshots/search.png' },
+  { name: '限流列表',           tag: '文件', tagCls: 'lemon',   cat: 'file',     src: 'screenshots/throttled-list.png' },
+  // —— 传输 (5) ——
+  { name: '下载进度',           tag: '下载', tagCls: 'mint',    cat: 'transfer', src: 'screenshots/500mb-download-progress.png' },
+  { name: '文件可下载',         tag: '下载', tagCls: 'mint',    cat: 'transfer', src: 'screenshots/500mb-file-visible-downloadable.png' },
+  { name: '上传修复后',         tag: '上传', tagCls: 'pink',    cat: 'transfer', src: 'screenshots/500mb-upload-after-logging-fix.png' },
+  { name: '上传成功',           tag: '上传', tagCls: 'pink',    cat: 'transfer', src: 'screenshots/500mb-upload-success.png' },
+  { name: '手动重试 6',         tag: '重试', tagCls: 'lemon',   cat: 'transfer', src: 'screenshots/manual-retry6.png' },
+  // —— 通知与恢复 (7) ——
+  { name: '重装后登录',         tag: '通知', tagCls: 'lilac',   cat: 'recovery', src: 'screenshots/resilience-after-reinstall-login.png' },
+  { name: 'ANR 对话框',         tag: '异常', tagCls: 'pink',    cat: 'recovery', src: 'screenshots/resilience-anr-dialog.png' },
+  { name: '登录后中断',         tag: '通知', tagCls: 'lilac',   cat: 'recovery', src: 'screenshots/resilience-interrupted-after-login.png' },
+  { name: '通知被拒绝',         tag: '权限', tagCls: 'lemon',   cat: 'recovery', src: 'screenshots/resilience-notification-denied.png' },
+  { name: '通知已授权',         tag: '权限', tagCls: 'mint',    cat: 'recovery', src: 'screenshots/resilience-notification-granted-active.png' },
+  { name: '中断后重试',         tag: '通知', tagCls: 'mint',    cat: 'recovery', src: 'screenshots/resilience-retry-after-interrupt.png' },
+  { name: '飞行模式',           tag: '网络', tagCls: 'lemon',   cat: 'recovery', src: 'screenshots/flight-mode.png' },
+  // —— 登录与启动 (4) ——
+  { name: 'API 34 启动',        tag: '启动', tagCls: 'lilac',   cat: 'login',    src: 'screenshots/api34-launch.png' },
+  { name: '密码错误',           tag: '登录', tagCls: 'pink',    cat: 'login',    src: 'screenshots/wrong-password.png' },
+  { name: '退出登录后',         tag: '登录', tagCls: '',        cat: 'login',    src: 'screenshots/after-logout.png' },
+  { name: 'URL 输入后',         tag: '登录', tagCls: '',        cat: 'login',    src: 'screenshots/after-url2.png' },
+];
+
+function renderShots(cat) {
+  const list = cat === 'all' ? SHOTS : SHOTS.filter(s => s.cat === cat);
+  const grid = document.getElementById('shotGrid');
+  grid.innerHTML = list.map(s => `
+    <div class="shot-card">
+      <img src="${s.src}" alt="${s.name}" loading="lazy">
+      <div class="meta">
+        <span class="name">${s.name}</span>
+        <span class="tag ${s.tagCls}">${s.tag}</span>
+      </div>
+    </div>
+  `).join('');
+}
+renderShots('all');
+document.querySelectorAll('.shot-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.shot-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderShots(tab.dataset.cat);
+  });
+});
 </script>
 
 </body>
