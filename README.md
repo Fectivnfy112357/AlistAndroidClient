@@ -3,6 +3,8 @@
 一款面向 [Alist v3](https://github.com/AlistGo/alist) 的原生 Android 文件管理客户端。
 单 Activity、Jetpack Compose + Material 3、MVVM + Repository 架构；不依赖 WebView 包装，也不复刻 Alist 管理后台。
 
+[![GitHub release](https://img.shields.io/github/v/release/Fectivnfy112357/AlistAndroidClient?include_prereleases&sort=semver)](https://github.com/Fectivnfy112357/AlistAndroidClient/releases) [![GitHub tag](https://img.shields.io/github/v/tag/Fectivnfy112357/AlistAndroidClient)](https://github.com/Fectivnfy112357/AlistAndroidClient/tags) [![License](https://img.shields.io/github/license/Fectivnfy112357/AlistAndroidClient)](https://github.com/Fectivnfy112357/AlistAndroidClient/blob/main/LICENSE) [![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android)](https://developer.android.com) [![Min SDK](https://img.shields.io/badge/min%20SDK-26-3DDC84)](https://github.com/Fectivnfy112357/AlistAndroidClient/blob/main/app/build.gradle.kts) [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?logo=kotlin)](https://kotlinlang.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
+
 > 包名 `com.textvision.alistclient` · 当前版本 `0.1.0` (`versionCode = 2`)
 
 ---
